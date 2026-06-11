@@ -1,0 +1,292 @@
+/* Title / level select, upgrades screen, and the run-end overlay. */
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 1.5rem 4rem;
+}
+
+.screen-inner {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ---------- Title ---------- */
+
+.title-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.title-header h1 {
+  font-size: 3.2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #f2f5fb 30%, #8aa6ee);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.title-header .tagline {
+  color: var(--text-dim);
+  font-size: 1.05rem;
+}
+
+.title-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* ---------- Level list ---------- */
+
+.level-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.level-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+
+.level-card:not(.locked):hover {
+  border-color: var(--accent);
+  background: var(--bg-panel);
+  transform: translateY(-1px);
+}
+
+.level-card.locked {
+  opacity: 0.6;
+}
+
+.level-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.level-card .level-meta {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.level-card .lock-note {
+  color: var(--gold);
+}
+
+/* ---------- Upgrades ---------- */
+
+.upgrade-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.upgrade-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  transition: border-color 0.15s ease;
+}
+
+.upgrade-card:hover {
+  border-color: var(--border-strong);
+}
+
+.upgrade-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.upgrade-card .upgrade-desc {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 0.15rem;
+}
+
+.upgrade-card .upgrade-effect {
+  color: var(--success);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-top: 0.2rem;
+}
+
+.rank-pips {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.rank-pips .pip {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.rank-pips .pip.filled {
+  background: var(--gold);
+}
+
+.upgrade-buy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  flex: none;
+}
+
+.upgrade-cost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.upgrade-maxed {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--success);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ---------- Run-end overlay ---------- */
+
+.run-end-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 12, 16, 0.72);
+  backdrop-filter: blur(4px);
+  animation: overlay-in 0.25s ease-out;
+  z-index: 50;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.run-end-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 2rem 2.75rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  animation: card-pop 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes card-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.run-end-card h2 {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.run-end-card h2.won {
+  color: var(--success);
+}
+
+.run-end-card h2.lost {
+  color: var(--danger);
+}
+
+.run-end-sub {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.run-end-score {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.run-end-score .label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.run-end-points {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--gold);
+  font-weight: 700;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+.run-end-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}

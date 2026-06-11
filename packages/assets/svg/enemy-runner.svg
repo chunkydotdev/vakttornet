@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- runner: lean orange blob leaning forward, stick legs, wide eyes -->
+  <ellipse cx="32" cy="56" rx="14" ry="4" fill="rgba(0,0,0,0.18)"/>
+  <g stroke="#b35a1f" stroke-width="3" stroke-linecap="round">
+    <path d="M26 48 L20 56"/>
+    <path d="M38 48 L42 56"/>
+  </g>
+  <path d="M18 44 Q14 24 34 14 Q52 22 46 44 Q40 52 30 51 Q20 50 18 44 Z" fill="#f08a24"/>
+  <path d="M22 40 Q20 26 34 18" fill="none" stroke="#ffb45e" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="36" cy="28" r="6" fill="#ffffff"/>
+  <circle cx="46" cy="30" r="5" fill="#ffffff"/>
+  <circle cx="38" cy="28" r="2.5" fill="#222222"/>
+  <circle cx="47.5" cy="30" r="2" fill="#222222"/>
+  <path d="M38 40 Q42 42 45 39" fill="none" stroke="#7a3c12" stroke-width="2" stroke-linecap="round"/>
+</svg>

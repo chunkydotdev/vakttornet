@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- brute: big purple beetle, armored shell plates, small angry eyes, horns -->
+  <ellipse cx="32" cy="57" rx="22" ry="5" fill="rgba(0,0,0,0.18)"/>
+  <g stroke="#3d2b52" stroke-width="4" stroke-linecap="round">
+    <path d="M14 48 L8 56"/>
+    <path d="M24 52 L22 58"/>
+    <path d="M40 52 L42 58"/>
+    <path d="M50 48 L56 56"/>
+  </g>
+  <path d="M8 42 Q8 14 32 10 Q56 14 56 42 Q56 54 32 54 Q8 54 8 42 Z" fill="#6c4f9e"/>
+  <path d="M12 38 Q12 18 32 14" fill="none" stroke="#8d6fc4" stroke-width="5" stroke-linecap="round"/>
+  <path d="M32 10 L32 54" stroke="#503a78" stroke-width="3"/>
+  <path d="M12 30 H52 M14 42 H50" stroke="#503a78" stroke-width="3"/>
+  <path d="M16 14 L10 4 M48 14 L54 4" stroke="#d8d2e4" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="25" cy="24" r="4" fill="#ffffff"/>
+  <circle cx="39" cy="24" r="4" fill="#ffffff"/>
+  <circle cx="26" cy="25" r="2" fill="#1d1430"/>
+  <circle cx="38" cy="25" r="2" fill="#1d1430"/>
+  <path d="M20 18 L29 21 M44 18 L35 21" stroke="#3d2b52" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

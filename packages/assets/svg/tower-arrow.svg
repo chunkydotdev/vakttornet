@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- arrow tower: wooden round base, tan body, arrow-slit, pointed roof -->
+  <ellipse cx="32" cy="52" rx="20" ry="8" fill="#6b5236"/>
+  <ellipse cx="32" cy="50" rx="20" ry="8" fill="#8a6c47"/>
+  <rect x="22" y="22" width="20" height="28" fill="#c9a062"/>
+  <rect x="22" y="22" width="6" height="28" fill="#dbb476"/>
+  <path d="M18 24 L32 6 L46 24 Z" fill="#a3622e"/>
+  <path d="M18 24 L32 6 L32 24 Z" fill="#b97338"/>
+  <rect x="30" y="30" width="4" height="12" rx="2" fill="#4a3621"/>
+</svg>

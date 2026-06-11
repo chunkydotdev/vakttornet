@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- swarmling: tiny yellow-green blob with one big eye and antennae -->
+  <ellipse cx="32" cy="50" rx="10" ry="3" fill="rgba(0,0,0,0.18)"/>
+  <g stroke="#7e8c2b" stroke-width="2" stroke-linecap="round">
+    <path d="M26 22 L22 14"/>
+    <path d="M38 22 L42 14"/>
+  </g>
+  <circle cx="22" cy="13" r="2" fill="#b6c43f"/>
+  <circle cx="42" cy="13" r="2" fill="#b6c43f"/>
+  <path d="M18 38 Q18 22 32 22 Q46 22 46 38 Q46 48 32 48 Q18 48 18 38 Z" fill="#aebf3a"/>
+  <path d="M22 36 Q22 26 30 25" fill="none" stroke="#cdde58" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="33" cy="34" r="7" fill="#ffffff"/>
+  <circle cx="34.5" cy="34" r="3" fill="#222222"/>
+  <path d="M28 43 Q32 45 36 43" fill="none" stroke="#67731f" stroke-width="2" stroke-linecap="round"/>
+</svg>
