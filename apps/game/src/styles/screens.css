@@ -48,6 +48,11 @@
   gap: 1rem;
 }
 
+.title-toolbar-actions {
+  display: inline-flex;
+  gap: 0.6rem;
+}
+
 /* ---------- Level list ---------- */
 
 .level-list {
@@ -190,6 +195,58 @@
   text-transform: uppercase;
 }
 
+/* ---------- Sägner codex ---------- */
+
+.sagen-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sagen-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.35rem;
+}
+
+/* Old-tale flourish: serif italics, lantern-amber title. */
+.sagen-card .sagen-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1.12rem;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+.sagen-card .sagen-text {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
+.sagen-card.locked {
+  border-style: dashed;
+  background: transparent;
+}
+
+.sagen-card.locked .sagen-title {
+  color: var(--text-faint);
+  letter-spacing: 0.35em;
+}
+
+.sagen-card .sagen-hint {
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--text-faint);
+}
+
 /* ---------- Run-end overlay ---------- */
 
 .run-end-overlay {
@@ -283,6 +340,29 @@
   border-radius: 999px;
   padding: 0.35rem 0.9rem;
   font-size: 0.9rem;
+}
+
+.run-end-sagner {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.run-end-sagner li {
+  color: var(--purple);
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.run-end-sagner li em {
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 .run-end-actions {

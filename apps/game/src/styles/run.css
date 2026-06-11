@@ -207,6 +207,29 @@
   cursor: not-allowed;
 }
 
+/* Locked (unlockPoints not yet earned): greyed sprite + lock note, but kept
+   readable so the player sees what to aim for. */
+.tower-card.locked:disabled {
+  opacity: 0.8;
+}
+
+.tower-card.locked img {
+  filter: grayscale(1) brightness(0.65);
+  opacity: 0.55;
+}
+
+.tower-card.locked .tower-name {
+  color: var(--text-faint);
+}
+
+.tower-lock-note {
+  display: block;
+  color: var(--text-faint);
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-top: 0.15rem;
+}
+
 .tower-card img {
   width: 38px;
   height: 38px;

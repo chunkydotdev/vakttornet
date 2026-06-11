@@ -3,11 +3,13 @@ import { content } from "./content";
 import { applyRunEnd, buyUpgrade, computeMetaModifiers, loadSave, type SaveData } from "./save";
 import { TitleScreen } from "./screens/TitleScreen";
 import { UpgradesScreen } from "./screens/UpgradesScreen";
+import { CodexScreen } from "./screens/CodexScreen";
 import { RunScreen } from "./screens/RunScreen";
 
 type Screen =
   | { kind: "title" }
   | { kind: "upgrades" }
+  | { kind: "codex" }
   | { kind: "run"; levelId: string; runKey: number };
 
 export function App() {
@@ -27,7 +29,8 @@ export function App() {
           key={`${screen.levelId}:${screen.runKey}`}
           level={level}
           meta={meta}
-          onRunEnd={(score) => setSave((s) => applyRunEnd(s, score))}
+          save={save}
+          onRunEnd={(score, deeds) => setSave((s) => applyRunEnd(s, score, deeds))}
           onExit={() => setScreen({ kind: "title" })}
           onRetry={() =>
             setScreen({ kind: "run", levelId: screen.levelId, runKey: screen.runKey + 1 })
@@ -36,6 +39,10 @@ export function App() {
       );
     }
     // Unknown level id — fall through to the title screen.
+  }
+
+  if (screen.kind === "codex") {
+    return <CodexScreen save={save} onBack={() => setScreen({ kind: "title" })} />;
   }
 
   if (screen.kind === "upgrades") {
@@ -58,6 +65,7 @@ export function App() {
       save={save}
       onPlay={(levelId) => setScreen({ kind: "run", levelId, runKey: 0 })}
       onUpgrades={() => setScreen({ kind: "upgrades" })}
+      onCodex={() => setScreen({ kind: "codex" })}
     />
   );
 }

@@ -199,9 +199,14 @@ export const createSim: CreateSim = (level, content, opts) => {
 
   function towersFire(events: SimEvent[]): void {
     for (const tower of state.towers) {
+      const lvl = levelDefOf(tower);
+      // damage 0 = non-attacking tower (e.g. income): it never targets or
+      // fires. Skipped before cooldown handling so even a tower carrying
+      // stale cooldown state (e.g. upgraded into a damage-0 level) stays
+      // inert while its current level deals no damage.
+      if (lvl.damage === 0) continue;
       if (tower.cooldown > 0) tower.cooldown -= 1;
       if (tower.cooldown > 0) continue;
-      const lvl = levelDefOf(tower);
       const range = lvl.range * meta.rangeMult;
       const center = tileCenter(tower.tile);
 
@@ -244,6 +249,9 @@ export const createSim: CreateSim = (level, content, opts) => {
           durationTicks: lvl.slow.durationTicks,
         };
       }
+      if (lvl.splashRadius !== undefined) {
+        projectile.splashRadius = lvl.splashRadius;
+      }
       state.projectiles.push(projectile);
       tower.cooldown = lvl.cooldownTicks;
       events.push({ type: "towerFired", towerId: tower.id, projectileId: projectile.id });
@@ -260,27 +268,51 @@ export const createSim: CreateSim = (level, content, opts) => {
       const dy = target.pos.y - proj.pos.y;
       const dist = Math.hypot(dx, dy);
       if (dist <= travel) {
-        // Hit.
+        // Hit. The impact point is the primary target's position; splash
+        // (if any) measures from here.
+        const impact: Vec = { ...target.pos };
         target.hp -= proj.damage;
         events.push({
           type: "projectileHit",
           projectileId: proj.id,
           enemyId: target.id,
           damage: proj.damage,
-          at: { ...target.pos },
+          at: { ...impact },
+          ...(proj.splashRadius !== undefined
+            ? { splashRadius: proj.splashRadius }
+            : {}),
         });
-        if (target.hp <= 0) {
-          state.enemies = state.enemies.filter((e) => e.id !== target.id);
-          state.gold += target.bounty;
-          state.score += target.bounty;
-          events.push({
-            type: "enemyDied",
-            enemyId: target.id,
-            typeId: target.typeId,
-            bounty: target.bounty,
-            at: { ...target.pos },
-          });
-        } else if (proj.slow) {
+        // Splash: every OTHER living enemy within splashRadius tiles of the
+        // impact takes the same damage (flat, no falloff).
+        if (proj.splashRadius !== undefined) {
+          for (const enemy of state.enemies) {
+            if (enemy.id === target.id) continue;
+            const d = Math.hypot(enemy.pos.x - impact.x, enemy.pos.y - impact.y);
+            if (d <= proj.splashRadius) enemy.hp -= proj.damage;
+          }
+        }
+        // Deaths resolve only after ALL damage from this impact has been
+        // applied. Splash kills pay the normal bounty (gold + score), in
+        // enemy-array (spawn) order for determinism.
+        const dead = state.enemies.filter((e) => e.hp <= 0);
+        if (dead.length > 0) {
+          state.enemies = state.enemies.filter((e) => e.hp > 0);
+          for (const e of dead) {
+            state.gold += e.bounty;
+            state.score += e.bounty;
+            events.push({
+              type: "enemyDied",
+              enemyId: e.id,
+              typeId: e.typeId,
+              bounty: e.bounty,
+              at: { ...e.pos },
+            });
+          }
+        }
+        // Slow applies ONLY to the primary target — splash victims are never
+        // slowed, even if a tower somehow has both slow and splashRadius —
+        // and only if the primary survived the impact.
+        if (target.hp > 0 && proj.slow) {
           // Overwrite semantics: a new application replaces both factor and
           // duration — no stacking, no taking the stronger of the two.
           target.slowFactor = proj.slow.factor;
@@ -313,6 +345,16 @@ export const createSim: CreateSim = (level, content, opts) => {
     state.score += bonus;
     state.status = "building";
     events.push({ type: "waveCleared", waveIndex: clearedIndex, bonus });
+    // Income towers pay out on EVERY wave clear — including the final one,
+    // where runWon fires in the same tick (consistent: the last wave cleared
+    // is still a cleared wave). Income is gold only; it never adds to score.
+    // Events go after waveCleared (and before runWon), same tick.
+    for (const tower of state.towers) {
+      const income = levelDefOf(tower).incomePerWave;
+      if (income === undefined) continue;
+      state.gold += income;
+      events.push({ type: "income", towerId: tower.id, amount: income });
+    }
     if (state.waveIndex >= state.totalWaves) {
       state.status = "won";
       state.score += state.lives * globals.winBonusPerLife;

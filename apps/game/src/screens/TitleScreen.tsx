@@ -6,9 +6,10 @@ interface TitleScreenProps {
   save: SaveData;
   onPlay: (levelId: string) => void;
   onUpgrades: () => void;
+  onCodex: () => void;
 }
 
-export function TitleScreen({ save, onPlay, onUpgrades }: TitleScreenProps) {
+export function TitleScreen({ save, onPlay, onUpgrades, onCodex }: TitleScreenProps) {
   return (
     <div className="screen">
       <div className="screen-inner">
@@ -22,9 +23,14 @@ export function TitleScreen({ save, onPlay, onUpgrades }: TitleScreenProps) {
             <img className="icon" src={manifest["ui.coin"]} alt="" />
             {save.points} poäng
           </span>
-          <button type="button" className="btn" onClick={onUpgrades}>
-            Uppgraderingar
-          </button>
+          <span className="title-toolbar-actions">
+            <button type="button" className="btn" onClick={onUpgrades}>
+              Uppgraderingar
+            </button>
+            <button type="button" className="btn" onClick={onCodex}>
+              Sägner
+            </button>
+          </span>
         </div>
 
         <ul className="level-list">

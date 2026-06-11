@@ -16,7 +16,7 @@ import type {
   TowerInstance,
   Vec,
 } from "@vakttornet/sim";
-import type { ContentBundle, TowerDef } from "@vakttornet/content";
+import type { ContentBundle, TowerDef, TowerLevel } from "@vakttornet/content";
 
 export const TILE_PX = 64;
 
@@ -34,6 +34,7 @@ const TILE_ASSET: Record<TileKind, string> = {
   blocked: "tile.blocked",
   spawn: "tile.spawn",
   exit: "tile.exit",
+  water: "tile.water",
 };
 
 /** Fallback fills if an SVG failed to load — the run must stay playable. */
@@ -43,6 +44,7 @@ const TILE_FALLBACK: Record<TileKind, string> = {
   path: "#3a3326",
   spawn: "#3a2630",
   exit: "#26303a",
+  water: "#16293c",
 };
 
 export type ImageStore = Map<string, HTMLImageElement>;
@@ -115,6 +117,17 @@ interface FloatingText {
 const FLOAT_LIFE_MS = 1100;
 const FLOAT_RISE_PX = 30;
 
+/** Brief expanding ring drawn where a splash projectile lands. */
+interface SplashRing {
+  x: number;
+  y: number;
+  /** full radius at the end of the animation, in px */
+  radiusPx: number;
+  bornAt: number;
+}
+
+const SPLASH_LIFE_MS = 250;
+
 /** Min ms between "förstenad!" floats per enemy — re-applied slows don't spam. */
 const SLOW_FLOAT_COOLDOWN_MS = 700;
 
@@ -137,6 +150,7 @@ export class Renderer {
   private readonly towerDefs: Map<string, TowerDef>;
   private readonly exitPos: Vec;
   private floats: FloatingText[] = [];
+  private splashes: SplashRing[] = [];
   private lastSlowFloatAt = new Map<number, number>();
 
   constructor(
@@ -194,6 +208,25 @@ export class Renderer {
           this.addFloat("förstenad!", PETRIFY_COLOR, enemy.pos, { italic: true });
           break;
         }
+        case "projectileHit":
+          if (event.splashRadius !== undefined) {
+            this.splashes.push({
+              x: event.at.x * TILE_PX,
+              y: event.at.y * TILE_PX,
+              radiusPx: event.splashRadius * TILE_PX,
+              bornAt: performance.now(),
+            });
+          }
+          break;
+        case "income": {
+          const tower = this.sim.state.towers.find((t) => t.id === event.towerId);
+          if (!tower) break;
+          this.addFloat(`+${event.amount}g`, "#fbbf24", {
+            x: tower.tile.col + 0.5,
+            y: tower.tile.row + 0.3,
+          });
+          break;
+        }
       }
     }
   }
@@ -224,6 +257,7 @@ export class Renderer {
     this.drawTowers();
     this.drawEnemies(alpha);
     this.drawProjectiles(alpha);
+    this.drawSplashes();
     this.drawPlacementPreview();
     this.drawFloats();
 
@@ -255,10 +289,15 @@ export class Renderer {
     }
   }
 
+  private towerLevelDef(typeId: string, level: number): TowerLevel | undefined {
+    return this.towerDefs.get(typeId)?.levels[level - 1];
+  }
+
+  /** Range circle radius in px — 0 for non-attacking (damage 0) towers, whose
+   * range is meaningless and would only mislead. */
   private towerRangePx(typeId: string, level: number): number {
-    const def = this.towerDefs.get(typeId);
-    const lvl = def?.levels[level - 1];
-    if (!lvl) return 0;
+    const lvl = this.towerLevelDef(typeId, level);
+    if (!lvl || lvl.damage <= 0) return 0;
     return lvl.range * this.meta.rangeMult * TILE_PX;
   }
 
@@ -385,6 +424,26 @@ export class Renderer {
     // green (120) -> red (0) as hp drops
     ctx.fillStyle = `hsl(${Math.round(120 * clamped)}, 75%, 48%)`;
     ctx.fillRect(x, cy, width * clamped, height);
+  }
+
+  /** Brief expanding rings where splash projectiles landed (~250 ms each). */
+  private drawSplashes(): void {
+    if (this.splashes.length === 0) return;
+    const { ctx } = this;
+    const now = performance.now();
+    this.splashes = this.splashes.filter((s) => now - s.bornAt < SPLASH_LIFE_MS);
+    for (const splash of this.splashes) {
+      const t = (now - splash.bornAt) / SPLASH_LIFE_MS;
+      const eased = 1 - (1 - t) * (1 - t); // ease-out: fast pop, soft finish
+      const radius = Math.max(2, splash.radiusPx * eased);
+      ctx.beginPath();
+      ctx.arc(splash.x, splash.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${ACCENT_RGB}, ${0.12 * (1 - t)})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(${ACCENT_RGB}, ${0.7 * (1 - t)})`;
+      ctx.lineWidth = 1 + 2.5 * (1 - t);
+      ctx.stroke();
+    }
   }
 
   private drawProjectiles(alpha: number): void {

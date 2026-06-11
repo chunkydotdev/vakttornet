@@ -11,6 +11,8 @@ export interface ParsedGrid {
   exit: { col: number; row: number };
 }
 
+/** Tiles BFS may cross. "water" is deliberately absent: it behaves exactly
+ * like "blocked" for pathing (and for building — see placeTower). */
 const WALKABLE: ReadonlySet<TileKind> = new Set(["path", "spawn", "exit"]);
 
 /**

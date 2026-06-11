@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- dark tarn water at dusk: still surface, subtle ripples kept clear of the
+       edges so the tile repeats seamlessly against itself and grass -->
+  <rect width="64" height="64" fill="#27414d"/>
+  <g fill="#20363f">
+    <ellipse cx="16" cy="14" rx="7" ry="3"/>
+    <ellipse cx="46" cy="26" rx="8" ry="3.5"/>
+    <ellipse cx="24" cy="44" rx="7" ry="3"/>
+    <ellipse cx="50" cy="52" rx="6" ry="2.5"/>
+  </g>
+  <g fill="none" stroke="#3d5c6b" stroke-width="1.5" stroke-linecap="round">
+    <path d="M12 22 Q17 20 22 22"/>
+    <path d="M38 14 Q43 12 48 14"/>
+    <path d="M30 34 Q35 32 40 34"/>
+    <path d="M14 50 Q19 48 24 50"/>
+    <path d="M42 44 Q47 42 52 44"/>
+  </g>
+  <g fill="#527789">
+    <circle cx="26" cy="18" r="1"/>
+    <circle cx="52" cy="34" r="0.9"/>
+    <circle cx="34" cy="54" r="1"/>
+  </g>
+  <circle cx="44" cy="12" r="1.1" fill="#6e93a3" opacity="0.7"/>
+</svg>

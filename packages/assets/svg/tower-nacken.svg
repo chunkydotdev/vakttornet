@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- nacken: pale green water spirit rising from a dark pool, fiddle raised -->
+  <ellipse cx="32" cy="54" rx="20" ry="7" fill="#36502f"/>
+  <ellipse cx="32" cy="52" rx="18" ry="6.5" fill="#27414d"/>
+  <ellipse cx="32" cy="51" rx="13" ry="4.5" fill="#1d323c"/>
+  <g fill="none" stroke="#3d5c6b" stroke-width="1.5" stroke-linecap="round">
+    <path d="M20 52 Q24 50 28 52"/>
+    <path d="M36 53 Q40 51 44 53"/>
+  </g>
+  <path d="M26 50 Q24 36 28 28 Q30 22 34 22 Q39 22 40 29 Q42 38 38 50 Q32 53 26 50 Z" fill="#9ec79a"/>
+  <path d="M28 46 Q27 36 30 29" fill="none" stroke="#b8d8b2" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="34" cy="18" rx="6" ry="5.5" fill="#9ec79a"/>
+  <path d="M28 14 Q30 8 36 9 Q42 11 41 17 Q39 21 36 23 Q38 17 34 14 Q31 13 28 14 Z" fill="#5d8a64"/>
+  <circle cx="31.5" cy="17" r="1.2" fill="#1d323c"/>
+  <circle cx="36.5" cy="17" r="1.2" fill="#1d323c"/>
+  <path d="M32 21 Q34 22.5 36 21" fill="none" stroke="#4f7245" stroke-width="1.2" stroke-linecap="round"/>
+  <g>
+    <path d="M44 32 Q49 30 50 24 Q51 19 48 18 Q45 18 44 22 Q43 27 44 32 Z" fill="#7a4f2a"/>
+    <path d="M46 30 Q48 26 47.5 21" fill="none" stroke="#a8814f" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="47" y1="18" x2="46" y2="11" stroke="#5b4632" stroke-width="2" stroke-linecap="round"/>
+    <line x1="40" y1="14" x2="53" y2="27" stroke="#d8cdb4" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+  <g fill="#7fb7c9">
+    <circle cx="20" cy="46" r="1.4"/>
+    <circle cx="45" cy="44" r="1.2"/>
+    <circle cx="24" cy="40" r="1"/>
+  </g>
+  <circle cx="33" cy="30" r="14" fill="#7fb7c9" opacity="0.1"/>
+</svg>

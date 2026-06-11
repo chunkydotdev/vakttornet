@@ -12,11 +12,14 @@ import {
   type PlaceResult,
   type RunStatus,
   type Sim,
+  type SimEvent,
   type TowerInstance,
 } from "@vakttornet/sim";
-import type { LevelDef, TowerDef } from "@vakttornet/content";
+import type { LevelDef, SagenDef, TowerDef } from "@vakttornet/content";
 import { manifest } from "@vakttornet/assets/manifest";
 import { content } from "../content";
+import { mergeDeeds, type RunDeeds, type SaveData } from "../save";
+import { newlyUnlockedSagner } from "../sagner";
 import { startGameLoop, type GameLoop, type SimSpeed } from "../game/loop";
 import { Renderer, TILE_PX, assetUrl, loadImages, type TilePos } from "../game/render";
 import { playEventSounds } from "../game/sfx";
@@ -25,7 +28,8 @@ import { RunEndOverlay } from "./RunEndOverlay";
 interface RunScreenProps {
   level: LevelDef;
   meta: MetaModifiers;
-  onRunEnd: (score: number) => void;
+  save: SaveData;
+  onRunEnd: (score: number, deeds: RunDeeds) => void;
   onExit: () => void;
   onRetry: () => void;
 }
@@ -73,7 +77,7 @@ const PLACE_ERROR_TEXT: Record<PlaceFailReason, string> = {
 
 const HUD_SYNC_INTERVAL_MS = 100;
 
-export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenProps) {
+export function RunScreen({ level, meta, save, onRunEnd, onExit, onRetry }: RunScreenProps) {
   // Meta modifiers are locked in at mount — buying upgrades mid-run (not
   // possible via UI anyway) must not retroactively change a live sim.
   const metaRef = useRef(meta);
@@ -94,12 +98,39 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
   const endedNotifiedRef = useRef(false);
   const lastHudSyncRef = useRef(0);
 
+  // ---- Lifetime deed tracking (sägner). Kills + petrifies accumulate from
+  // the event stream; the sim's starting lives are captured here so a
+  // flawless win can be detected by comparison at run end.
+  const runKillsRef = useRef<Record<string, number>>({});
+  const runPetrifiedRef = useRef(0);
+  const startLivesRef = useRef(sim.state.lives);
+
+  // Tower unlocks are computed ONCE at run start — points banked when this
+  // run ends must not pop new towers into the shop mid-run.
+  const [lockedTowerIds] = useState<ReadonlySet<string>>(
+    () =>
+      new Set(
+        content.towers.filter((t) => t.unlockPoints > save.totalEarned).map((t) => t.id),
+      ),
+  );
+
   const [loading, setLoading] = useState(true);
   const [hud, setHud] = useState<HudState>(() => snapshotHud(sim));
   const [armed, setArmed] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [speed, setSpeed] = useState<SimSpeed>(1);
   const [toast, setToast] = useState<{ message: string; key: number } | null>(null);
+  const [newSagner, setNewSagner] = useState<SagenDef[]>([]);
+
+  const trackDeeds = useCallback((events: SimEvent[]) => {
+    for (const event of events) {
+      if (event.type === "enemyDied") {
+        runKillsRef.current[event.typeId] = (runKillsRef.current[event.typeId] ?? 0) + 1;
+      } else if (event.type === "enemySlowed") {
+        runPetrifiedRef.current += 1;
+      }
+    }
+  }, []);
 
   const syncHud = useCallback(() => {
     const next = snapshotHud(sim);
@@ -117,6 +148,7 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
       const loop = startGameLoop({
         sim,
         onEvents: (events) => {
+          trackDeeds(events);
           renderer.handleEvents(events);
           playEventSounds(events);
         },
@@ -141,7 +173,7 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
       loopRef.current = null;
       rendererRef.current = null;
     };
-  }, [sim, syncHud]);
+  }, [sim, syncHud, trackDeeds]);
 
   // ---- Mirror React selection/arming state into the renderer. ----
   useEffect(() => {
@@ -152,14 +184,27 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
     }
   }, [armed, selectedId, loading]);
 
-  // ---- Run end: bank the score exactly once. ----
+  // ---- Run end: bank the score + deeds exactly once. Kills count won or
+  // lost; the level only joins wonLevelIds (and may count as flawless) on a
+  // win. Newly satisfied sägner conditions are diffed against the pre-merge
+  // save so the overlay can announce them.
   const runEnded = hud.status === "won" || hud.status === "lost";
   useEffect(() => {
     if (runEnded && !endedNotifiedRef.current) {
       endedNotifiedRef.current = true;
-      onRunEnd(sim.state.score);
+      const won = sim.state.status === "won";
+      const deeds: RunDeeds = {
+        kills: runKillsRef.current,
+        petrified: runPetrifiedRef.current,
+        wonLevelId: won ? level.id : null,
+        flawless: won && sim.state.lives === startLivesRef.current,
+      };
+      setNewSagner(
+        newlyUnlockedSagner(content.sagner, save.deeds, mergeDeeds(save.deeds, deeds)),
+      );
+      onRunEnd(sim.state.score, deeds);
     }
-  }, [runEnded, onRunEnd, sim]);
+  }, [runEnded, onRunEnd, sim, level.id, save.deeds]);
 
   const startWave = useCallback(() => {
     if (sim.startWave()) {
@@ -324,6 +369,27 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
           <h2>Torn</h2>
           {content.towers.map((tower) => {
             const cost = tower.levels[0]?.cost ?? 0;
+            if (lockedTowerIds.has(tower.id)) {
+              return (
+                <button
+                  key={tower.id}
+                  type="button"
+                  className="tower-card locked"
+                  disabled
+                  title={`Låst — kräver ${tower.unlockPoints} poäng`}
+                >
+                  <img src={assetUrl(tower.assetId)} alt="" />
+                  <span>
+                    <span className="tower-name">
+                      {tower.name} <span aria-hidden="true">🔒</span>
+                    </span>
+                    <span className="tower-lock-note">
+                      Låst — kräver {tower.unlockPoints} poäng
+                    </span>
+                  </span>
+                </button>
+              );
+            }
             return (
               <button
                 key={tower.id}
@@ -404,6 +470,7 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
         <RunEndOverlay
           won={hud.status === "won"}
           score={sim.state.score}
+          newSagner={newSagner.map((s) => s.title)}
           onRetry={onRetry}
           onExit={onExit}
         />
@@ -428,6 +495,9 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
 
   const spent = def.levels.slice(0, tower.level).reduce((sum, l) => sum + l.cost, 0);
   const refund = Math.floor(spent * content.globals.sellRefundRatio);
+  // Economy towers (damage 0) never attack — combat stats (including range)
+  // are meaningless, so show their income instead.
+  const isEconomy = current.damage === 0;
   const damage = formatNumber(current.damage * meta.damageMult);
   const range = formatNumber(current.range * meta.rangeMult);
   const rate = formatNumber(TICK_RATE / current.cooldownTicks);
@@ -445,18 +515,27 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
       </div>
 
       <div className="stat-table">
-        <div className="stat-row">
-          <span className="stat-label">Skada</span>
-          <span className="stat-value">{damage}</span>
-        </div>
-        <div className="stat-row">
-          <span className="stat-label">Räckvidd</span>
-          <span className="stat-value">{range} rutor</span>
-        </div>
-        <div className="stat-row">
-          <span className="stat-label">Eldtakt</span>
-          <span className="stat-value">{rate}/s</span>
-        </div>
+        {isEconomy ? (
+          <div className="stat-row">
+            <span className="stat-label">Inkomst</span>
+            <span className="stat-value">+{current.incomePerWave ?? 0}g per våg</span>
+          </div>
+        ) : (
+          <>
+            <div className="stat-row">
+              <span className="stat-label">Skada</span>
+              <span className="stat-value">{damage}</span>
+            </div>
+            <div className="stat-row">
+              <span className="stat-label">Räckvidd</span>
+              <span className="stat-value">{range} rutor</span>
+            </div>
+            <div className="stat-row">
+              <span className="stat-label">Eldtakt</span>
+              <span className="stat-value">{rate}/s</span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="inspector-actions">
@@ -471,9 +550,15 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
               Uppgradera — {next.cost}g
             </button>
             <p className="next-level-note">
-              Nästa nivå: {formatNumber(next.damage * meta.damageMult)} skada,{" "}
-              {formatNumber(next.range * meta.rangeMult)} räckvidd,{" "}
-              {formatNumber(TICK_RATE / next.cooldownTicks)}/s
+              {next.damage === 0 ? (
+                <>Nästa nivå: +{next.incomePerWave ?? 0}g per våg</>
+              ) : (
+                <>
+                  Nästa nivå: {formatNumber(next.damage * meta.damageMult)} skada,{" "}
+                  {formatNumber(next.range * meta.rangeMult)} räckvidd,{" "}
+                  {formatNumber(TICK_RATE / next.cooldownTicks)}/s
+                </>
+              )}
             </p>
           </>
         ) : (

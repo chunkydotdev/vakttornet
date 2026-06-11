@@ -53,6 +53,14 @@ describe("placeTower", () => {
     });
   });
 
+  it("rejects water tiles", () => {
+    const { sim } = setup({ map: ["S~E", "P~P", "PPP"] });
+    expect(sim.placeTower("archer", { col: 1, row: 0 })).toEqual({
+      ok: false,
+      reason: "not-buildable",
+    });
+  });
+
   it("rejects occupied tiles", () => {
     const { sim } = setup();
     expect(sim.placeTower("archer", { col: 1, row: 1 }).ok).toBe(true);
@@ -515,6 +523,124 @@ describe("slow (petrify)", () => {
   });
 });
 
+describe("splash", () => {
+  it("kills every clustered enemy in radius in one hit, each paying bounty; outside radius unhurt", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "runt", count: 3, spacingTicks: 2 }] }],
+    });
+    sim.startWave();
+    // Spawns on ticks 1, 3, 5; let the first two walk ahead first.
+    for (let t = 1; t <= 4; t++) sim.tick();
+    // Place mid-wave so the boulder's first shot is on tick 5, when all three
+    // runts are alive. After tick 5's movement: A x=1.75, B x=1.25, C x=0.75.
+    const placed = sim.placeTower("boulder", { col: 1, row: 1 });
+    if (!placed.ok) throw new Error("placement failed");
+    const goldBefore = sim.state.gold;
+    const scoreBefore = sim.state.score;
+
+    const t5 = sim.tick();
+    // Boulder targets A (furthest along); projectile speed 60 hits same tick.
+    const hits = eventsOfType(t5, "projectileHit");
+    expect(hits).toHaveLength(1);
+    expect(hits[0]!.splashRadius).toBe(0.75); // event carries the radius
+    expect(hits[0]!.at).toEqual({ x: 1.75, y: 2.5 }); // impact = A's position
+
+    // A (primary) and B (0.5 tiles from impact) die; C (1.0 tiles) is outside
+    // the 0.75 radius and completely unhurt. Both deaths pay full bounty.
+    const died = eventsOfType(t5, "enemyDied");
+    expect(died).toHaveLength(2);
+    expect(died.map((d) => d.bounty)).toEqual([5, 5]);
+    expect(sim.state.enemies).toHaveLength(1);
+    expect(sim.state.enemies[0]!.hp).toBe(10);
+    expect(sim.state.gold).toBe(goldBefore + 10);
+    expect(sim.state.score).toBe(scoreBefore + 10);
+  });
+
+  it("non-splash projectile hits do not carry splashRadius", () => {
+    const { sim } = setup();
+    sim.placeTower("sniper", { col: 3, row: 1 });
+    sim.startWave();
+    let hit: SimEvent | undefined;
+    for (let t = 0; t < 10 && !hit; t++) {
+      hit = eventsOfType(sim.tick(), "projectileHit")[0];
+    }
+    expect(hit).toBeDefined();
+    expect("splashRadius" in hit!).toBe(false);
+  });
+});
+
+describe("income towers", () => {
+  it("a damage-0 tower never targets or fires across a full wave", () => {
+    const { sim } = setup(); // 1 wave, 1 runt
+    const kvarn = sim.placeTower("kvarn", { col: 3, row: 1 }); // range 20 sees everything
+    const archer = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!kvarn.ok || !archer.ok) throw new Error("placement failed");
+    sim.startWave();
+
+    const fired: number[] = [];
+    for (let t = 0; t < 50 && sim.state.status !== "won"; t++) {
+      fired.push(...eventsOfType(sim.tick(), "towerFired").map((e) => e.towerId));
+    }
+    expect(sim.state.status).toBe("won");
+    expect(fired.length).toBeGreaterThan(0);
+    expect(fired).not.toContain(kvarn.tower.id); // only the archer ever fired
+    expect(fired.every((id) => id === archer.tower.id)).toBe(true);
+  });
+
+  it("pays incomePerWave per income tower on wave clear — gold only, never score", () => {
+    const { sim } = setup({
+      startGold: 200,
+      waves: [
+        { entries: [{ enemyTypeId: "runt", count: 1, spacingTicks: 1 }] },
+        { entries: [{ enemyTypeId: "runt", count: 1, spacingTicks: 1 }] },
+      ],
+    });
+    const k1 = sim.placeTower("kvarn", { col: 1, row: 0 });
+    const k2 = sim.placeTower("kvarn", { col: 2, row: 0 });
+    const archer = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!k1.ok || !k2.ok || !archer.ok) throw new Error("placement failed");
+    sim.startWave();
+
+    sim.tick(); // t1: waveStarted, spawn, archer fires
+    const goldBefore = sim.state.gold;
+    const scoreBefore = sim.state.score;
+    const t2 = sim.tick(); // t2: kill clears wave 0
+    // Income events come AFTER waveCleared, in the same tick, one per tower.
+    expect(t2.map((e) => e.type)).toEqual([
+      "projectileHit",
+      "enemyDied",
+      "waveCleared",
+      "income",
+      "income",
+    ]);
+    expect(eventsOfType(t2, "income")).toEqual([
+      { type: "income", towerId: k1.tower.id, amount: 7 },
+      { type: "income", towerId: k2.tower.id, amount: 7 },
+    ]);
+    expect(sim.state.gold).toBe(goldBefore + 5 + 14); // bounty + 2 × 7 income
+    expect(sim.state.score).toBe(scoreBefore + 5 + 10); // bounty + clear bonus ONLY
+
+    // Final wave: income also pays out alongside runWon (a cleared last wave
+    // is still a cleared wave), ordered waveCleared → income → runWon.
+    expect(sim.startWave()).toBe(true);
+    let finalEvents: SimEvent[] = [];
+    for (let t = 0; t < 100 && sim.state.status !== "won"; t++) {
+      finalEvents = sim.tick();
+    }
+    expect(sim.state.status).toBe("won");
+    const types = finalEvents.map((e) => e.type);
+    expect(eventsOfType(finalEvents, "income")).toEqual([
+      { type: "income", towerId: k1.tower.id, amount: 7 },
+      { type: "income", towerId: k2.tower.id, amount: 7 },
+    ]);
+    expect(types.indexOf("waveCleared")).toBeLessThan(types.indexOf("income"));
+    expect(types.lastIndexOf("income")).toBeLessThan(types.indexOf("runWon"));
+    // score = bounties (5+5) + clear bonuses (10+20) + 3 lives × 2 = 46.
+    // Income (4 × 7 = 28 gold) must not appear anywhere in the score.
+    expect(sim.state.score).toBe(46);
+  });
+});
+
 describe("upgrade and sell", () => {
   it("upgrades through max level, charging each level's cost", () => {
     const { sim } = setup({ startGold: 200 });
@@ -584,10 +710,18 @@ describe("determinism", () => {
     const run = () => {
       const { sim } = setup(
         {
-          startGold: 200,
+          startGold: 300,
+          startLives: 10,
           waves: [
             { entries: [{ enemyTypeId: "runt", count: 2, spacingTicks: 6 }] },
-            { entries: [{ enemyTypeId: "runt", count: 3, spacingTicks: 5, delayTicks: 2 }] },
+            {
+              entries: [
+                { enemyTypeId: "runt", count: 3, spacingTicks: 5, delayTicks: 2 },
+                // Tight cluster (0.5 tiles apart) so the boulder's splash
+                // resolves multi-kills inside the determinism script.
+                { enemyTypeId: "runt", count: 3, spacingTicks: 2 },
+              ],
+            },
           ],
         },
         { seed: 1234 },
@@ -596,11 +730,15 @@ describe("determinism", () => {
       const archer = sim.placeTower("archer", { col: 1, row: 1 });
       const sniper = sim.placeTower("sniper", { col: 3, row: 1 });
       const lantern = sim.placeTower("lantern", { col: 5, row: 1 });
-      if (!archer.ok || !sniper.ok || !lantern.ok) throw new Error("placement failed");
+      const kvarn = sim.placeTower("kvarn", { col: 5, row: 3 }); // income on each clear
+      if (!archer.ok || !sniper.ok || !lantern.ok || !kvarn.ok) {
+        throw new Error("placement failed");
+      }
       sim.startWave();
       for (let t = 1; t <= 200; t++) {
         if (t === 10) sim.upgradeTower(archer.tower.id);
         if (t === 20) sim.sellTower(sniper.tower.id);
+        if (t === 24) sim.placeTower("boulder", { col: 2, row: 3 }); // splash, mid-run
         if (sim.state.status === "building" && sim.state.waveIndex < sim.state.totalWaves) {
           sim.startWave();
         }

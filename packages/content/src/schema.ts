@@ -20,7 +20,8 @@ export type EnemyDef = z.infer<typeof enemyDefSchema>;
 export const towerLevelSchema = z.object({
   /** gold cost to buy (level 1) or upgrade to this level */
   cost: z.number().positive(),
-  damage: z.number().positive(),
+  /** 0 = non-attacking tower (e.g. economy): never targets or fires */
+  damage: z.number().nonnegative(),
   /** tiles, measured from tower tile center */
   range: z.number().positive(),
   /** ticks between shots (TICK_RATE = 30/s) */
@@ -35,6 +36,11 @@ export const towerLevelSchema = z.object({
       durationTicks: z.number().int().positive(),
     })
     .optional(),
+  /** splash: on hit, full damage to every enemy within this tile radius of
+   * the impact (flat, no falloff) */
+  splashRadius: z.number().positive().optional(),
+  /** economy: gold granted to the player when a wave is cleared */
+  incomePerWave: z.number().positive().optional(),
 });
 export type TowerLevel = z.infer<typeof towerLevelSchema>;
 
@@ -43,6 +49,9 @@ export const towerDefSchema = z.object({
   name: z.string(),
   assetId: z.string(),
   description: z.string(),
+  /** lifetime meta points (totalEarned) required before this tower appears
+   * unlocked in the shop; 0 = available from the start */
+  unlockPoints: z.number().nonnegative().default(0),
   levels: z.array(towerLevelSchema).min(1).max(3),
 });
 export type TowerDef = z.infer<typeof towerDefSchema>;
@@ -108,11 +117,36 @@ export const globalsSchema = z.object({
 });
 export type Globals = z.infer<typeof globalsSchema>;
 
+/** Sägner: folklore codex entries unlocked by in-game deeds. Conditions are
+ * evaluated by the app against lifetime counters tracked in the save. */
+export const sagenConditionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("kills"),
+    enemyTypeId: z.string(),
+    count: z.number().int().positive(),
+  }),
+  z.object({ kind: z.literal("petrified"), count: z.number().int().positive() }),
+  z.object({ kind: z.literal("winLevel"), levelId: z.string() }),
+  /** win any level without losing a single life */
+  z.object({ kind: z.literal("flawlessWin") }),
+]);
+export type SagenCondition = z.infer<typeof sagenConditionSchema>;
+
+export const sagenSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  /** short folklore text in fairy-tale Swedish, revealed when unlocked */
+  text: z.string(),
+  condition: sagenConditionSchema,
+});
+export type SagenDef = z.infer<typeof sagenSchema>;
+
 export const contentBundleSchema = z.object({
   enemies: z.array(enemyDefSchema).min(1),
   towers: z.array(towerDefSchema).min(1),
   levels: z.array(levelDefSchema).min(1),
   metaUpgrades: z.array(metaUpgradeSchema),
+  sagner: z.array(sagenSchema),
   globals: globalsSchema,
 });
 export type ContentBundle = z.infer<typeof contentBundleSchema>;

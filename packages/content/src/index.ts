@@ -4,7 +4,9 @@ import { enemies } from "./enemies";
 import { towers } from "./towers";
 import { level01 } from "./levels/level01";
 import { level02 } from "./levels/level02";
+import { level03 } from "./levels/level03";
 import { metaUpgrades } from "./metaUpgrades";
+import { sagner } from "./sagner";
 import { globals } from "./globals";
 
 export * from "./schema";
@@ -12,10 +14,12 @@ export { enemies } from "./enemies";
 export { towers } from "./towers";
 export { level01 } from "./levels/level01";
 export { level02 } from "./levels/level02";
+export { level03 } from "./levels/level03";
 export { metaUpgrades } from "./metaUpgrades";
+export { sagner } from "./sagner";
 export { globals } from "./globals";
 
-export const levels = [level01, level02];
+export const levels = [level01, level02, level03];
 
 /**
  * Cross-reference checks beyond what zod schemas can express.
@@ -54,11 +58,29 @@ export function collectIntegrityViolations(bundle: ContentBundle): string[] {
     });
   }
 
+  const levelIds = new Set(bundle.levels.map((l) => l.id));
+  for (const sagen of bundle.sagner) {
+    const cond = sagen.condition;
+    if (cond.kind === "kills" && !enemyIds.has(cond.enemyTypeId)) {
+      violations.push(
+        `sagen "${sagen.id}": condition enemyTypeId "${cond.enemyTypeId}" ` +
+          `does not match any enemy def`,
+      );
+    }
+    if (cond.kind === "winLevel" && !levelIds.has(cond.levelId)) {
+      violations.push(
+        `sagen "${sagen.id}": condition levelId "${cond.levelId}" ` +
+          `does not match any level def`,
+      );
+    }
+  }
+
   const collections: Array<[string, Array<{ id: string }>]> = [
     ["enemy", bundle.enemies],
     ["tower", bundle.towers],
     ["level", bundle.levels],
     ["metaUpgrade", bundle.metaUpgrades],
+    ["sagen", bundle.sagner],
   ];
   for (const [kind, defs] of collections) {
     const seen = new Set<string>();
@@ -91,6 +113,7 @@ export function buildContent(): ContentBundle {
     towers,
     levels,
     metaUpgrades,
+    sagner,
     globals,
   });
   assertContentIntegrity(bundle);

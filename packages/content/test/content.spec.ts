@@ -22,18 +22,45 @@ describe("buildContent", () => {
       "vatte",
     ]);
     expect(bundle.towers.map((t) => t.id).sort()).toEqual([
+      "nacken",
       "runsten",
       "sollykta",
       "tomte",
+      "vardtradet",
     ]);
-    expect(bundle.levels.map((l) => l.id)).toEqual(["level01", "level02"]);
+    expect(bundle.levels.map((l) => l.id)).toEqual([
+      "level01",
+      "level02",
+      "level03",
+    ]);
     expect(bundle.metaUpgrades).toHaveLength(4);
+    expect(bundle.sagner).toHaveLength(7);
   });
 
   it("level01 is unlocked from the start, level02 is not", () => {
     const bundle = buildContent();
     expect(bundle.levels[0]!.unlockPoints).toBe(0);
     expect(bundle.levels[1]!.unlockPoints).toBeGreaterThan(0);
+  });
+
+  it("the unlock ladder is sensible: free starters, then nacken 300, vardtradet 800, level03 1000", () => {
+    const bundle = buildContent();
+    const tower = (id: string) => bundle.towers.find((t) => t.id === id)!;
+    expect(tower("tomte").unlockPoints).toBe(0);
+    expect(tower("runsten").unlockPoints).toBe(0);
+    expect(tower("sollykta").unlockPoints).toBe(0);
+    expect(tower("nacken").unlockPoints).toBe(300);
+    expect(tower("vardtradet").unlockPoints).toBe(800);
+
+    const levelPoints = bundle.levels.map((l) => l.unlockPoints);
+    expect(levelPoints[2]).toBe(1000);
+    // levels unlock strictly later and later
+    for (let i = 1; i < levelPoints.length; i++) {
+      expect(levelPoints[i]!).toBeGreaterThan(levelPoints[i - 1]!);
+    }
+    // the level02 grind unlocks nacken before level03 opens
+    expect(tower("nacken").unlockPoints).toBeLessThan(levelPoints[2]!);
+    expect(tower("vardtradet").unlockPoints).toBeLessThan(levelPoints[2]!);
   });
 });
 
@@ -99,6 +126,9 @@ describe("level maps", () => {
     while (queue.length > 0) {
       const [c, r] = queue.shift()!;
       const ch = at(c, r);
+      // the walked route may only ever touch spawn/path/exit tiles — never
+      // water (~), boulders (#), or open ground (.)
+      expect(["S", "P", "E"]).toContain(ch);
       if (ch === "E") {
         reachedExit = true;
         continue; // the exit ends the path
@@ -152,6 +182,13 @@ describe("level maps", () => {
   it("level02 has a contiguous S→P…→E path", () => {
     checkLevel(buildContent().levels[1]!);
   });
+
+  it("level03 has a contiguous S→P…→E path that skirts the tarn", () => {
+    const level03 = buildContent().levels[2]!;
+    checkLevel(level03); // exactly one S/E, full connectivity, no water walked
+    // the tarn must actually be there — plenty of water tiles
+    expect(countChar(level03.map, "~")).toBeGreaterThanOrEqual(20);
+  });
 });
 
 describe("tower defs", () => {
@@ -166,12 +203,77 @@ describe("tower defs", () => {
     }
   });
 
-  it("damage rises with each level", () => {
+  it("damage rises with each level on attacking towers", () => {
     for (const tower of buildContent().towers) {
+      if (tower.levels.every((l) => l.damage === 0)) continue; // economy tower
       for (let i = 1; i < tower.levels.length; i++) {
         expect(tower.levels[i]!.damage).toBeGreaterThan(
           tower.levels[i - 1]!.damage,
         );
+      }
+    }
+  });
+
+  it("nacken splashes on every level, wider per level, hitting softer than runsten", () => {
+    const bundle = buildContent();
+    const nacken = bundle.towers.find((t) => t.id === "nacken")!;
+    const runsten = bundle.towers.find((t) => t.id === "runsten")!;
+    expect(nacken).toBeDefined();
+    expect(nacken.unlockPoints).toBe(300);
+    for (const level of nacken.levels) {
+      expect(level.splashRadius).toBeDefined();
+      expect(level.damage).toBeGreaterThan(0);
+    }
+    for (let i = 1; i < nacken.levels.length; i++) {
+      expect(nacken.levels[i]!.splashRadius!).toBeGreaterThan(
+        nacken.levels[i - 1]!.splashRadius!,
+      );
+    }
+    // splash multiplies the hit across the swarm, so per-target damage must
+    // stay below the single-target heavy hitter at every level
+    for (let i = 0; i < nacken.levels.length; i++) {
+      expect(nacken.levels[i]!.damage).toBeLessThan(runsten.levels[i]!.damage);
+    }
+  });
+
+  it("only nacken has splash", () => {
+    for (const tower of buildContent().towers) {
+      if (tower.id === "nacken") continue;
+      for (const level of tower.levels) {
+        expect(
+          level.splashRadius,
+          `${tower.id} should not splash`,
+        ).toBeUndefined();
+      }
+    }
+  });
+
+  it("vardtradet never attacks and pays rising income every wave", () => {
+    const vardtradet = buildContent().towers.find(
+      (t) => t.id === "vardtradet",
+    )!;
+    expect(vardtradet).toBeDefined();
+    expect(vardtradet.unlockPoints).toBe(800);
+    for (const level of vardtradet.levels) {
+      expect(level.damage).toBe(0);
+      expect(level.incomePerWave).toBeDefined();
+      expect(level.incomePerWave!).toBeGreaterThan(0);
+    }
+    for (let i = 1; i < vardtradet.levels.length; i++) {
+      expect(vardtradet.levels[i]!.incomePerWave!).toBeGreaterThan(
+        vardtradet.levels[i - 1]!.incomePerWave!,
+      );
+    }
+  });
+
+  it("only vardtradet has incomePerWave", () => {
+    for (const tower of buildContent().towers) {
+      if (tower.id === "vardtradet") continue;
+      for (const level of tower.levels) {
+        expect(
+          level.incomePerWave,
+          `${tower.id} should not generate income`,
+        ).toBeUndefined();
       }
     }
   });
@@ -199,5 +301,87 @@ describe("tower defs", () => {
         expect(level.slow, `${tower.id} should not slow`).toBeUndefined();
       }
     }
+  });
+});
+
+describe("sagner", () => {
+  it("every condition references existing enemy and level ids", () => {
+    const bundle = buildContent();
+    const enemyIds = new Set(bundle.enemies.map((e) => e.id));
+    const levelIds = new Set(bundle.levels.map((l) => l.id));
+    for (const sagen of bundle.sagner) {
+      if (sagen.condition.kind === "kills") {
+        expect(
+          enemyIds.has(sagen.condition.enemyTypeId),
+          `sagen "${sagen.id}" references enemy "${sagen.condition.enemyTypeId}"`,
+        ).toBe(true);
+      }
+      if (sagen.condition.kind === "winLevel") {
+        expect(
+          levelIds.has(sagen.condition.levelId),
+          `sagen "${sagen.id}" references level "${sagen.condition.levelId}"`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("covers the expected deeds", () => {
+    const bundle = buildContent();
+    const conditions = bundle.sagner.map((s) => s.condition);
+    expect(conditions).toContainEqual({
+      kind: "kills",
+      enemyTypeId: "troll",
+      count: 1,
+    });
+    expect(conditions).toContainEqual({
+      kind: "kills",
+      enemyTypeId: "vatte",
+      count: 50,
+    });
+    expect(conditions).toContainEqual({
+      kind: "kills",
+      enemyTypeId: "myling",
+      count: 25,
+    });
+    expect(conditions).toContainEqual({ kind: "petrified", count: 30 });
+    expect(conditions).toContainEqual({ kind: "winLevel", levelId: "level01" });
+    expect(conditions).toContainEqual({ kind: "winLevel", levelId: "level02" });
+    expect(conditions).toContainEqual({ kind: "flawlessWin" });
+
+    const firstTrollKill = bundle.sagner.find(
+      (s) => s.condition.kind === "kills" && s.condition.enemyTypeId === "troll",
+    )!;
+    expect(firstTrollKill.title).toBe("Trollet i skogen");
+    const flawless = bundle.sagner.find(
+      (s) => s.condition.kind === "flawlessWin",
+    )!;
+    expect(flawless.title).toBe("Obefläckad");
+  });
+
+  it("integrity check fires on bogus condition enemyTypeIds and levelIds", () => {
+    const broken: ContentBundle = structuredClone(buildContent());
+    const killsSagen = broken.sagner.find((s) => s.condition.kind === "kills")!;
+    if (killsSagen.condition.kind === "kills") {
+      killsSagen.condition.enemyTypeId = "gengangare";
+    }
+    const winSagen = broken.sagner.find(
+      (s) => s.condition.kind === "winLevel",
+    )!;
+    if (winSagen.condition.kind === "winLevel") {
+      winSagen.condition.levelId = "level99";
+    }
+
+    const violations = collectIntegrityViolations(broken);
+    expect(violations).toHaveLength(2);
+    expect(violations.join("\n")).toContain('"gengangare"');
+    expect(violations.join("\n")).toContain('"level99"');
+  });
+
+  it("integrity check flags duplicate sagen ids", () => {
+    const broken: ContentBundle = structuredClone(buildContent());
+    broken.sagner.push(structuredClone(broken.sagner[0]!));
+    const violations = collectIntegrityViolations(broken);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain(`sagen id "${broken.sagner[0]!.id}"`);
   });
 });

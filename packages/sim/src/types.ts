@@ -23,15 +23,23 @@ export interface Vec {
   y: number;
 }
 
-export type TileKind = "buildable" | "blocked" | "path" | "spawn" | "exit";
+export type TileKind =
+  | "buildable"
+  | "blocked"
+  | "path"
+  | "spawn"
+  | "exit"
+  | "water";
 
-/** Map characters in LevelDef.map rows. */
+/** Map characters in LevelDef.map rows. Water behaves like blocked
+ * (unbuildable, unwalkable) and only differs visually. */
 export const TILE_CHARS: Record<string, TileKind> = {
   ".": "buildable",
   "#": "blocked",
   P: "path",
   S: "spawn",
   E: "exit",
+  "~": "water",
 };
 
 export type RunStatus = "building" | "wave" | "won" | "lost";
@@ -74,6 +82,9 @@ export interface ProjectileInstance {
   damage: number;
   /** slow payload applied on hit (from TowerLevel.slow), if any */
   slow?: { factor: number; durationTicks: number };
+  /** splash radius in tiles (from TowerLevel.splashRadius): on hit, full
+   * damage to every enemy within this radius of the impact */
+  splashRadius?: number;
   /** asset of the tower type that fired it, for rendering */
   towerTypeId: string;
 }
@@ -103,8 +114,9 @@ export type SimEvent =
   | { type: "enemyDied"; enemyId: number; typeId: string; bounty: number; at: Vec }
   | { type: "enemyLeaked"; enemyId: number; livesLeft: number }
   | { type: "towerFired"; towerId: number; projectileId: number }
-  | { type: "projectileHit"; projectileId: number; enemyId: number; damage: number; at: Vec }
+  | { type: "projectileHit"; projectileId: number; enemyId: number; damage: number; at: Vec; splashRadius?: number }
   | { type: "enemySlowed"; enemyId: number; durationTicks: number }
+  | { type: "income"; towerId: number; amount: number }
   | { type: "towerPlaced"; towerId: number }
   | { type: "towerUpgraded"; towerId: number; level: number }
   | { type: "towerSold"; towerId: number; refund: number }

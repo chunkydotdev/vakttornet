@@ -38,6 +38,29 @@ describe("map parsing", () => {
     ]);
   });
 
+  it('parses "~" as water and never paths through it, even when it is the shortcut', () => {
+    // The straight route S→E crosses the water column; if water were
+    // walkable BFS would return 3 waypoints. It must go the long way around.
+    const { sim } = setup({ map: ["S~E", "P~P", "PPP"] });
+    expect(sim.state.grid.tiles[0]![1]).toBe("water");
+    expect(sim.state.grid.tiles[1]![1]).toBe("water");
+    expect(sim.state.path).toEqual([
+      { x: 0.5, y: 0.5 },
+      { x: 0.5, y: 1.5 },
+      { x: 0.5, y: 2.5 },
+      { x: 1.5, y: 2.5 },
+      { x: 2.5, y: 2.5 },
+      { x: 2.5, y: 1.5 },
+      { x: 2.5, y: 0.5 },
+    ]);
+  });
+
+  it("throws when water cuts spawn off from exit", () => {
+    expect(() => setup({ map: ["S~E", ".~.", ".~."] })).toThrowError(
+      /no path from spawn/,
+    );
+  });
+
   it("throws a descriptive error on unknown map characters", () => {
     expect(() => setup({ map: ["SPE", "..X", "..."] })).toThrowError(
       /unknown map character "X" at row 1, col 2/,

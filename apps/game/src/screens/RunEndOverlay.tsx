@@ -1,11 +1,13 @@
 interface RunEndOverlayProps {
   won: boolean;
   score: number;
+  /** titles of sägner whose conditions this run newly satisfied */
+  newSagner: string[];
   onRetry: () => void;
   onExit: () => void;
 }
 
-export function RunEndOverlay({ won, score, onRetry, onExit }: RunEndOverlayProps) {
+export function RunEndOverlay({ won, score, newSagner, onRetry, onExit }: RunEndOverlayProps) {
   return (
     <div className="run-end-overlay" role="dialog" aria-modal="true">
       <div className="run-end-card">
@@ -20,6 +22,15 @@ export function RunEndOverlay({ won, score, onRetry, onExit }: RunEndOverlayProp
           {score}
         </p>
         <span className="run-end-points">+{score} poäng</span>
+        {newSagner.length > 0 && (
+          <ul className="run-end-sagner">
+            {newSagner.map((title) => (
+              <li key={title}>
+                Ny sägen upptäckt: <em>{title}</em>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="run-end-actions">
           <button type="button" className="btn" onClick={onExit}>
             Till kartorna

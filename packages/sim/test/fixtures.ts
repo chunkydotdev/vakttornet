@@ -119,9 +119,44 @@ export function makeContent(level: LevelDef): ContentBundle {
           },
         ],
       },
+      {
+        id: "boulder",
+        name: "Boulder",
+        assetId: "tower-boulder",
+        description: "One-shots runts with 0.75-tile splash — for splash tests",
+        // cooldownTicks 90 → fires exactly once in typical test windows.
+        levels: [
+          {
+            cost: 30,
+            damage: 12,
+            range: 20,
+            cooldownTicks: 90,
+            projectileSpeed: 60,
+            splashRadius: 0.75,
+          },
+        ],
+      },
+      {
+        id: "kvarn",
+        name: "Mill",
+        assetId: "tower-kvarn",
+        description: "damage 0, pays 7 gold per cleared wave — for income tests",
+        // range 20 on purpose: if damage-0 towers ever target, this one would.
+        levels: [
+          {
+            cost: 20,
+            damage: 0,
+            range: 20,
+            cooldownTicks: 10,
+            projectileSpeed: 30,
+            incomePerWave: 7,
+          },
+        ],
+      },
     ],
     levels: [level],
     metaUpgrades: [],
+    sagner: [],
     globals: { sellRefundRatio: 0.5, waveClearBonusPerWave: 10, winBonusPerLife: 2 },
   });
 }
