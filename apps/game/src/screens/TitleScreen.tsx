@@ -14,16 +14,16 @@ export function TitleScreen({ save, onPlay, onUpgrades }: TitleScreenProps) {
       <div className="screen-inner">
         <header className="title-header">
           <h1>Vakttornet</h1>
-          <p className="tagline">Försvara stigen! Build towers, hold the line.</p>
+          <p className="tagline">Mörka skogen vaknar. Håll stigen — försvara stugan.</p>
         </header>
 
         <div className="title-toolbar">
-          <span className="points-chip" title="Spendable meta points">
+          <span className="points-chip" title="Poäng att spendera">
             <img className="icon" src={manifest["ui.coin"]} alt="" />
-            {save.points} points
+            {save.points} poäng
           </span>
           <button type="button" className="btn" onClick={onUpgrades}>
-            Upgrades
+            Uppgraderingar
           </button>
         </div>
 
@@ -35,10 +35,10 @@ export function TitleScreen({ save, onPlay, onUpgrades }: TitleScreenProps) {
                 <div>
                   <h3>{level.name}</h3>
                   <p className="level-meta">
-                    {level.waves.length} waves
+                    {level.waves.length} {level.waves.length === 1 ? "våg" : "vågor"}
                     {locked && (
                       <span className="lock-note">
-                        · Locked — needs {level.unlockPoints} points
+                        · Låst — kräver {level.unlockPoints} poäng
                       </span>
                     )}
                   </p>
@@ -49,7 +49,7 @@ export function TitleScreen({ save, onPlay, onUpgrades }: TitleScreenProps) {
                   disabled={locked}
                   onClick={() => onPlay(level.id)}
                 >
-                  Play
+                  Spela
                 </button>
               </li>
             );
@@ -57,7 +57,7 @@ export function TitleScreen({ save, onPlay, onUpgrades }: TitleScreenProps) {
         </ul>
 
         <p className="muted" style={{ textAlign: "center", fontSize: "0.8rem" }}>
-          Earn points by playing — win or lose, your score carries over.
+          Du samlar poäng varje gång du spelar — vinst som förlust.
         </p>
       </div>
     </div>

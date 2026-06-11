@@ -86,6 +86,39 @@ export function makeContent(level: LevelDef): ContentBundle {
         description: "Cheap and short-ranged — for refund/range tests",
         levels: [{ cost: 25, damage: 1, range: 1, cooldownTicks: 30, projectileSpeed: 30 }],
       },
+      {
+        id: "lantern",
+        name: "Sun Lantern",
+        assetId: "tower-lantern",
+        description: "Petrifies: half speed for 12 ticks — for slow tests",
+        // cooldownTicks 90 → fires exactly once in typical test windows.
+        levels: [
+          {
+            cost: 30,
+            damage: 1,
+            range: 20,
+            cooldownTicks: 90,
+            projectileSpeed: 60,
+            slow: { factor: 0.5, durationTicks: 12 },
+          },
+        ],
+      },
+      {
+        id: "beacon",
+        name: "Dawn Beacon",
+        assetId: "tower-beacon",
+        description: "Heavy hit + mild slow — for overwrite/kill slow tests",
+        levels: [
+          {
+            cost: 30,
+            damage: 50,
+            range: 20,
+            cooldownTicks: 90,
+            projectileSpeed: 60,
+            slow: { factor: 0.8, durationTicks: 40 },
+          },
+        ],
+      },
     ],
     levels: [level],
     metaUpgrades: [],

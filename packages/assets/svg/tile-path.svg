@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#cdb380"/>
-  <g fill="#b89d6a">
+  <!-- worn forest trail: packed dirt, pebbles, a root creeping across -->
+  <rect width="64" height="64" fill="#94805a"/>
+  <g fill="#7f6d4c">
     <circle cx="12" cy="12" r="3"/>
     <circle cx="46" cy="8" r="2"/>
     <circle cx="30" cy="24" r="2.5"/>
@@ -9,9 +10,12 @@
     <circle cx="38" cy="50" r="3"/>
     <circle cx="8" cy="56" r="2"/>
   </g>
-  <g fill="#dcc592">
+  <g fill="#a8946a">
     <circle cx="24" cy="8" r="1.5"/>
     <circle cx="50" cy="48" r="1.5"/>
     <circle cx="22" cy="58" r="1.5"/>
+    <circle cx="58" cy="18" r="1.2"/>
   </g>
+  <path d="M0 34 Q10 30 18 33 Q24 35 28 32" fill="none" stroke="#6b5942" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <path d="M64 52 Q56 50 50 53" fill="none" stroke="#6b5942" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
 </svg>

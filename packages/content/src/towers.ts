@@ -1,18 +1,19 @@
 import type { TowerDef } from "./schema";
 
 /**
- * First-pass balance @ TICK_RATE 30.
- * DPS per level (damage / (cooldownTicks/30)):
- *   arrow:    10.0 / 16.9 / 27.9   (cheap, fast, short range)
- *   cannon:   14.7 / 24.3 / 39.5   (expensive, slow, heavy hits)
- *   crossbow: 12.0 / 20.0 / 33.8   (mid cost, long range, mid speed)
+ * Balance @ TICK_RATE 30. DPS per level (damage / (cooldownTicks/30)):
+ *   tomte:    10.0 / 16.9 / 27.9   (cheap, fast, short range)
+ *   runsten:  14.7 / 24.3 / 39.5   (expensive, slow, heavy hits)
+ *   sollykta:  8.0 / 14.4 / 23.8   (long range; ~30% less DPS than the old
+ *              long-range tower — the petrifying slow pays for the difference)
  */
 export const towers: TowerDef[] = [
   {
-    id: "arrow",
-    name: "Arrow Tower",
-    assetId: "tower.arrow",
-    description: "Cheap and quick. Peppers nearby enemies with arrows.",
+    id: "tomte",
+    name: "Tomten",
+    assetId: "tower.tomte",
+    description:
+      "Liten, snabb och lättretad — slungar het julgröt mot allt som hotar gården.",
     levels: [
       { cost: 50, damage: 6, range: 2.2, cooldownTicks: 18, projectileSpeed: 9 },
       { cost: 60, damage: 9, range: 2.4, cooldownTicks: 16, projectileSpeed: 9 },
@@ -20,10 +21,11 @@ export const towers: TowerDef[] = [
     ],
   },
   {
-    id: "cannon",
-    name: "Cannon Tower",
-    assetId: "tower.cannon",
-    description: "Slow to reload, but each shot hits like a falling boulder.",
+    id: "runsten",
+    name: "Runstenen",
+    assetId: "tower.runsten",
+    description:
+      "Urgammal runmagi som laddar långsamt, men varje runa slår som ett stenras.",
     levels: [
       { cost: 90, damage: 22, range: 2.0, cooldownTicks: 45, projectileSpeed: 6 },
       { cost: 100, damage: 34, range: 2.2, cooldownTicks: 42, projectileSpeed: 6 },
@@ -31,14 +33,36 @@ export const towers: TowerDef[] = [
     ],
   },
   {
-    id: "crossbow",
-    name: "Crossbow Tower",
-    assetId: "tower.crossbow",
-    description: "Long reach and steady aim. Picks off enemies from afar.",
+    id: "sollykta",
+    name: "Sollyktan",
+    assetId: "tower.sollykta",
+    description:
+      "Fångat solljus med lång räckvidd — bränner milt men förstenar väsen mitt i steget.",
     levels: [
-      { cost: 70, damage: 12, range: 3.2, cooldownTicks: 30, projectileSpeed: 8 },
-      { cost: 80, damage: 18, range: 3.5, cooldownTicks: 27, projectileSpeed: 8 },
-      { cost: 110, damage: 27, range: 3.8, cooldownTicks: 24, projectileSpeed: 9 },
+      {
+        cost: 70,
+        damage: 8,
+        range: 3.2,
+        cooldownTicks: 30,
+        projectileSpeed: 8,
+        slow: { factor: 0.55, durationTicks: 45 },
+      },
+      {
+        cost: 80,
+        damage: 13,
+        range: 3.5,
+        cooldownTicks: 27,
+        projectileSpeed: 8,
+        slow: { factor: 0.5, durationTicks: 55 },
+      },
+      {
+        cost: 110,
+        damage: 19,
+        range: 3.8,
+        cooldownTicks: 24,
+        projectileSpeed: 9,
+        slow: { factor: 0.45, durationTicks: 65 },
+      },
     ],
   },
 ];

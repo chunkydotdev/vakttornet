@@ -6,6 +6,15 @@ Saturday) via Discord `#hackathon-spel` with a playable browser link.
 Judging: fun, creativity, polish, open-source reusability (1-5 points each).
 Polish beats feature count.
 
+## Theme — Vättar & Troll
+
+Swedish folklore, dusk-forest mood, **all player-facing copy in Swedish**.
+The watchtower guards a röd stuga at the edge of mörka skogen. Towers:
+`tomte` (Tomten, cheap/fast), `runsten` (Runstenen, heavy/slow), `sollykta`
+(Sollyktan, long range + slow — sunlight petrifies). Enemies: `myling`
+(fast ghost), `vatte` (tiny swarm), `troll` (tank). Stay on-theme for any
+new content, names, and art; lantern-amber is the UI accent color.
+
 ## Architecture
 
 Turborepo + pnpm. Packages export raw TypeScript (`main: ./src/index.ts`) —

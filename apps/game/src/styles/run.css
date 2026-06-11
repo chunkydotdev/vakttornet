@@ -86,7 +86,7 @@
   color: var(--accent);
 }
 
-/* Fixed width so the label swap (Start wave / Wave incoming…) never shifts the HUD. */
+/* Fixed width so the label swap (Skicka våg / Våg pågår…) never shifts the HUD. */
 .start-wave-btn {
   min-width: 9.5rem;
 }

@@ -65,10 +65,10 @@ function hudEqual(a: HudState, b: HudState): boolean {
 type PlaceFailReason = Extract<PlaceResult, { ok: false }>["reason"];
 
 const PLACE_ERROR_TEXT: Record<PlaceFailReason, string> = {
-  occupied: "That tile already has a tower",
-  "not-buildable": "You can't build there",
-  "insufficient-gold": "Not enough gold",
-  "unknown-tower": "Unknown tower type",
+  occupied: "Det står redan ett torn där",
+  "not-buildable": "Här kan du inte bygga",
+  "insufficient-gold": "För lite guld",
+  "unknown-tower": "Okänd torntyp",
 };
 
 const HUD_SYNC_INTERVAL_MS = 100;
@@ -271,28 +271,28 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
     <div className="run-screen">
       <header className="hud">
         <button type="button" className="btn btn-ghost btn-small" onClick={onExit}>
-          ← Leave
+          ← Lämna
         </button>
         <span className="hud-title">{level.name}</span>
         <span className="hud-divider" />
-        <span className="hud-stat" title="Lives">
-          <img className="icon" src={manifest["ui.heart"]} alt="Lives" />
+        <span className="hud-stat" title="Liv">
+          <img className="icon" src={manifest["ui.heart"]} alt="Liv" />
           {hud.lives}
         </span>
-        <span className="hud-stat" title="Gold">
-          <img className="icon" src={manifest["ui.coin"]} alt="Gold" />
+        <span className="hud-stat" title="Guld">
+          <img className="icon" src={manifest["ui.coin"]} alt="Guld" />
           {hud.gold}
         </span>
-        <span className="hud-stat" title="Score">
-          <span className="hud-label">Score</span>
+        <span className="hud-stat" title="Poäng">
+          <span className="hud-label">Poäng</span>
           {hud.score}
         </span>
-        <span className="hud-stat" title="Wave">
-          <span className="hud-label">Wave</span>
+        <span className="hud-stat" title="Våg">
+          <span className="hud-label">Våg</span>
           {displayWave}/{hud.totalWaves}
         </span>
         <span className="hud-divider" />
-        <span className="speed-toggle" role="group" aria-label="Game speed">
+        <span className="speed-toggle" role="group" aria-label="Spelhastighet">
           <button
             type="button"
             className={speed === 1 ? "active" : undefined}
@@ -313,15 +313,15 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
           className="btn btn-primary start-wave-btn"
           disabled={!canStartWave}
           onClick={startWave}
-          title="Space"
+          title="Mellanslag"
         >
-          {hud.status === "wave" ? "Wave incoming…" : "Start wave"}
+          {hud.status === "wave" ? "Våg pågår…" : "Skicka våg"}
         </button>
       </header>
 
       <div className="run-layout">
         <aside className="side-panel">
-          <h2>Towers</h2>
+          <h2>Torn</h2>
           {content.towers.map((tower) => {
             const cost = tower.levels[0]?.cost ?? 0;
             return (
@@ -344,7 +344,7 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
             );
           })}
           <p className="shop-hint">
-            Pick a tower, then click a green tile to build. Esc cancels.
+            Välj ett torn och klicka sedan på en grön ruta för att bygga. Esc avbryter.
           </p>
         </aside>
 
@@ -358,7 +358,7 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
             onMouseMove={handleCanvasMove}
             onMouseLeave={handleCanvasLeave}
           />
-          {loading && <div className="board-loading">Preparing the battlefield…</div>}
+          {loading && <div className="board-loading">Mörka skogen vaknar…</div>}
           {toast && (
             <div key={toast.key} className="toast">
               {toast.message}
@@ -367,7 +367,7 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
         </div>
 
         <aside className="side-panel">
-          <h2>Inspector</h2>
+          <h2>Granska</h2>
           {selectedTower && selectedDef ? (
             <SelectedTowerPanel
               tower={selectedTower}
@@ -383,18 +383,18 @@ export function RunScreen({ level, meta, onRunEnd, onExit, onRetry }: RunScreenP
                 <img src={assetUrl(armedDef.assetId)} alt="" />
                 <div>
                   <div className="tower-name">{armedDef.name}</div>
-                  <div className="tower-level">Placing…</div>
+                  <div className="tower-level">Placerar…</div>
                 </div>
               </div>
               <p className="inspector-empty">{armedDef.description}</p>
               <button type="button" className="btn btn-small" onClick={() => setArmed(null)}>
-                Cancel (Esc)
+                Avbryt (Esc)
               </button>
             </>
           ) : (
             <p className="inspector-empty">
-              Click a tower on the board to inspect, upgrade or sell it. Press Space to send
-              the next wave.
+              Klicka på ett torn på spelplanen för att granska, uppgradera eller sälja det.
+              Tryck på mellanslag för att skicka nästa våg.
             </p>
           )}
         </aside>
@@ -439,22 +439,22 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
         <div>
           <div className="tower-name">{def.name}</div>
           <div className="tower-level">
-            Level {tower.level}/{def.levels.length}
+            Nivå {tower.level}/{def.levels.length}
           </div>
         </div>
       </div>
 
       <div className="stat-table">
         <div className="stat-row">
-          <span className="stat-label">Damage</span>
+          <span className="stat-label">Skada</span>
           <span className="stat-value">{damage}</span>
         </div>
         <div className="stat-row">
-          <span className="stat-label">Range</span>
-          <span className="stat-value">{range} tiles</span>
+          <span className="stat-label">Räckvidd</span>
+          <span className="stat-value">{range} rutor</span>
         </div>
         <div className="stat-row">
-          <span className="stat-label">Fire rate</span>
+          <span className="stat-label">Eldtakt</span>
           <span className="stat-value">{rate}/s</span>
         </div>
       </div>
@@ -468,21 +468,21 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
               disabled={gold < next.cost}
               onClick={onUpgrade}
             >
-              Upgrade — {next.cost}g
+              Uppgradera — {next.cost}g
             </button>
             <p className="next-level-note">
-              Next: {formatNumber(next.damage * meta.damageMult)} dmg,{" "}
-              {formatNumber(next.range * meta.rangeMult)} range,{" "}
+              Nästa nivå: {formatNumber(next.damage * meta.damageMult)} skada,{" "}
+              {formatNumber(next.range * meta.rangeMult)} räckvidd,{" "}
               {formatNumber(TICK_RATE / next.cooldownTicks)}/s
             </p>
           </>
         ) : (
           <button type="button" className="btn" disabled>
-            Max level
+            Maxnivå
           </button>
         )}
         <button type="button" className="btn btn-danger" onClick={onSell}>
-          Sell — +{refund}g
+          Sälj — +{refund}g
         </button>
       </div>
     </>

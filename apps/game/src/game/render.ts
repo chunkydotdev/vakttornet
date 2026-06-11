@@ -108,10 +108,20 @@ interface FloatingText {
   x: number;
   y: number;
   bornAt: number;
+  /** Petrify callouts render smaller + italic to stand apart from gold text. */
+  italic?: boolean;
 }
 
 const FLOAT_LIFE_MS = 1100;
 const FLOAT_RISE_PX = 30;
+
+/** Min ms between "förstenad!" floats per enemy — re-applied slows don't spam. */
+const SLOW_FLOAT_COOLDOWN_MS = 700;
+
+/** Dusk-amber accent for canvas overlays (mirrors --accent in global.css). */
+const ACCENT_RGB = "240, 180, 80";
+/** Stony indigo used for petrified enemies' ring + callout text. */
+const PETRIFY_COLOR = "#c7d2fe";
 
 export class Renderer {
   readonly pointer: PointerState = {
@@ -127,6 +137,7 @@ export class Renderer {
   private readonly towerDefs: Map<string, TowerDef>;
   private readonly exitPos: Vec;
   private floats: FloatingText[] = [];
+  private lastSlowFloatAt = new Map<number, number>();
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -159,29 +170,47 @@ export class Renderer {
       switch (event.type) {
         case "enemyDied":
           this.addFloat(`+${event.bounty}`, "#fbbf24", event.at);
+          this.lastSlowFloatAt.delete(event.enemyId);
           break;
         case "enemyLeaked":
           this.addFloat("-1 ♥", "#f87171", this.exitPos);
+          this.lastSlowFloatAt.delete(event.enemyId);
           break;
         case "waveCleared":
           if (event.bonus > 0) {
-            this.addFloat(`Wave cleared +${event.bonus}`, "#a78bfa", {
+            this.addFloat(`Våg klar +${event.bonus}`, "#a78bfa", {
               x: this.sim.state.grid.cols / 2,
               y: this.sim.state.grid.rows / 2,
             });
           }
           break;
+        case "enemySlowed": {
+          const enemy = this.sim.state.enemies.find((e) => e.id === event.enemyId);
+          if (!enemy) break;
+          const now = performance.now();
+          const lastAt = this.lastSlowFloatAt.get(event.enemyId) ?? -Infinity;
+          if (now - lastAt < SLOW_FLOAT_COOLDOWN_MS) break;
+          this.lastSlowFloatAt.set(event.enemyId, now);
+          this.addFloat("förstenad!", PETRIFY_COLOR, enemy.pos, { italic: true });
+          break;
+        }
       }
     }
   }
 
-  private addFloat(text: string, color: string, at: Vec): void {
+  private addFloat(
+    text: string,
+    color: string,
+    at: Vec,
+    opts: { italic?: boolean } = {},
+  ): void {
     this.floats.push({
       text,
       color,
       x: at.x * TILE_PX,
       y: at.y * TILE_PX - 10,
       bornAt: performance.now(),
+      italic: opts.italic,
     });
   }
 
@@ -238,9 +267,9 @@ export class Renderer {
     const { ctx } = this;
     ctx.beginPath();
     ctx.arc(cx, cy, radiusPx, 0, Math.PI * 2);
-    ctx.fillStyle = ok ? "rgba(124, 158, 255, 0.10)" : "rgba(248, 113, 113, 0.10)";
+    ctx.fillStyle = ok ? `rgba(${ACCENT_RGB}, 0.10)` : "rgba(248, 113, 113, 0.10)";
     ctx.fill();
-    ctx.strokeStyle = ok ? "rgba(124, 158, 255, 0.45)" : "rgba(248, 113, 113, 0.45)";
+    ctx.strokeStyle = ok ? `rgba(${ACCENT_RGB}, 0.45)` : "rgba(248, 113, 113, 0.45)";
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
@@ -255,7 +284,7 @@ export class Renderer {
     this.drawRangeCircle(cx, cy, this.towerRangePx(tower.typeId, tower.level));
 
     // Highlight the selected tower's tile.
-    this.ctx.strokeStyle = "rgba(124, 158, 255, 0.8)";
+    this.ctx.strokeStyle = `rgba(${ACCENT_RGB}, 0.8)`;
     this.ctx.lineWidth = 2;
     this.ctx.strokeRect(tower.tile.col * TILE_PX + 2, tower.tile.row * TILE_PX + 2, TILE_PX - 4, TILE_PX - 4);
   }
@@ -275,7 +304,7 @@ export class Renderer {
     if (img) {
       this.ctx.drawImage(img, x, y, TILE_PX, TILE_PX);
     } else {
-      this.ctx.fillStyle = "#7c9eff";
+      this.ctx.fillStyle = "#f0b450";
       this.ctx.beginPath();
       this.ctx.arc(x + TILE_PX / 2, y + TILE_PX / 2, 18, 0, Math.PI * 2);
       this.ctx.fill();
@@ -308,6 +337,13 @@ export class Renderer {
       const def = enemyDefs.find((e) => e.id === enemy.typeId);
       const img = this.image(def?.assetId ?? `enemy.${enemy.typeId}`);
       const size = 48;
+      const petrified = enemy.slowTicksLeft > 0;
+
+      if (petrified) this.drawPetrifyRing(x, y, size);
+
+      // Petrified (sun-lantern slow): desaturate + darken the sprite so the
+      // stony state reads at a glance. Reset the filter right after.
+      if (petrified) ctx.filter = "grayscale(0.7) brightness(0.85)";
       if (img) {
         ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
       } else {
@@ -316,8 +352,26 @@ export class Renderer {
         ctx.arc(x, y, 14, 0, Math.PI * 2);
         ctx.fill();
       }
+      if (petrified) ctx.filter = "none";
+
       this.drawHpBar(x, y - size / 2 - 7, enemy.hp / enemy.maxHp);
     }
+  }
+
+  /** Subtle stony ground ring under enemies held by the sun-lantern's light. */
+  private drawPetrifyRing(cx: number, cy: number, size: number): void {
+    const { ctx } = this;
+    ctx.save();
+    ctx.translate(cx, cy + size * 0.32);
+    ctx.scale(1, 0.42);
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.42, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(140, 150, 190, 0.16)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(199, 210, 254, 0.45)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
   }
 
   private drawHpBar(cx: number, cy: number, ratio: number): void {
@@ -384,11 +438,13 @@ export class Renderer {
     if (this.floats.length === 0) return;
     const { ctx } = this;
     const now = performance.now();
-    ctx.font = "700 14px system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     this.floats = this.floats.filter((f) => now - f.bornAt < FLOAT_LIFE_MS);
     for (const float of this.floats) {
+      ctx.font = float.italic
+        ? "italic 700 12px system-ui, sans-serif"
+        : "700 14px system-ui, sans-serif";
       const t = (now - float.bornAt) / FLOAT_LIFE_MS;
       const y = float.y - t * FLOAT_RISE_PX;
       ctx.globalAlpha = 1 - t * t;

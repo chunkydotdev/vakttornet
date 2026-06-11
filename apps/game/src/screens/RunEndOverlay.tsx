@@ -11,19 +11,21 @@ export function RunEndOverlay({ won, score, onRetry, onExit }: RunEndOverlayProp
       <div className="run-end-card">
         <h2 className={won ? "won" : "lost"}>{won ? "Seger!" : "Nederlag"}</h2>
         <p className="run-end-sub">
-          {won ? "The tower stands — the path is safe." : "The horde broke through…"}
+          {won
+            ? "Stugan står kvar — mörkret drar sig tillbaka i skogen."
+            : "Mörkret nådde fram till stugan…"}
         </p>
         <p className="run-end-score">
-          <span className="label">Score</span>
+          <span className="label">Poäng</span>
           {score}
         </p>
-        <span className="run-end-points">+{score} points earned</span>
+        <span className="run-end-points">+{score} poäng</span>
         <div className="run-end-actions">
           <button type="button" className="btn" onClick={onExit}>
-            Level select
+            Till kartorna
           </button>
           <button type="button" className="btn btn-primary" onClick={onRetry}>
-            Play again
+            Spela igen
           </button>
         </div>
       </div>

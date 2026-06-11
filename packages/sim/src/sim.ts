@@ -126,6 +126,8 @@ export const createSim: CreateSim = (level, content, opts) => {
         speed: def.speed,
         pathIndex: 1, // spawned at path[0], moving toward path[1]
         bounty: def.bounty,
+        slowTicksLeft: 0,
+        slowFactor: 1,
       };
       state.enemies.push(enemy);
       events.push({ type: "enemySpawned", enemyId: enemy.id, typeId: enemy.typeId });
@@ -138,7 +140,9 @@ export const createSim: CreateSim = (level, content, opts) => {
     const survivors: EnemyInstance[] = [];
     for (let i = 0; i < state.enemies.length; i++) {
       const enemy = state.enemies[i]!;
-      let travel = enemy.speed * TICK_SECONDS;
+      const effectiveSpeed =
+        enemy.speed * (enemy.slowTicksLeft > 0 ? enemy.slowFactor : 1);
+      let travel = effectiveSpeed * TICK_SECONDS;
       let leaked = false;
       while (travel > 0) {
         const target = state.path[enemy.pathIndex];
@@ -166,6 +170,13 @@ export const createSim: CreateSim = (level, content, opts) => {
             break;
           }
         }
+      }
+      // Decrement AFTER the slow has been applied to this tick's movement,
+      // so a slow landing in the projectile phase of tick T affects the full
+      // durationTicks of movement (ticks T+1 .. T+durationTicks).
+      if (enemy.slowTicksLeft > 0) {
+        enemy.slowTicksLeft -= 1;
+        if (enemy.slowTicksLeft === 0) enemy.slowFactor = 1;
       }
       if (!leaked) {
         survivors.push(enemy);
@@ -225,6 +236,14 @@ export const createSim: CreateSim = (level, content, opts) => {
         damage: lvl.damage * meta.damageMult,
         towerTypeId: tower.typeId,
       };
+      if (lvl.slow) {
+        // Copy the values onto the projectile. Meta modifiers (damageMult,
+        // rangeMult) intentionally do not touch the slow payload.
+        projectile.slow = {
+          factor: lvl.slow.factor,
+          durationTicks: lvl.slow.durationTicks,
+        };
+      }
       state.projectiles.push(projectile);
       tower.cooldown = lvl.cooldownTicks;
       events.push({ type: "towerFired", towerId: tower.id, projectileId: projectile.id });
@@ -260,6 +279,16 @@ export const createSim: CreateSim = (level, content, opts) => {
             typeId: target.typeId,
             bounty: target.bounty,
             at: { ...target.pos },
+          });
+        } else if (proj.slow) {
+          // Overwrite semantics: a new application replaces both factor and
+          // duration — no stacking, no taking the stronger of the two.
+          target.slowFactor = proj.slow.factor;
+          target.slowTicksLeft = proj.slow.durationTicks;
+          events.push({
+            type: "enemySlowed",
+            enemyId: target.id,
+            durationTicks: proj.slow.durationTicks,
           });
         }
       } else {

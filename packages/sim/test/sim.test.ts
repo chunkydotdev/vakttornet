@@ -398,6 +398,123 @@ describe("meta modifiers", () => {
   });
 });
 
+describe("slow (petrify)", () => {
+  /** Tick until an enemySlowed event appears; returns that tick's events. */
+  function tickUntilSlowed(sim: ReturnType<typeof setup>["sim"], maxTicks = 30): SimEvent[] {
+    for (let t = 0; t < maxTicks; t++) {
+      const events = sim.tick();
+      if (eventsOfType(events, "enemySlowed").length > 0) return events;
+    }
+    throw new Error("no enemySlowed event within maxTicks");
+  }
+
+  it("spawns enemies unslowed (slowTicksLeft 0, slowFactor 1)", () => {
+    const { sim } = setup();
+    sim.startWave();
+    sim.tick();
+    expect(sim.state.enemies[0]).toMatchObject({ slowTicksLeft: 0, slowFactor: 1 });
+  });
+
+  it("slow-tower projectiles carry the slow payload; no-slow towers' carry none", () => {
+    const { sim } = setup({ startGold: 200 });
+    // Archer projectile (1 tile/tick) stays in flight after the firing tick.
+    sim.placeTower("archer", { col: 1, row: 1 });
+    const lantern = sim.placeTower("lantern", { col: 5, row: 1 });
+    if (!lantern.ok) throw new Error("placement failed");
+    sim.startWave();
+    const t1 = sim.tick(); // both fire at the freshly spawned runt
+    const fired = eventsOfType(t1, "towerFired");
+    expect(fired).toHaveLength(2);
+    const byTower = (typeId: string) =>
+      sim.state.projectiles.find((p) => p.towerTypeId === typeId)!;
+    expect(byTower("archer").slow).toBeUndefined();
+    expect(byTower("lantern").slow).toEqual({ factor: 0.5, durationTicks: 12 });
+  });
+
+  it("a slowed enemy travels less distance than an unslowed one over the same ticks", () => {
+    const distanceAfter20Ticks = (withLantern: boolean) => {
+      const { sim } = setup();
+      if (withLantern) sim.placeTower("lantern", { col: 3, row: 1 });
+      sim.startWave();
+      for (let t = 1; t <= 20; t++) sim.tick();
+      return sim.state.enemies[0]!.pos.x; // straight path: x = distance walked
+    };
+    expect(distanceAfter20Ticks(true)).toBeLessThan(distanceAfter20Ticks(false));
+  });
+
+  it("emits enemySlowed in the same tick as the projectileHit when the target survives", () => {
+    const { sim } = setup();
+    sim.placeTower("lantern", { col: 3, row: 1 }); // damage 1, runt has 10 hp
+    sim.startWave();
+    const events = tickUntilSlowed(sim);
+    const hit = eventsOfType(events, "projectileHit")[0]!;
+    expect(eventsOfType(events, "enemySlowed")).toEqual([
+      { type: "enemySlowed", enemyId: hit.enemyId, durationTicks: 12 },
+    ]);
+    expect(eventsOfType(events, "enemyDied")).toEqual([]);
+    expect(sim.state.enemies[0]).toMatchObject({ slowFactor: 0.5, slowTicksLeft: 12 });
+  });
+
+  it("does not emit enemySlowed when the hit kills the enemy", () => {
+    const { sim } = setup();
+    sim.placeTower("beacon", { col: 3, row: 1 }); // damage 50 one-shots the runt
+    sim.startWave();
+    let died: SimEvent[] = [];
+    for (let t = 0; t < 10 && died.length === 0; t++) {
+      const events = sim.tick();
+      died = eventsOfType(events, "enemyDied");
+      expect(eventsOfType(events, "enemySlowed")).toEqual([]);
+    }
+    expect(died).toHaveLength(1);
+  });
+
+  it("a new application overwrites factor and duration (no stacking, no strongest-wins)", () => {
+    const { sim } = setup({
+      startGold: 200,
+      waves: [{ entries: [{ enemyTypeId: "tank", count: 1, spacingTicks: 1 }] }],
+    });
+    sim.placeTower("lantern", { col: 3, row: 1 }); // 0.5 × 12
+    sim.startWave();
+    tickUntilSlowed(sim);
+    const enemy = sim.state.enemies[0]!;
+    expect(enemy.slowFactor).toBe(0.5);
+    expect(enemy.slowTicksLeft).toBe(12);
+
+    // Second, WEAKER slow lands before the first expires: both values must be
+    // replaced — stacking or strongest-wins would keep factor 0.5.
+    sim.placeTower("beacon", { col: 3, row: 3 }); // 0.8 × 40
+    const events = tickUntilSlowed(sim);
+    expect(eventsOfType(events, "enemySlowed")).toEqual([
+      { type: "enemySlowed", enemyId: enemy.id, durationTicks: 40 },
+    ]);
+    expect(enemy.slowFactor).toBe(0.8);
+    expect(enemy.slowTicksLeft).toBe(40);
+  });
+
+  it("applies the factor for exactly durationTicks of movement, then restores full speed", () => {
+    const { sim } = setup();
+    sim.placeTower("lantern", { col: 3, row: 1 }); // 0.5 × 12, fires once
+    sim.startWave();
+    tickUntilSlowed(sim);
+    const enemy = sim.state.enemies[0]!;
+    expect(enemy.slowTicksLeft).toBe(12);
+
+    // 12 ticks at 0.5 × 0.25 = 0.125 tiles/tick — the FULL duration moves slow.
+    for (let i = 0; i < 12; i++) {
+      const before = enemy.pos.x;
+      sim.tick();
+      expect(enemy.pos.x - before).toBeCloseTo(0.125, 10);
+    }
+    expect(enemy.slowTicksLeft).toBe(0);
+    expect(enemy.slowFactor).toBe(1); // reset on expiry
+
+    // Next tick moves at full speed again.
+    const before = enemy.pos.x;
+    sim.tick();
+    expect(enemy.pos.x - before).toBeCloseTo(0.25, 10);
+  });
+});
+
 describe("upgrade and sell", () => {
   it("upgrades through max level, charging each level's cost", () => {
     const { sim } = setup({ startGold: 200 });
@@ -478,7 +595,8 @@ describe("determinism", () => {
       const events: SimEvent[] = [];
       const archer = sim.placeTower("archer", { col: 1, row: 1 });
       const sniper = sim.placeTower("sniper", { col: 3, row: 1 });
-      if (!archer.ok || !sniper.ok) throw new Error("placement failed");
+      const lantern = sim.placeTower("lantern", { col: 5, row: 1 });
+      if (!archer.ok || !sniper.ok || !lantern.ok) throw new Error("placement failed");
       sim.startWave();
       for (let t = 1; t <= 200; t++) {
         if (t === 10) sim.upgradeTower(archer.tower.id);

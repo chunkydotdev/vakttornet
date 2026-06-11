@@ -1,8 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#5e9c52"/>
-  <path d="M14 50 L20 26 L30 18 L44 22 L52 38 L50 50 Z" fill="#8d8d8d"/>
-  <path d="M20 26 L30 18 L44 22 L40 32 L26 34 Z" fill="#a6a6a6"/>
-  <path d="M26 34 L40 32 L44 50 L24 50 Z" fill="#7b7b7b"/>
-  <path d="M14 50 H52" stroke="#4d8543" stroke-width="3" stroke-linecap="round"/>
-  <path d="M10 52 v-4 M56 52 v-4" stroke="#4d8543" stroke-width="2" stroke-linecap="round"/>
+  <!-- mossy boulder with a mushroom cluster at its foot -->
+  <rect width="64" height="64" fill="#415c39"/>
+  <path d="M12 50 L16 26 L28 16 L44 20 L52 36 L50 50 Z" fill="#767d72"/>
+  <path d="M16 26 L28 16 L44 20 L40 30 L24 32 Z" fill="#8b9388"/>
+  <path d="M24 32 L40 30 L44 50 L22 50 Z" fill="#646b60"/>
+  <path d="M24 16 Q30 10 38 14 Q44 16 44 20 L28 16 Z" fill="#4f7245"/>
+  <path d="M16 26 Q12 30 14 36 Q18 34 19 29 Z" fill="#46683d"/>
+  <path d="M12 50 H52" stroke="#36502f" stroke-width="3" stroke-linecap="round"/>
+  <g>
+    <rect x="51" y="46" width="3" height="7" rx="1.5" fill="#d8cdb4"/>
+    <path d="M46 47 Q52.5 38 59 47 Z" fill="#b5402f"/>
+    <circle cx="50" cy="44" r="1" fill="#efe7da"/>
+    <circle cx="55" cy="43.5" r="1.2" fill="#efe7da"/>
+    <rect x="58" y="51" width="2.4" height="5" rx="1.2" fill="#d8cdb4"/>
+    <path d="M55 52 Q59 46 63 52 Z" fill="#a3402f"/>
+    <circle cx="59" cy="49.5" r="0.9" fill="#efe7da"/>
+  </g>
 </svg>

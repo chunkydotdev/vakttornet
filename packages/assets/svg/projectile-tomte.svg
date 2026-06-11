@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- porridge glob, ~14 units, centered, with a stray lingonberry -->
+  <path d="M25 32 Q25 25 32 25 Q39 25 39 31 Q41 33 38 35 Q39 39 33 38 Q27 39 26 35 Q23 34 25 32 Z" fill="#f2e2c4"/>
+  <path d="M28 30 Q29 27 32 27" fill="none" stroke="#fff3dd" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="36" cy="33" r="1.8" fill="#b03a2e"/>
+  <circle cx="24" cy="28" r="1.2" fill="#f2e2c4"/>
+  <circle cx="41" cy="37" r="1" fill="#f2e2c4"/>
+</svg>

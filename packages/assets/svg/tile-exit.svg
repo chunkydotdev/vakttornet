@@ -1,18 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#5e9c52"/>
-  <rect x="14" y="22" width="36" height="34" fill="#9a9a9a"/>
-  <rect x="14" y="22" width="36" height="6" fill="#b0b0b0"/>
-  <g fill="#b0b0b0">
-    <rect x="14" y="14" width="8" height="8"/>
-    <rect x="28" y="14" width="8" height="8"/>
-    <rect x="42" y="14" width="8" height="8"/>
-  </g>
-  <rect x="26" y="38" width="12" height="18" rx="6" fill="#4a3621"/>
-  <rect x="26" y="50" width="12" height="6" fill="#3a2a19"/>
-  <rect x="31" y="2" width="2" height="14" fill="#5b4632"/>
-  <path d="M33 3 L46 7 L33 11 Z" fill="#d8434e"/>
-  <g fill="#7b7b7b">
-    <rect x="18" y="32" width="4" height="6"/>
-    <rect x="42" y="32" width="4" height="6"/>
+  <!-- exit: röd stuga med vita knutar, warm window glowing into the dusk -->
+  <rect width="64" height="64" fill="#415c39"/>
+  <rect x="12" y="26" width="40" height="30" fill="#9e3328"/>
+  <rect x="12" y="26" width="40" height="5" fill="#b04134"/>
+  <rect x="12" y="26" width="4" height="30" fill="#ece5d8"/>
+  <rect x="48" y="26" width="4" height="30" fill="#ece5d8"/>
+  <path d="M8 28 L32 10 L56 28 Z" fill="#423c34"/>
+  <path d="M8 28 L32 10 L32 28 Z" fill="#4e4840"/>
+  <path d="M6 28 H58" stroke="#322d27" stroke-width="3" stroke-linecap="round"/>
+  <rect x="40" y="12" width="6" height="10" fill="#6e6862"/>
+  <rect x="39" y="11" width="8" height="3" fill="#7d776f"/>
+  <rect x="26" y="38" width="12" height="18" rx="1" fill="#5a3c25"/>
+  <rect x="26" y="38" width="12" height="18" rx="1" fill="none" stroke="#ece5d8" stroke-width="2"/>
+  <circle cx="35" cy="47" r="1.2" fill="#d8cdb4"/>
+  <circle cx="20" cy="42" r="7" fill="#ffd271" opacity="0.35"/>
+  <rect x="16" y="38" width="9" height="9" fill="#ffd271"/>
+  <rect x="16" y="38" width="9" height="9" fill="none" stroke="#ece5d8" stroke-width="2"/>
+  <path d="M20.5 38 V47 M16 42.5 H25" stroke="#ece5d8" stroke-width="1.5"/>
+  <path d="M12 56 H52" stroke="#36502f" stroke-width="3" stroke-linecap="round"/>
+  <g stroke="#517044" stroke-width="2" stroke-linecap="round">
+    <path d="M6 60v-4"/>
+    <path d="M58 62v-4"/>
   </g>
 </svg>

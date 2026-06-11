@@ -17,14 +17,14 @@ describe("buildContent", () => {
   it("contains the expected defs", () => {
     const bundle = buildContent();
     expect(bundle.enemies.map((e) => e.id).sort()).toEqual([
-      "brute",
-      "runner",
-      "swarm",
+      "myling",
+      "troll",
+      "vatte",
     ]);
     expect(bundle.towers.map((t) => t.id).sort()).toEqual([
-      "arrow",
-      "cannon",
-      "crossbow",
+      "runsten",
+      "sollykta",
+      "tomte",
     ]);
     expect(bundle.levels.map((l) => l.id)).toEqual(["level01", "level02"]);
     expect(bundle.metaUpgrades).toHaveLength(4);
@@ -172,6 +172,31 @@ describe("tower defs", () => {
         expect(tower.levels[i]!.damage).toBeGreaterThan(
           tower.levels[i - 1]!.damage,
         );
+      }
+    }
+  });
+
+  it("sollykta petrifies on every level, deeper and longer per level", () => {
+    const sollykta = buildContent().towers.find((t) => t.id === "sollykta")!;
+    expect(sollykta).toBeDefined();
+    for (const level of sollykta.levels) {
+      expect(level.slow).toBeDefined();
+    }
+    for (let i = 1; i < sollykta.levels.length; i++) {
+      expect(sollykta.levels[i]!.slow!.factor).toBeLessThan(
+        sollykta.levels[i - 1]!.slow!.factor,
+      );
+      expect(sollykta.levels[i]!.slow!.durationTicks).toBeGreaterThan(
+        sollykta.levels[i - 1]!.slow!.durationTicks,
+      );
+    }
+  });
+
+  it("only sollykta has a slow — the other towers hit clean", () => {
+    for (const tower of buildContent().towers) {
+      if (tower.id === "sollykta") continue;
+      for (const level of tower.levels) {
+        expect(level.slow, `${tower.id} should not slow`).toBeUndefined();
       }
     }
   });

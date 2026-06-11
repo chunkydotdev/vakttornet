@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- myling: pale grey-blue ghost-wisp, big sorrowful eyes, trailing tail (~48u) -->
+  <ellipse cx="32" cy="57" rx="11" ry="3" fill="rgba(0,0,0,0.12)"/>
+  <path d="M18 30 Q18 10 32 10 Q46 10 46 30 L46 42 Q46 50 41 47 Q38 56 32 51 Q26 56 23 47 Q18 50 18 42 Z" fill="#b7c7d6"/>
+  <path d="M22 32 Q22 16 32 14" fill="none" stroke="#d9e4ee" stroke-width="4" stroke-linecap="round"/>
+  <path d="M32 51 Q31 55 28 57" fill="none" stroke="#b7c7d6" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="26" cy="28" r="5.5" fill="#ffffff"/>
+  <circle cx="39" cy="28" r="5.5" fill="#ffffff"/>
+  <circle cx="26.5" cy="29.5" r="2.8" fill="#25313c"/>
+  <circle cx="38.5" cy="29.5" r="2.8" fill="#25313c"/>
+  <circle cx="27.5" cy="28.5" r="0.9" fill="#ffffff"/>
+  <circle cx="39.5" cy="28.5" r="0.9" fill="#ffffff"/>
+  <path d="M20 22 Q23 20 26 21 M45 22 Q42 20 39 21" fill="none" stroke="#8fa3b5" stroke-width="2" stroke-linecap="round"/>
+  <ellipse cx="32" cy="40" rx="3" ry="4" fill="#8fa3b5"/>
+</svg>

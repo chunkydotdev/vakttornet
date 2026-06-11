@@ -12,13 +12,13 @@ interface UpgradesScreenProps {
 function effectText(effect: MetaUpgradeDef["effect"]): string {
   switch (effect.kind) {
     case "damageMult":
-      return `+${Math.round(effect.value * 100)}% tower damage per rank`;
+      return `+${Math.round(effect.value * 100)}% tornskada per rang`;
     case "rangeMult":
-      return `+${Math.round(effect.value * 100)}% tower range per rank`;
+      return `+${Math.round(effect.value * 100)}% räckvidd per rang`;
     case "startGold":
-      return `+${effect.value} starting gold per rank`;
+      return `+${effect.value} guld vid start per rang`;
     case "startLives":
-      return `+${effect.value} starting lives per rank`;
+      return `+${effect.value} liv vid start per rang`;
   }
 }
 
@@ -28,17 +28,17 @@ export function UpgradesScreen({ save, onBuy, onBack }: UpgradesScreenProps) {
       <div className="screen-inner">
         <div className="title-toolbar">
           <button type="button" className="btn btn-ghost" onClick={onBack}>
-            ← Back
+            ← Tillbaka
           </button>
-          <span className="points-chip" title="Spendable meta points">
+          <span className="points-chip" title="Poäng att spendera">
             <img className="icon" src={manifest["ui.coin"]} alt="" />
-            {save.points} points
+            {save.points} poäng
           </span>
         </div>
 
         <header className="title-header">
-          <h1 style={{ fontSize: "2.2rem" }}>Upgrades</h1>
-          <p className="tagline">Permanent boosts for every future run.</p>
+          <h1 style={{ fontSize: "2.2rem" }}>Uppgraderingar</h1>
+          <p className="tagline">Permanenta förstärkningar inför varje ny strid.</p>
         </header>
 
         <ul className="upgrade-list">
@@ -51,7 +51,7 @@ export function UpgradesScreen({ save, onBuy, onBack }: UpgradesScreenProps) {
                 <div>
                   <h3>
                     {upgrade.name}
-                    <span className="rank-pips" title={`Rank ${rank} of ${upgrade.maxRank}`}>
+                    <span className="rank-pips" title={`Rang ${rank} av ${upgrade.maxRank}`}>
                       {Array.from({ length: upgrade.maxRank }, (_, i) => (
                         <span key={i} className={i < rank ? "pip filled" : "pip"} />
                       ))}
@@ -62,7 +62,7 @@ export function UpgradesScreen({ save, onBuy, onBack }: UpgradesScreenProps) {
                 </div>
                 <div className="upgrade-buy">
                   {maxed ? (
-                    <span className="upgrade-maxed">Maxed</span>
+                    <span className="upgrade-maxed">Maxad</span>
                   ) : (
                     <>
                       <span className="upgrade-cost">
@@ -73,10 +73,10 @@ export function UpgradesScreen({ save, onBuy, onBack }: UpgradesScreenProps) {
                         type="button"
                         className="btn btn-primary btn-small"
                         disabled={!affordable}
-                        title={affordable ? undefined : "Not enough points"}
+                        title={affordable ? undefined : "För få poäng"}
                         onClick={() => onBuy(upgrade.id)}
                       >
-                        Buy
+                        Köp
                       </button>
                     </>
                   )}
@@ -88,7 +88,7 @@ export function UpgradesScreen({ save, onBuy, onBack }: UpgradesScreenProps) {
 
         {content.metaUpgrades.length === 0 && (
           <p className="muted" style={{ textAlign: "center" }}>
-            No upgrades available yet.
+            Inga uppgraderingar att köpa än.
           </p>
         )}
       </div>

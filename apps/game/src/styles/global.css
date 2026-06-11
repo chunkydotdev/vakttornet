@@ -1,25 +1,26 @@
-/* Vakttornet — global palette, base elements, shared components. */
+/* Vakttornet — global palette, base elements, shared components.
+   Dusk-forest theme: deep green-blacks, indigo shadows, lantern-amber accent. */
 
 :root {
-  --bg: #0e1116;
-  --bg-raised: #151b25;
-  --bg-panel: #1a2230;
-  --bg-hover: #212b3d;
-  --border: #2a3344;
-  --border-strong: #3b4860;
-  --text: #e8ecf3;
-  --text-dim: #93a0b4;
-  --text-faint: #5f6b80;
-  --accent: #7c9eff;
-  --accent-strong: #5d83f5;
-  --accent-soft: rgba(124, 158, 255, 0.14);
+  --bg: #0a100c;
+  --bg-raised: #111a14;
+  --bg-panel: #16221a;
+  --bg-hover: #1d2c22;
+  --border: #28382c;
+  --border-strong: #3c5343;
+  --text: #e9efe7;
+  --text-dim: #9cab9d;
+  --text-faint: #66776a;
+  --accent: #f0b450;
+  --accent-strong: #d99a2b;
+  --accent-soft: rgba(240, 180, 80, 0.14);
   --gold: #fbbf24;
   --danger: #f87171;
   --success: #4ade80;
   --purple: #a78bfa;
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --shadow: 0 10px 30px rgba(8, 7, 26, 0.55);
   --font: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
@@ -34,8 +35,10 @@ body {
 }
 
 body {
+  /* Indigo dusk falling from above, a faint lantern glow rising from below. */
   background:
-    radial-gradient(1100px 600px at 50% -10%, rgba(124, 158, 255, 0.08), transparent 60%),
+    radial-gradient(1100px 600px at 50% -10%, rgba(111, 123, 217, 0.1), transparent 60%),
+    radial-gradient(900px 500px at 50% 115%, rgba(240, 180, 80, 0.06), transparent 60%),
     var(--bg);
   color: var(--text);
   font-family: var(--font);
@@ -102,13 +105,14 @@ img {
 .btn-primary {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
-  color: #fff;
+  /* Dark text on the amber lantern accent keeps contrast comfortable. */
+  color: #1d1305;
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(124, 158, 255, 0.3);
+  box-shadow: 0 4px 14px rgba(240, 180, 80, 0.3);
 }
 
 .btn-danger {
@@ -172,7 +176,7 @@ img {
   left: 50%;
   bottom: 14px;
   transform: translateX(-50%);
-  background: rgba(14, 17, 22, 0.92);
+  background: rgba(10, 16, 12, 0.92);
   border: 1px solid rgba(248, 113, 113, 0.5);
   color: var(--text);
   padding: 0.45rem 1rem;

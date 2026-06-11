@@ -27,6 +27,14 @@ export const towerLevelSchema = z.object({
   cooldownTicks: z.number().int().positive(),
   /** tiles per second */
   projectileSpeed: z.number().positive(),
+  /** slow (petrify) applied on hit: factor = speed multiplier while active
+   * (0.5 = half speed), re-application overwrites factor + duration */
+  slow: z
+    .object({
+      factor: z.number().min(0.1).max(1),
+      durationTicks: z.number().int().positive(),
+    })
+    .optional(),
 });
 export type TowerLevel = z.infer<typeof towerLevelSchema>;
 

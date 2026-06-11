@@ -1,10 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#3b3247"/>
-  <ellipse cx="32" cy="32" rx="22" ry="26" fill="#241c30"/>
-  <ellipse cx="32" cy="32" rx="22" ry="26" fill="none" stroke="#8c5fd9" stroke-width="3"/>
-  <ellipse cx="32" cy="32" rx="14" ry="18" fill="#120c1c"/>
-  <ellipse cx="32" cy="32" rx="14" ry="18" fill="none" stroke="#6a44ad" stroke-width="2" stroke-dasharray="6 5"/>
-  <circle cx="32" cy="32" r="4" fill="#b18cff"/>
-  <circle cx="24" cy="20" r="1.5" fill="#b18cff"/>
-  <circle cx="42" cy="46" r="1.5" fill="#b18cff"/>
+  <!-- spawn: dark forest opening between two trunks, something watching -->
+  <rect width="64" height="64" fill="#415c39"/>
+  <path d="M10 0 Q14 18 14 34 Q14 48 12 58 L52 58 Q50 48 50 34 Q50 18 54 0 Z" fill="#161d10"/>
+  <path d="M18 6 Q20 24 20 38 Q20 50 19 58 L45 58 Q44 50 44 38 Q44 24 46 6 Z" fill="#0d120a"/>
+  <path d="M0 0 H64 L64 6 Q52 12 42 9 L22 9 Q12 12 0 6 Z" fill="#22311e"/>
+  <path d="M8 8 Q12 12 18 11 M56 8 Q52 12 46 11" fill="none" stroke="#2c3f26" stroke-width="3" stroke-linecap="round"/>
+  <path d="M0 2 Q10 4 13 18 Q16 38 13 58 L0 58 Z" fill="#4a3927"/>
+  <path d="M7 14 Q10 32 8 52 M3 10 Q5 28 4 48" fill="none" stroke="#382b1c" stroke-width="2" stroke-linecap="round"/>
+  <path d="M64 2 Q54 4 51 18 Q48 38 51 58 L64 58 Z" fill="#4a3927"/>
+  <path d="M57 14 Q54 32 56 52 M61 10 Q59 28 60 48" fill="none" stroke="#382b1c" stroke-width="2" stroke-linecap="round"/>
+  <path d="M13 58 H51" stroke="#36502f" stroke-width="4" stroke-linecap="round"/>
+  <g fill="#cfd86f">
+    <circle cx="29" cy="28" r="1.7"/>
+    <circle cx="36" cy="28" r="1.7"/>
+  </g>
+  <g fill="#9aa852" opacity="0.7">
+    <circle cx="40" cy="44" r="1.1"/>
+    <circle cx="44" cy="44" r="1.1"/>
+  </g>
 </svg>

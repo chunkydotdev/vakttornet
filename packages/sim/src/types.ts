@@ -48,6 +48,10 @@ export interface EnemyInstance {
   /** index into SimState.path of the waypoint currently moving toward */
   pathIndex: number;
   bounty: number;
+  /** slow (petrify) effect: while slowTicksLeft > 0, effective speed =
+   * speed × slowFactor. A new application overwrites factor and duration. */
+  slowTicksLeft: number;
+  slowFactor: number;
 }
 
 export interface TowerInstance {
@@ -68,6 +72,8 @@ export interface ProjectileInstance {
   /** tiles per second */
   speed: number;
   damage: number;
+  /** slow payload applied on hit (from TowerLevel.slow), if any */
+  slow?: { factor: number; durationTicks: number };
   /** asset of the tower type that fired it, for rendering */
   towerTypeId: string;
 }
@@ -98,6 +104,7 @@ export type SimEvent =
   | { type: "enemyLeaked"; enemyId: number; livesLeft: number }
   | { type: "towerFired"; towerId: number; projectileId: number }
   | { type: "projectileHit"; projectileId: number; enemyId: number; damage: number; at: Vec }
+  | { type: "enemySlowed"; enemyId: number; durationTicks: number }
   | { type: "towerPlaced"; towerId: number }
   | { type: "towerUpgraded"; towerId: number; level: number }
   | { type: "towerSold"; towerId: number; refund: number }
