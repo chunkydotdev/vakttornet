@@ -1,0 +1,20 @@
+{
+  "name": "@vakttornet/content",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vakttornet/assets": "workspace:*",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}
