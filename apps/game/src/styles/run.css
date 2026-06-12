@@ -406,6 +406,106 @@
   gap: 0.5rem;
 }
 
+/* ---------- Mutations (utvecklingar) ---------- */
+
+/* Shop-hover teaser: a max-level tower offers a choice of two branches. */
+.mutation-teaser {
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 0 0.2rem;
+}
+
+/* Chosen-branch subtitle under the tower name in the inspector head. */
+.mutation-subtitle {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-top: 0.1rem;
+}
+
+.mutation-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mutation-choice-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 0 0.2rem;
+}
+
+.mutation-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.3rem;
+  width: 100%;
+  text-align: left;
+  appearance: none;
+  background: var(--bg-panel);
+  border: 1px solid rgba(240, 180, 80, 0.35);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.65rem;
+  color: var(--text);
+  font-family: var(--font);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.1s ease;
+}
+
+.mutation-card:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.mutation-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.mutation-card .mutation-name {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.mutation-card .mutation-desc {
+  color: var(--text-dim);
+  font-size: 0.74rem;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.mutation-card .mutation-effect {
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.mutation-card .mutation-cost {
+  align-self: flex-end;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* Insufficient gold: the cost is the blocker, so it carries the warning —
+   and stays full-strength against the dimmed card. */
+.mutation-card .mutation-cost.insufficient {
+  color: var(--danger);
+  opacity: 1;
+}
+
 /* ---------- Responsive fallback ---------- */
 
 @media (max-width: 1020px) {

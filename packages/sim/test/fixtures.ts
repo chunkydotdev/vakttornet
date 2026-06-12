@@ -52,7 +52,11 @@ export function makeLevel(overrides: LevelOverrides = {}): LevelDef {
   });
 }
 
-export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): ContentBundle {
+export function makeContent(
+  level: LevelDef,
+  extraEnemies: unknown[] = [],
+  extraTowers: unknown[] = [],
+): ContentBundle {
   return contentBundleSchema.parse({
     enemies: [
       // 7.5 tiles/s = exactly 0.25 tiles/tick
@@ -123,11 +127,27 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
         id: "archer",
         name: "Archer",
         assetId: "tower-archer",
-        description: "Single-target workhorse",
+        description: "Single-target workhorse; 3 levels — for max-level mutation guards",
         levels: [
           { cost: 50, damage: 12, range: 3, cooldownTicks: 10, projectileSpeed: 30 },
           { cost: 40, damage: 24, range: 3.5, cooldownTicks: 8, projectileSpeed: 30 },
           { cost: 60, damage: 48, range: 4, cooldownTicks: 6, projectileSpeed: 30 },
+        ],
+        mutations: [
+          {
+            id: "archer-frenzy",
+            name: "Frenzy",
+            description: "Double damage, half cooldown",
+            cost: 50,
+            effect: { damageMult: 2, cooldownMult: 0.5 },
+          },
+          {
+            id: "archer-eagle",
+            name: "Eagle Eye",
+            description: "+2 range",
+            cost: 40,
+            effect: { rangeAdd: 2 },
+          },
         ],
       },
       {
@@ -141,8 +161,24 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
         id: "shed",
         name: "Shed",
         assetId: "tower-shed",
-        description: "Cheap and short-ranged — for refund/range tests",
+        description: "Cheap and short-ranged — for refund/range/rangeAdd tests",
         levels: [{ cost: 25, damage: 1, range: 1, cooldownTicks: 30, projectileSpeed: 30 }],
+        mutations: [
+          {
+            id: "shed-scope",
+            name: "Scope",
+            description: "+1.5 range",
+            cost: 10,
+            effect: { rangeAdd: 1.5 },
+          },
+          {
+            id: "shed-spikes",
+            name: "Spikes",
+            description: "Triple damage",
+            cost: 10,
+            effect: { damageMult: 3 },
+          },
+        ],
       },
       {
         id: "lantern",
@@ -193,6 +229,22 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
             splashRadius: 0.75,
           },
         ],
+        mutations: [
+          {
+            id: "boulder-tax",
+            name: "Tax",
+            description: "1.5× gold per kill — for splash bountyMult tests",
+            cost: 20,
+            effect: { bountyMult: 1.5 },
+          },
+          {
+            id: "boulder-heavy",
+            name: "Heavy",
+            description: "Double damage",
+            cost: 20,
+            effect: { damageMult: 2 },
+          },
+        ],
       },
       {
         id: "ballista",
@@ -200,6 +252,23 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
         assetId: "tower-ballista",
         description: "One-shots runts every 2 ticks, whole map — for split-chain tests",
         levels: [{ cost: 30, damage: 12, range: 20, cooldownTicks: 2, projectileSpeed: 60 }],
+        mutations: [
+          {
+            // cooldown 2 × 0.1 rounds to 0 → must clamp to the 1-tick minimum.
+            id: "ballista-rapid",
+            name: "Rapid",
+            description: "Cooldown ×0.1 — for the round-then-min-1 rule",
+            cost: 20,
+            effect: { cooldownMult: 0.1 },
+          },
+          {
+            id: "ballista-heavy",
+            name: "Heavy",
+            description: "Double damage",
+            cost: 20,
+            effect: { damageMult: 2 },
+          },
+        ],
       },
       {
         id: "storm",
@@ -218,6 +287,22 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
             projectileSpeed: 60,
             slow: { factor: 0.5, durationTicks: 12 },
             splashRadius: 5,
+          },
+        ],
+        mutations: [
+          {
+            id: "storm-tax",
+            name: "Storm Tax",
+            description: "1.5× gold per pulse kill — for pulse bountyMult tests",
+            cost: 20,
+            effect: { bountyMult: 1.5 },
+          },
+          {
+            id: "storm-heavy",
+            name: "Storm Heavy",
+            description: "Double damage",
+            cost: 20,
+            effect: { damageMult: 2 },
           },
         ],
       },
@@ -255,7 +340,145 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
             incomePerWave: 7,
           },
         ],
+        mutations: [
+          {
+            // 7 × 1.5 = 10.5 → rounds to 11: exercises the round() in incomeMult.
+            id: "kvarn-gild",
+            name: "Gild",
+            description: "1.5× wave income",
+            cost: 10,
+            effect: { incomeMult: 1.5 },
+          },
+          {
+            id: "kvarn-hoard",
+            name: "Hoard",
+            description: "2× wave income",
+            cost: 10,
+            effect: { incomeMult: 2 },
+          },
+        ],
       },
+      {
+        id: "twinbow",
+        name: "Twinbow",
+        assetId: "tower-twinbow",
+        description: "One-shots runts, whole map, fires once — for multishot tests",
+        levels: [{ cost: 30, damage: 12, range: 20, cooldownTicks: 90, projectileSpeed: 60 }],
+        mutations: [
+          {
+            id: "twin-volley",
+            name: "Volley",
+            description: "Fires at 2 targets",
+            cost: 30,
+            effect: { multishot: 2 },
+          },
+          {
+            id: "twin-triple",
+            name: "Triple Volley",
+            description: "Fires at 3 targets",
+            cost: 50,
+            effect: { multishot: 3 },
+          },
+        ],
+      },
+      {
+        id: "pyre",
+        name: "Pyre",
+        assetId: "tower-pyre",
+        description: "1 damage, whole map, fires once — for burn tests",
+        levels: [{ cost: 30, damage: 1, range: 20, cooldownTicks: 90, projectileSpeed: 60 }],
+        mutations: [
+          {
+            // dps 30 = exactly 1 damage per tick. bountyMult rides along ON
+            // PURPOSE: burn kills must pay BASE bounty (the payload only
+            // matters at hit time).
+            id: "pyre-ember",
+            name: "Ember",
+            description: "Ignite: 30 dps for 12 ticks",
+            cost: 20,
+            effect: { burn: { dps: 30, durationTicks: 12 }, bountyMult: 2 },
+          },
+          {
+            id: "pyre-flare",
+            name: "Flare",
+            description: "Ignite: 60 dps for 3 ticks",
+            cost: 20,
+            effect: { burn: { dps: 60, durationTicks: 3 } },
+          },
+        ],
+      },
+      {
+        id: "reaper",
+        name: "Reaper",
+        assetId: "tower-reaper",
+        description: "6 damage, whole map, fires once — for executeBelow tests",
+        levels: [{ cost: 30, damage: 6, range: 20, cooldownTicks: 90, projectileSpeed: 60 }],
+        mutations: [
+          {
+            id: "reaper-scythe",
+            name: "Scythe",
+            description: "Executes survivors below half hp",
+            cost: 20,
+            effect: { executeBelow: 0.5 },
+          },
+          {
+            id: "reaper-sickle",
+            name: "Sickle",
+            description: "Executes survivors below quarter hp",
+            cost: 20,
+            effect: { executeBelow: 0.25 },
+          },
+        ],
+      },
+      {
+        id: "runeguard",
+        name: "Runeguard",
+        assetId: "tower-runeguard",
+        description: "10 damage, whole map, fires once — for towerAura tests",
+        levels: [{ cost: 30, damage: 10, range: 20, cooldownTicks: 90, projectileSpeed: 60 }],
+        mutations: [
+          {
+            id: "rune-aura",
+            name: "Rune Aura",
+            description: "Towers within 2 tiles hit 1.5× harder",
+            cost: 20,
+            effect: { towerAura: { radiusTiles: 2, damageMult: 1.5 } },
+          },
+          {
+            id: "rune-heavy",
+            name: "Rune Heavy",
+            description: "Double damage",
+            cost: 20,
+            effect: { damageMult: 2 },
+          },
+        ],
+      },
+      {
+        id: "coldwell",
+        name: "Cold Well",
+        assetId: "tower-coldwell",
+        description: "damage 0 (never fires), range 1.5 — for auraSlow tests",
+        levels: [{ cost: 20, damage: 0, range: 1.5, cooldownTicks: 10, projectileSpeed: 30 }],
+        mutations: [
+          {
+            // 0.8 is weaker than the lantern's 0.5 projectile slow, and
+            // 0.8 × 0.25 = 0.2 tiles/tick exactly for slowed runts.
+            id: "kall-aura",
+            name: "Chill Aura",
+            description: "Enemies in range move at 0.8× speed",
+            cost: 20,
+            effect: { auraSlow: { factor: 0.8 } },
+          },
+          {
+            id: "kall-deep",
+            name: "Deep Chill",
+            description: "Enemies in range move at 0.5× speed",
+            cost: 20,
+            effect: { auraSlow: { factor: 0.5 } },
+          },
+        ],
+      },
+      ...extraTowers,
     ],
     levels: [level],
     metaUpgrades: [],
@@ -266,10 +489,15 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
 
 export function setup(
   levelOverrides: LevelOverrides = {},
-  opts: { seed?: number; meta?: MetaModifiers; extraEnemies?: unknown[] } = {},
+  opts: {
+    seed?: number;
+    meta?: MetaModifiers;
+    extraEnemies?: unknown[];
+    extraTowers?: unknown[];
+  } = {},
 ): { sim: Sim; level: LevelDef; content: ContentBundle } {
   const level = makeLevel(levelOverrides);
-  const content = makeContent(level, opts.extraEnemies ?? []);
+  const content = makeContent(level, opts.extraEnemies ?? [], opts.extraTowers ?? []);
   const sim = createSim(level, content, { seed: opts.seed ?? 42, meta: opts.meta });
   return { sim, level, content };
 }

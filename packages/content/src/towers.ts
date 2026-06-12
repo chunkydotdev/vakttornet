@@ -8,13 +8,18 @@ import type { TowerDef } from "./schema";
  *              in range at once. Vs a 3-enemy cluster that's 21.6 / 35.2 /
  *              55.7 — past its old single-target self (14.7/24.3/39.5) the
  *              moment two or more crowd the stone. THE swarm answer.
- *   sollykta:  8.0 / 14.4 / 23.8   (long range; ~30% less DPS than the old
- *              long-range tower — the petrifying slow pays for the difference)
+ *   sollykta:  8.0 / 12.2 / 17.5   (long range; upgrades buy CONTROL, not
+ *              damage — the petrify deepens 0.55→0.45→0.35 and lasts
+ *              45→55→70 ticks while the damage curve stays flat on purpose)
  *   nacken:   19.4 / 31.9 / 52.0   sniper — top single-target DPS and the
  *              longest range on the board, but one slow shot at a time.
+ *              Costs 115/135/170: the sniper pays for his range.
  *              Spend it on brutes and bosses, never on vättar.
  *   vardtradet: 0 DPS — pure economy, pays incomePerWave on each clear
  *              (range/cooldown/projectileSpeed are schema-required stubs)
+ *
+ * Mutations: exactly two branches per tower, offered at max level.
+ * Costs sit in the 90-120g band, scaled to the tower's own price.
  */
 export const towers: TowerDef[] = [
   {
@@ -30,6 +35,24 @@ export const towers: TowerDef[] = [
       { cost: 60, damage: 9, range: 2.4, cooldownTicks: 16, projectileSpeed: 9 },
       { cost: 80, damage: 13, range: 2.6, cooldownTicks: 14, projectileSpeed: 10 },
     ],
+    mutations: [
+      {
+        id: "tomtetvillingarna",
+        name: "Tomtetvillingarna",
+        description:
+          "Det visar sig att tomten alltid varit två — nu slungar bröderna gröt mot var sitt väsen.",
+        cost: 90,
+        effect: { multishot: 2 },
+      },
+      {
+        id: "argbigga",
+        name: "Argbigga",
+        description:
+          "Ingen har sett tomten så förgrymmad — grötsleven viner snabbare än ögat hinner följa.",
+        cost: 90,
+        effect: { cooldownMult: 0.55 },
+      },
+    ],
   },
   {
     id: "runsten",
@@ -44,6 +67,24 @@ export const towers: TowerDef[] = [
       { cost: 90, damage: 12, range: 1.9, cooldownTicks: 50, projectileSpeed: 1 },
       { cost: 105, damage: 18, range: 2.1, cooldownTicks: 46, projectileSpeed: 1 },
       { cost: 145, damage: 26, range: 2.3, cooldownTicks: 42, projectileSpeed: 1 },
+    ],
+    mutations: [
+      {
+        id: "askstenen",
+        name: "Åskstenen",
+        description:
+          "Stenen minns åskgudens hand — varje blixt slår tyngre, men runorna behöver längre tid att glöda.",
+        cost: 115,
+        effect: { damageMult: 1.6, cooldownMult: 1.25 },
+      },
+      {
+        id: "offerstenen",
+        name: "Offerstenen",
+        description:
+          "Gamla seder kräver sitt — varje väsen som faller vid stenen lämnar rikare gåvor i guld.",
+        cost: 110,
+        effect: { bountyMult: 1.5 },
+      },
     ],
   },
   {
@@ -65,19 +106,37 @@ export const towers: TowerDef[] = [
       },
       {
         cost: 80,
-        damage: 13,
+        damage: 11,
         range: 3.5,
         cooldownTicks: 27,
         projectileSpeed: 8,
-        slow: { factor: 0.5, durationTicks: 55 },
+        slow: { factor: 0.45, durationTicks: 55 },
       },
       {
         cost: 110,
-        damage: 19,
+        damage: 14,
         range: 3.8,
         cooldownTicks: 24,
         projectileSpeed: 9,
-        slow: { factor: 0.45, durationTicks: 65 },
+        slow: { factor: 0.35, durationTicks: 70 },
+      },
+    ],
+    mutations: [
+      {
+        id: "midnattssol",
+        name: "Midnattssol",
+        description:
+          "Lyktan slocknar aldrig mer — ett stilla midnattsljus vilar över skogen och tynger varje steg därunder.",
+        cost: 100,
+        effect: { auraSlow: { factor: 0.65 } },
+      },
+      {
+        id: "brannglas",
+        name: "Brännglas",
+        description:
+          "En slipad lins samlar solens hetta i en enda punkt — den som träffas bär elden med sig genom skogen.",
+        cost: 100,
+        effect: { burn: { dps: 4, durationTicks: 75 } },
       },
     ],
   },
@@ -91,25 +150,43 @@ export const towers: TowerDef[] = [
     attackKind: "projectile",
     levels: [
       {
-        cost: 100,
+        cost: 115,
         damage: 55,
         range: 4.4,
         cooldownTicks: 85,
         projectileSpeed: 14,
       },
       {
-        cost: 115,
+        cost: 135,
         damage: 85,
         range: 4.8,
         cooldownTicks: 80,
         projectileSpeed: 14,
       },
       {
-        cost: 150,
+        cost: 170,
         damage: 130,
         range: 5.2,
         cooldownTicks: 75,
         projectileSpeed: 14,
+      },
+    ],
+    mutations: [
+      {
+        id: "djupets-ton",
+        name: "Djupets ton",
+        description:
+          "När tonen ur djupet ljuder dras de svaga under ytan utan ett ljud, hur långt de än hunnit.",
+        cost: 120,
+        effect: { executeBelow: 0.18 },
+      },
+      {
+        id: "dubbelton",
+        name: "Dubbelton",
+        description:
+          "Näcken spelar nu med båda händerna — två väsen lockas av var sin slinga ur strömmen.",
+        cost: 120,
+        effect: { multishot: 2 },
       },
     ],
   },
@@ -146,6 +223,24 @@ export const towers: TowerDef[] = [
         cooldownTicks: 1,
         projectileSpeed: 1,
         incomePerWave: 30,
+      },
+    ],
+    mutations: [
+      {
+        id: "gyllene-lov",
+        name: "Gyllene löv",
+        description:
+          "Om hösten faller löven av rent guld — den som vårdat trädet väl skördar rikare än någon annan.",
+        cost: 95,
+        effect: { incomeMult: 1.75 },
+      },
+      {
+        id: "rotverk",
+        name: "Rotverk",
+        description:
+          "Trädets rötter letar sig fram till tornen runt omkring och skänker dem skogens urgamla styrka.",
+        cost: 100,
+        effect: { towerAura: { radiusTiles: 2.5, damageMult: 1.2 } },
       },
     ],
   },

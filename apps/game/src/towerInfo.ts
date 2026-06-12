@@ -5,7 +5,7 @@
  * truth. Decimal separator is the Swedish comma.
  */
 import { TICK_RATE, type MetaModifiers } from "@vakttornet/sim";
-import type { TowerDef, TowerLevel } from "@vakttornet/content";
+import type { MutationEffect, TowerDef, TowerLevel } from "@vakttornet/content";
 
 /** Always one decimal, Swedish comma: 1.6667 → "1,7". */
 export function formatSv1(value: number): string {
@@ -103,6 +103,73 @@ export function mechanicLines(def: TowerDef, level: TowerLevel): string[] {
     lines.push(`Ger +${formatSv(level.incomePerWave)} guld efter varje klarad våg. Anfaller inte.`);
   }
   return lines;
+}
+
+/** Percent delta from a multiplier, rounded: 1.75 → 75, 0.7 → −30. */
+function pctDelta(mult: number): number {
+  return Math.round((mult - 1) * 100);
+}
+
+/** Percent slowdown from a slow factor, rounded: 0.7 → 30. */
+function pctSlower(factor: number): number {
+  return Math.round((1 - factor) * 100);
+}
+
+/**
+ * Player-facing Swedish lines for a mutation's effect — one line per keyword
+ * in the effect object, in schema order. Every number is computed from the
+ * effect data (Swedish comma decimals); nothing is hand-written per mutation,
+ * so this works for any tower/mutation id the content ships.
+ */
+export function mutationEffectLines(effect: MutationEffect): string[] {
+  const lines: string[] = [];
+  if (effect.damageMult !== undefined) {
+    lines.push(`Skada ×${formatSv(effect.damageMult)}`);
+  }
+  if (effect.cooldownMult !== undefined) {
+    // Shown as the fire-rate multiplier the player actually feels:
+    // cooldown ×0,55 ⇒ rate ×1,8.
+    lines.push(`Eldtakt ×${formatSv(1 / effect.cooldownMult)}`);
+  }
+  if (effect.rangeAdd !== undefined && effect.rangeAdd !== 0) {
+    const abs = Math.abs(effect.rangeAdd);
+    const sign = effect.rangeAdd > 0 ? "+" : "−";
+    lines.push(`Räckvidd ${sign}${formatSv(abs)} ${abs === 1 ? "ruta" : "rutor"}`);
+  }
+  if (effect.bountyMult !== undefined) {
+    lines.push(`+${pctDelta(effect.bountyMult)} % guld från egna dråp`);
+  }
+  if (effect.multishot !== undefined) {
+    lines.push(`Skjuter mot ${effect.multishot} mål samtidigt`);
+  }
+  if (effect.executeBelow !== undefined) {
+    lines.push(`Avrättar väsen under ${Math.round(effect.executeBelow * 100)} % hälsa (ej bossar)`);
+  }
+  if (effect.burn) {
+    const secs = formatSv(effect.burn.durationTicks / TICK_RATE);
+    lines.push(`Antänder: ${formatSv(effect.burn.dps)} skada/s i ${secs} s`);
+  }
+  if (effect.auraSlow) {
+    lines.push(
+      `Aura: allt inom räckvidd rör sig ${pctSlower(effect.auraSlow.factor)} % långsammare`,
+    );
+  }
+  if (effect.incomeMult !== undefined) {
+    lines.push(`+${pctDelta(effect.incomeMult)} % inkomst`);
+  }
+  if (effect.towerAura) {
+    lines.push(
+      `Närliggande torn slår ${pctDelta(effect.towerAura.damageMult)} % hårdare ` +
+        `(inom ${formatSv(effect.towerAura.radiusTiles)} rutor)`,
+    );
+  }
+  return lines;
+}
+
+/** Shop-hover teaser for towers that offer mutations at max level, or null. */
+export function mutationTeaser(def: TowerDef): string | null {
+  if (!def.mutations || def.mutations.length === 0) return null;
+  return `Nivå ${def.levels.length}: välj en av två utvecklingar`;
 }
 
 /**

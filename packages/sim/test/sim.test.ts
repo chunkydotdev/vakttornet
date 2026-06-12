@@ -1119,12 +1119,652 @@ describe("upgrade and sell", () => {
   });
 });
 
+/** Place a single-level tower and immediately pick one of its mutations
+ * (level 1 is max level for these fixtures, so mutating right away is legal). */
+function placeMutated(
+  sim: ReturnType<typeof setup>["sim"],
+  typeId: string,
+  tile: { col: number; row: number },
+  mutationId: string,
+): number {
+  const placed = sim.placeTower(typeId, tile);
+  if (!placed.ok) throw new Error(`placement failed: ${typeId}`);
+  if (!sim.mutateTower(placed.tower.id, mutationId)) {
+    throw new Error(`mutation failed: ${mutationId}`);
+  }
+  return placed.tower.id;
+}
+
+describe("mutateTower", () => {
+  it("rejects unknown towers and mutations that don't belong to the tower's def", () => {
+    const { sim } = setup({ startGold: 250 });
+    const archer = sim.placeTower("archer", { col: 1, row: 1 });
+    const sniper = sim.placeTower("sniper", { col: 3, row: 1 });
+    if (!archer.ok || !sniper.ok) throw new Error("placement failed");
+    sim.upgradeTower(archer.tower.id);
+    sim.upgradeTower(archer.tower.id); // archer now max level (3)
+    const goldBefore = sim.state.gold;
+
+    expect(sim.mutateTower(999, "archer-frenzy")).toBe(false); // unknown tower
+    expect(sim.mutateTower(archer.tower.id, "nope")).toBe(false); // unknown mutation
+    expect(sim.mutateTower(archer.tower.id, "kvarn-gild")).toBe(false); // other tower's mutation
+    // The sniper is at its max level (1) but its def offers no mutations.
+    expect(sim.mutateTower(sniper.tower.id, "archer-frenzy")).toBe(false);
+
+    expect(sim.state.gold).toBe(goldBefore); // nothing was charged
+    expect(archer.tower.mutationId).toBeNull();
+    expect(sniper.tower.mutationId).toBeNull();
+  });
+
+  it("rejects towers below max level", () => {
+    const { sim } = setup({ startGold: 250 });
+    const placed = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!placed.ok) throw new Error("placement failed");
+    expect(sim.mutateTower(placed.tower.id, "archer-frenzy")).toBe(false); // level 1
+    sim.upgradeTower(placed.tower.id);
+    expect(sim.mutateTower(placed.tower.id, "archer-frenzy")).toBe(false); // level 2
+    sim.upgradeTower(placed.tower.id);
+    expect(sim.mutateTower(placed.tower.id, "archer-frenzy")).toBe(true); // level 3 = max
+  });
+
+  it("rejects when gold is insufficient, charging nothing", () => {
+    const { sim } = setup({ startGold: 150 });
+    const placed = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!placed.ok) throw new Error("placement failed");
+    sim.upgradeTower(placed.tower.id);
+    sim.upgradeTower(placed.tower.id); // 150 spent — gold now 0
+    expect(sim.state.gold).toBe(0);
+    expect(sim.mutateTower(placed.tower.id, "archer-frenzy")).toBe(false); // costs 50
+    expect(sim.state.gold).toBe(0);
+    expect(placed.tower.mutationId).toBeNull();
+  });
+
+  it("deducts gold, sets mutationId, and queues towerMutated like other command events", () => {
+    const { sim } = setup({ startGold: 200 });
+    const placed = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!placed.ok) throw new Error("placement failed");
+    sim.upgradeTower(placed.tower.id);
+    sim.upgradeTower(placed.tower.id); // gold now 50
+    expect(sim.mutateTower(placed.tower.id, "archer-frenzy")).toBe(true);
+    expect(sim.state.gold).toBe(0); // frenzy costs exactly 50
+    expect(placed.tower.mutationId).toBe("archer-frenzy");
+
+    // Once per tower: neither the same nor the sibling branch can be added.
+    expect(sim.mutateTower(placed.tower.id, "archer-frenzy")).toBe(false);
+    expect(sim.mutateTower(placed.tower.id, "archer-eagle")).toBe(false);
+    expect(placed.tower.mutationId).toBe("archer-frenzy");
+
+    const events = sim.tick();
+    expect(events).toEqual([
+      { type: "towerPlaced", towerId: placed.tower.id },
+      { type: "towerUpgraded", towerId: placed.tower.id, level: 2 },
+      { type: "towerUpgraded", towerId: placed.tower.id, level: 3 },
+      { type: "towerMutated", towerId: placed.tower.id, mutationId: "archer-frenzy" },
+    ]);
+  });
+
+  it("is rejected after the run ends", () => {
+    const { sim } = setup(); // 1 wave, 1 runt; twinbow one-shots it
+    const placed = sim.placeTower("twinbow", { col: 1, row: 1 });
+    if (!placed.ok) throw new Error("placement failed");
+    sim.startWave();
+    sim.tick();
+    expect(sim.state.status).toBe("won");
+    const goldBefore = sim.state.gold;
+    expect(sim.mutateTower(placed.tower.id, "twin-volley")).toBe(false);
+    expect(sim.state.gold).toBe(goldBefore);
+    expect(placed.tower.mutationId).toBeNull();
+  });
+
+  it("counts the mutation cost in the sell refund's total spent", () => {
+    const { sim } = setup({ startGold: 250 });
+    const placed = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!placed.ok) throw new Error("placement failed");
+    sim.upgradeTower(placed.tower.id);
+    sim.upgradeTower(placed.tower.id);
+    sim.mutateTower(placed.tower.id, "archer-frenzy"); // total spent 150 + 50 = 200
+    expect(sim.state.gold).toBe(50);
+
+    expect(sim.sellTower(placed.tower.id)).toBe(true);
+    expect(sim.state.gold).toBe(150); // 50 + floor(0.5 × 200)
+    const events = sim.tick();
+    expect(eventsOfType(events, "towerSold")).toEqual([
+      { type: "towerSold", towerId: placed.tower.id, refund: 100 },
+    ]);
+  });
+
+  it("createSim throws when a tower has duplicate mutation ids", () => {
+    expect(() =>
+      setup(
+        {},
+        {
+          extraTowers: [
+            {
+              id: "dupmut",
+              name: "Dup",
+              assetId: "tower-dup",
+              description: "duplicate mutation ids",
+              levels: [
+                { cost: 10, damage: 1, range: 1, cooldownTicks: 10, projectileSpeed: 10 },
+              ],
+              mutations: [
+                { id: "same", name: "A", description: "a", cost: 5, effect: { damageMult: 2 } },
+                { id: "same", name: "B", description: "b", cost: 5, effect: { rangeAdd: 1 } },
+              ],
+            },
+          ],
+        },
+      ),
+    ).toThrow('Tower "dupmut" has duplicate mutation id "same"');
+  });
+});
+
+describe("mutation stat modifiers", () => {
+  it("damageMult multiplies hit damage and cooldownMult shortens the fire interval", () => {
+    const { sim } = setup({
+      startGold: 200,
+      waves: [{ entries: [{ enemyTypeId: "tank", count: 1, spacingTicks: 1 }] }],
+    });
+    const placed = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!placed.ok) throw new Error("placement failed");
+    sim.upgradeTower(placed.tower.id);
+    sim.upgradeTower(placed.tower.id); // level 3: damage 48, cooldown 6
+    sim.mutateTower(placed.tower.id, "archer-frenzy"); // ×2 damage, ×0.5 cooldown
+    sim.startWave();
+
+    const fireTicks: number[] = [];
+    const hitDamages: number[] = [];
+    for (let t = 1; t <= 12; t++) {
+      const events = sim.tick();
+      if (eventsOfType(events, "towerFired").length > 0) fireTicks.push(sim.state.tick);
+      hitDamages.push(...eventsOfType(events, "projectileHit").map((h) => h.damage));
+    }
+    expect(fireTicks).toEqual([1, 4, 7, 10]); // round(6 × 0.5) = 3 ticks apart
+    expect(hitDamages.length).toBeGreaterThan(0);
+    expect(hitDamages.every((d) => d === 96)).toBe(true); // 48 × 2
+  });
+
+  it("cooldownMult rounds and clamps to a minimum of 1 tick", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "tank", count: 1, spacingTicks: 1 }] }],
+    });
+    // Ballista cooldown 2 × 0.1 = 0.2 → round 0 → clamped to 1: fires EVERY tick.
+    placeMutated(sim, "ballista", { col: 1, row: 1 }, "ballista-rapid");
+    sim.startWave();
+    const fireTicks: number[] = [];
+    for (let t = 1; t <= 6; t++) {
+      if (eventsOfType(sim.tick(), "towerFired").length > 0) fireTicks.push(sim.state.tick);
+    }
+    expect(fireTicks).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it("rangeAdd lets a tower reach beyond its base range", () => {
+    // The shed at (3,0) has center (3.5, 0.5) — 2 tiles from the path row,
+    // beyond its base range 1 but within 1 + 1.5 = 2.5 once mutated.
+    const firedCount = (mutate: boolean) => {
+      const { sim } = setup();
+      const placed = sim.placeTower("shed", { col: 3, row: 0 });
+      if (!placed.ok) throw new Error("placement failed");
+      if (mutate) expect(sim.mutateTower(placed.tower.id, "shed-scope")).toBe(true);
+      sim.startWave();
+      let count = 0;
+      for (let t = 1; t <= 24; t++) count += eventsOfType(sim.tick(), "towerFired").length;
+      return count;
+    };
+    expect(firedCount(false)).toBe(0);
+    expect(firedCount(true)).toBeGreaterThan(0);
+  });
+
+  it("applies rangeAdd BEFORE meta rangeMult: (base + rangeAdd) × rangeMult", () => {
+    // Shed at (6,0), center (6.5, 0.5); runt walks x = 0.5 + 0.25t along y 2.5.
+    // Correct order: (1 + 1.5) × 2 = 5 → first in range at x = 2.0 → tick 6.
+    // Wrong order (1 × 2 + 1.5 = 3.5) would first fire at tick 13, and
+    // un-multiplied 2.5 at tick 18 — the first-fire tick pins the formula.
+    const { sim } = setup({}, { meta: { ...NO_META, rangeMult: 2 } });
+    placeMutated(sim, "shed", { col: 6, row: 0 }, "shed-scope");
+    sim.startWave();
+    let firstFire = 0;
+    for (let t = 1; t <= 24 && firstFire === 0; t++) {
+      if (eventsOfType(sim.tick(), "towerFired").length > 0) firstFire = sim.state.tick;
+    }
+    expect(firstFire).toBe(6);
+  });
+});
+
+describe("multishot", () => {
+  it("fires one projectile and one towerFired per target, never doubling a target", () => {
+    const { sim } = setup({
+      waves: [
+        {
+          entries: [
+            { enemyTypeId: "runt", count: 1, spacingTicks: 1 },
+            { enemyTypeId: "runt", count: 1, spacingTicks: 1 }, // same-tick spawn
+          ],
+        },
+      ],
+    });
+    const bow = placeMutated(sim, "twinbow", { col: 1, row: 1 }, "twin-volley");
+
+    sim.startWave();
+    const t1 = sim.tick();
+    const spawned = eventsOfType(t1, "enemySpawned").map((e) => e.enemyId);
+    expect(spawned).toHaveLength(2);
+
+    const fired = eventsOfType(t1, "towerFired");
+    expect(fired).toHaveLength(2);
+    expect(fired.every((f) => f.towerId === bow)).toBe(true);
+    expect(new Set(fired.map((f) => f.projectileId)).size).toBe(2); // 2 distinct projectiles
+
+    // Both hit in the same tick (speed 60) — two DISTINCT targets, both die.
+    const hits = eventsOfType(t1, "projectileHit");
+    expect(hits).toHaveLength(2);
+    expect([...hits.map((h) => h.enemyId)].sort()).toEqual([...spawned].sort());
+    expect(eventsOfType(t1, "enemyDied")).toHaveLength(2);
+  });
+
+  it("picks the N furthest-along targets and leaves the rest untouched", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "runt", count: 3, spacingTicks: 2 }] }],
+    });
+    sim.startWave();
+    const spawned: number[] = [];
+    for (let t = 1; t <= 4; t++) {
+      spawned.push(...eventsOfType(sim.tick(), "enemySpawned").map((e) => e.enemyId));
+    }
+    // Place mid-wave so the first shot lands on tick 5 with all three alive:
+    // A x=1.75 (pathIndex 2), B x=1.25, C x=0.75 (both pathIndex 1, B closer
+    // to its next waypoint) — the volley must pick A and B.
+    placeMutated(sim, "twinbow", { col: 1, row: 1 }, "twin-volley");
+    const t5 = sim.tick();
+    spawned.push(...eventsOfType(t5, "enemySpawned").map((e) => e.enemyId));
+    const [a, b, c] = spawned as [number, number, number];
+
+    expect(eventsOfType(t5, "towerFired")).toHaveLength(2);
+    expect(eventsOfType(t5, "enemyDied").map((d) => d.enemyId)).toEqual([a, b]);
+    expect(sim.state.enemies.map((e) => e.id)).toEqual([c]);
+    expect(sim.state.enemies[0]!.hp).toBe(10); // C completely unhurt
+  });
+
+  it("falls back to a single projectile when only one enemy is in range", () => {
+    const { sim } = setup(); // 1 wave, 1 runt
+    placeMutated(sim, "twinbow", { col: 1, row: 1 }, "twin-volley");
+    sim.startWave();
+    const t1 = sim.tick();
+    expect(eventsOfType(t1, "towerFired")).toHaveLength(1);
+    expect(eventsOfType(t1, "projectileHit")).toHaveLength(1);
+    expect(eventsOfType(t1, "enemyDied")).toHaveLength(1);
+  });
+});
+
+describe("burn", () => {
+  const tankWave = {
+    waves: [{ entries: [{ enemyTypeId: "tank", count: 1, spacingTicks: 1 }] }],
+  };
+
+  it("deals exactly dps × TICK_SECONDS per tick for durationTicks, then stops and zeroes state", () => {
+    const { sim } = setup(tankWave);
+    placeMutated(sim, "pyre", { col: 1, row: 1 }, "pyre-ember"); // 30 dps = 1/tick, 12 ticks
+    sim.startWave();
+    sim.tick(); // t1: spawn, fire, hit (1 damage), burn applied
+    const tank = sim.state.enemies[0]!;
+    expect(tank.hp).toBe(999);
+    expect(tank).toMatchObject({ burnDps: 30, burnTicksLeft: 12 });
+
+    for (let i = 1; i <= 12; i++) {
+      sim.tick();
+      expect(tank.hp).toBe(999 - i); // exact: 30 × (1/30) = 1 per tick
+    }
+    expect(tank).toMatchObject({ burnDps: 0, burnTicksLeft: 0 }); // expiry zeroes both
+    sim.tick();
+    sim.tick();
+    expect(tank.hp).toBe(987); // expired — no further damage
+  });
+
+  it("re-application refreshes the duration without stacking", () => {
+    const { sim } = setup(tankWave);
+    placeMutated(sim, "pyre", { col: 1, row: 1 }, "pyre-ember");
+    sim.startWave();
+    for (let t = 1; t <= 4; t++) sim.tick(); // t1 hit (999), burn t2-t4 → 996
+    const tank = sim.state.enemies[0]!;
+    expect(tank.hp).toBe(996);
+
+    // A second pyre's hit on tick 5 refreshes the burn to 12 fresh ticks.
+    placeMutated(sim, "pyre", { col: 2, row: 1 }, "pyre-ember");
+    sim.tick(); // t5: burn (995) + second hit (994), burn reset to 12
+    expect(tank.hp).toBe(994);
+    expect(tank.burnTicksLeft).toBe(12);
+
+    for (let t = 6; t <= 17; t++) sim.tick(); // 12 more burn ticks
+    // 2 hits + 16 total burn ticks (t2-t5 and t6-t17): stacking would deal more.
+    expect(tank.hp).toBe(982);
+    sim.tick();
+    expect(tank.hp).toBe(982); // expired again
+  });
+
+  it("burn kills pay BASE bounty (no bountyMult) and trigger splits via the normal death path", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "splitter", count: 1, spacingTicks: 1 }] }],
+    });
+    // pyre-ember carries bountyMult 2 ON PURPOSE: it must not apply to the
+    // burn kill — only hit-time kills are credited to the tower.
+    placeMutated(sim, "pyre", { col: 1, row: 1 }, "pyre-ember");
+    sim.startWave();
+    sim.tick(); // t1: hit → hp 9, ignited
+    expect(sim.state.enemies[0]!.hp).toBe(9);
+    const goldBefore = sim.state.gold;
+    const scoreBefore = sim.state.score;
+
+    for (let t = 2; t <= 9; t++) sim.tick(); // burn → hp 1
+    expect(sim.state.enemies[0]!.hp).toBe(1);
+    const t10 = sim.tick(); // 9th burn tick kills
+    expect(eventsOfType(t10, "enemyDied")).toEqual([
+      expect.objectContaining({ typeId: "splitter", bounty: 8 }), // base, NOT ×2
+    ]);
+    expect(sim.state.gold).toBe(goldBefore + 8);
+    expect(sim.state.score).toBe(scoreBefore + 8);
+    // splitsInto children spawn through the same death path.
+    expect(eventsOfType(t10, "enemySpawned").map((e) => e.typeId)).toEqual(["runt", "runt"]);
+    expect(sim.state.enemies.map((e) => e.typeId)).toEqual(["runt", "runt"]);
+  });
+});
+
+describe("executeBelow", () => {
+  it("kills a surviving non-boss below the threshold through the normal death path", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "splitter", count: 1, spacingTicks: 1 }] }],
+    });
+    placeMutated(sim, "reaper", { col: 1, row: 1 }, "reaper-scythe"); // 6 dmg, execute < 0.5
+    const goldBefore = sim.state.gold;
+    sim.startWave();
+    // t1: hit → hp 4 of 10 → 0.4 < 0.5 → executed the same tick, with full
+    // death semantics: bounty paid and splitsInto children spawned.
+    const t1 = sim.tick();
+    expect(eventsOfType(t1, "projectileHit")).toEqual([
+      expect.objectContaining({ damage: 6 }),
+    ]);
+    expect(eventsOfType(t1, "enemyDied")).toEqual([
+      expect.objectContaining({ typeId: "splitter", bounty: 8 }),
+    ]);
+    expect(eventsOfType(t1, "enemySpawned").map((e) => e.typeId)).toEqual([
+      "splitter",
+      "runt",
+      "runt",
+    ]);
+    expect(sim.state.gold).toBe(goldBefore + 8);
+  });
+
+  it("does not execute at exactly the threshold (strictly below only)", () => {
+    const { sim } = setup(
+      { waves: [{ entries: [{ enemyTypeId: "even", count: 1, spacingTicks: 1 }] }] },
+      {
+        extraEnemies: [
+          { id: "even", name: "Even", assetId: "enemy-even", hp: 12, speed: 3.75, bounty: 5 },
+        ],
+      },
+    );
+    placeMutated(sim, "reaper", { col: 1, row: 1 }, "reaper-scythe");
+    sim.startWave();
+    const t1 = sim.tick(); // hit → hp 6 of 12 = exactly 0.5 → survives
+    expect(eventsOfType(t1, "projectileHit")).toHaveLength(1);
+    expect(eventsOfType(t1, "enemyDied")).toEqual([]);
+    expect(sim.state.enemies[0]!.hp).toBe(6);
+  });
+
+  it("never executes a boss, no matter how low it gets", () => {
+    const { sim } = setup(
+      { waves: [{ entries: [{ enemyTypeId: "trollking", count: 1, spacingTicks: 1 }] }] },
+      {
+        extraEnemies: [
+          {
+            id: "trollking",
+            name: "Troll King",
+            assetId: "enemy-trollking",
+            hp: 10,
+            speed: 3.75,
+            bounty: 50,
+            boss: true,
+          },
+        ],
+      },
+    );
+    placeMutated(sim, "reaper", { col: 1, row: 1 }, "reaper-scythe");
+    sim.startWave();
+    const t1 = sim.tick(); // hit → hp 4 of 10 → 0.4 < 0.5 BUT boss
+    expect(eventsOfType(t1, "projectileHit")).toHaveLength(1);
+    expect(eventsOfType(t1, "enemyDied")).toEqual([]);
+    expect(sim.state.enemies[0]!.hp).toBe(4);
+  });
+});
+
+describe("bountyMult", () => {
+  it("projectile and splash kills pay round(bounty × mult) gold while score adds base bounty", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "runt", count: 3, spacingTicks: 2 }] }],
+    });
+    sim.startWave();
+    for (let t = 1; t <= 4; t++) sim.tick();
+    // Same geometry as the splash suite: the tick-5 shot kills A (primary)
+    // and B (splash), C stays out of the radius.
+    placeMutated(sim, "boulder", { col: 1, row: 1 }, "boulder-tax"); // bountyMult 1.5
+    const goldBefore = sim.state.gold;
+    const scoreBefore = sim.state.score;
+
+    const t5 = sim.tick();
+    const died = eventsOfType(t5, "enemyDied");
+    expect(died).toHaveLength(2);
+    // The event reports the gold actually paid: round(5 × 1.5) = 8 each.
+    expect(died.map((d) => d.bounty)).toEqual([8, 8]);
+    expect(sim.state.gold).toBe(goldBefore + 16);
+    expect(sim.state.score).toBe(scoreBefore + 10); // score: base 5 + 5
+  });
+
+  it("pulse kills from a mutated pulse tower pay multiplied gold, base score", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "wisp", count: 3, spacingTicks: 2 }] }],
+    });
+    sim.startWave();
+    for (let t = 1; t <= 8; t++) sim.tick();
+    // Same geometry as the pulse suite: the tick-9 pulse kills B and C.
+    placeMutated(sim, "storm", { col: 1, row: 1 }, "storm-tax"); // bountyMult 1.5
+    const goldBefore = sim.state.gold;
+    const scoreBefore = sim.state.score;
+
+    const t9 = sim.tick();
+    const died = eventsOfType(t9, "enemyDied");
+    expect(died).toHaveLength(2);
+    expect(died.map((d) => d.bounty)).toEqual([8, 8]); // round(5 × 1.5)
+    expect(sim.state.gold).toBe(goldBefore + 16);
+    expect(sim.state.score).toBe(scoreBefore + 10);
+  });
+});
+
+describe("towerAura", () => {
+  const tankWave = {
+    waves: [{ entries: [{ enemyTypeId: "tank", count: 1, spacingTicks: 1 }] }],
+  };
+
+  /** Run `ticks` ticks and return each tower's projectileHit damages. */
+  function hitDamagesByTower(
+    sim: ReturnType<typeof setup>["sim"],
+    ticks: number,
+  ): Map<number, number[]> {
+    const projToTower = new Map<number, number>();
+    const result = new Map<number, number[]>();
+    for (let t = 1; t <= ticks; t++) {
+      const events = sim.tick();
+      for (const f of eventsOfType(events, "towerFired")) {
+        projToTower.set(f.projectileId, f.towerId);
+      }
+      for (const h of eventsOfType(events, "projectileHit")) {
+        const towerId = projToTower.get(h.projectileId)!;
+        result.set(towerId, [...(result.get(towerId) ?? []), h.damage]);
+      }
+    }
+    return result;
+  }
+
+  it("buffs a tower within radius by exactly damageMult, and never buffs itself", () => {
+    const { sim } = setup(tankWave);
+    const rune = placeMutated(sim, "runeguard", { col: 2, row: 1 }, "rune-aura"); // ×1.5, radius 2
+    const archer = sim.placeTower("archer", { col: 1, row: 1 }); // 1 tile away
+    if (!archer.ok) throw new Error("placement failed");
+    sim.startWave();
+
+    const hits = hitDamagesByTower(sim, 12);
+    expect(hits.get(archer.tower.id)!.every((d) => d === 18)).toBe(true); // 12 × 1.5
+    expect(hits.get(rune)).toEqual([10]); // the aura tower's own damage is unbuffed
+  });
+
+  it("does not buff towers outside the radius", () => {
+    const { sim } = setup(tankWave);
+    placeMutated(sim, "runeguard", { col: 5, row: 1 }, "rune-aura"); // 4 tiles from the archer
+    const archer = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!archer.ok) throw new Error("placement failed");
+    sim.startWave();
+
+    const hits = hitDamagesByTower(sim, 12);
+    expect(hits.get(archer.tower.id)!.every((d) => d === 12)).toBe(true); // base damage
+  });
+
+  it("overlapping auras multiply", () => {
+    const { sim } = setup({ ...tankWave, startGold: 200 });
+    const rune1 = placeMutated(sim, "runeguard", { col: 0, row: 1 }, "rune-aura");
+    const rune2 = placeMutated(sim, "runeguard", { col: 2, row: 1 }, "rune-aura");
+    const archer = sim.placeTower("archer", { col: 1, row: 1 }); // inside both radii
+    if (!archer.ok) throw new Error("placement failed");
+    sim.startWave();
+
+    const hits = hitDamagesByTower(sim, 12);
+    expect(hits.get(archer.tower.id)!.every((d) => d === 27)).toBe(true); // 12 × 1.5 × 1.5
+    // The aura towers sit exactly 2 tiles apart (radius inclusive): each is
+    // buffed by the OTHER but never by itself → 10 × 1.5.
+    expect(hits.get(rune1)).toEqual([15]);
+    expect(hits.get(rune2)).toEqual([15]);
+  });
+});
+
+describe("auraSlow", () => {
+  it("slows while in range with ONE enemySlowed on entry, and recovers within 2 ticks of leaving", () => {
+    const { sim } = setup(); // 1 runt
+    placeMutated(sim, "coldwell", { col: 1, row: 1 }, "kall-aura"); // factor 0.8, range 1.5
+    sim.startWave();
+
+    const t1 = sim.tick(); // runt moves to x 0.75 — inside the aura
+    expect(eventsOfType(t1, "enemySlowed")).toEqual([
+      { type: "enemySlowed", enemyId: sim.state.enemies[0]!.id, durationTicks: 2 },
+    ]);
+    const runt = sim.state.enemies[0]!;
+    expect(runt.slowFactor).toBe(0.8);
+
+    // Slowed to 0.8 × 0.25 = 0.2 tiles/tick while in range (x ≤ 2.618…,
+    // last in-range application on tick 10 at x 2.55), plus the 2 leftover
+    // ticks after leaving: ticks 2-12 all move 0.2 — and NO further
+    // enemySlowed events fire while the aura keeps re-applying.
+    for (let t = 2; t <= 12; t++) {
+      const before = runt.pos.x;
+      expect(eventsOfType(sim.tick(), "enemySlowed")).toEqual([]);
+      expect(runt.pos.x - before).toBeCloseTo(0.2, 12);
+    }
+    // Recovered: full speed again on tick 13.
+    const before = runt.pos.x;
+    sim.tick();
+    expect(runt.pos.x - before).toBeCloseTo(0.25, 12);
+    expect(runt.slowFactor).toBe(1);
+  });
+
+  it("never overwrites a stronger projectile slow; takes over once it expires", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "tank", count: 1, spacingTicks: 1 }] }],
+    });
+    placeMutated(sim, "coldwell", { col: 1, row: 1 }, "kall-aura"); // weak 0.8 aura
+    sim.placeTower("lantern", { col: 5, row: 1 }); // strong 0.5 × 12 projectile slow
+    sim.startWave();
+
+    // Tick until the lantern's slow lands (duration 12 distinguishes it from
+    // the aura's duration-2 applications).
+    let landed = false;
+    for (let t = 1; t <= 10 && !landed; t++) {
+      landed = eventsOfType(sim.tick(), "enemySlowed").some((e) => e.durationTicks === 12);
+    }
+    expect(landed).toBe(true);
+    const tank = sim.state.enemies[0]!;
+    expect(tank.slowFactor).toBe(0.5);
+    expect(tank.slowTicksLeft).toBe(12);
+
+    // The aura re-applies every tick but must NOT weaken the active 0.5 slow:
+    // all 12 duration ticks move at 0.5 × 0.125 = 0.0625.
+    for (let i = 0; i < 12; i++) {
+      const before = tank.pos.x;
+      sim.tick();
+      expect(tank.pos.x - before).toBeCloseTo(0.0625, 12);
+      if (i < 11) expect(tank.slowFactor).toBe(0.5);
+    }
+    // Projectile slow expired — the aura takes over the same tick (0.8).
+    expect(tank.slowFactor).toBe(0.8);
+    const before = tank.pos.x;
+    sim.tick();
+    expect(tank.pos.x - before).toBeCloseTo(0.1, 12); // 0.8 × 0.125
+  });
+
+  it("respects slowResist: immune enemies get no slow state and no event", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "stoneskin", count: 1, spacingTicks: 1 }] }],
+    });
+    placeMutated(sim, "coldwell", { col: 1, row: 1 }, "kall-aura");
+    sim.startWave();
+    sim.tick();
+    const enemy = sim.state.enemies[0]!;
+    for (let t = 2; t <= 8; t++) {
+      const before = enemy.pos.x;
+      expect(eventsOfType(sim.tick(), "enemySlowed")).toEqual([]);
+      expect(enemy.pos.x - before).toBe(0.25); // full speed throughout
+    }
+    expect(enemy).toMatchObject({ slowTicksLeft: 0, slowFactor: 1 });
+  });
+
+  it("partial slowResist weakens the aura factor", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "halfskin", count: 1, spacingTicks: 1 }] }],
+    });
+    placeMutated(sim, "coldwell", { col: 1, row: 1 }, "kall-aura"); // 0.8 → 0.9 vs resist 0.5
+    sim.startWave();
+    const t1 = sim.tick();
+    expect(eventsOfType(t1, "enemySlowed")).toHaveLength(1);
+    const enemy = sim.state.enemies[0]!;
+    expect(enemy.slowFactor).toBeCloseTo(0.9, 12); // 0.8 + (1 − 0.8) × 0.5
+    const before = enemy.pos.x;
+    sim.tick();
+    expect(enemy.pos.x - before).toBeCloseTo(0.225, 12); // 0.9 × 0.25
+  });
+});
+
+describe("incomeMult", () => {
+  it("pays round(incomePerWave × mult) on wave clear, leaving score untouched", () => {
+    const { sim } = setup(); // 1 wave, 1 runt
+    const gilded = placeMutated(sim, "kvarn", { col: 1, row: 0 }, "kvarn-gild"); // ×1.5
+    const plain = sim.placeTower("kvarn", { col: 2, row: 0 });
+    const archer = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!plain.ok || !archer.ok) throw new Error("placement failed");
+    sim.startWave();
+
+    const all: SimEvent[] = [];
+    for (let t = 0; t < 50 && sim.state.status !== "won"; t++) all.push(...sim.tick());
+    expect(sim.state.status).toBe("won");
+    expect(eventsOfType(all, "income")).toEqual([
+      { type: "income", towerId: gilded, amount: 11 }, // round(7 × 1.5) = round(10.5)
+      { type: "income", towerId: plain.tower.id, amount: 7 },
+    ]);
+    // score = bounty 5 + clear bonus 10 + 3 lives × 2 — income never scores.
+    expect(sim.state.score).toBe(21);
+  });
+});
+
 describe("determinism", () => {
   it("produces identical states and event streams for the same seed and commands", () => {
     const run = () => {
       const { sim } = setup(
         {
-          startGold: 300,
+          startGold: 500,
           startLives: 10,
           waves: [
             { entries: [{ enemyTypeId: "runt", count: 2, spacingTicks: 6 }] },
@@ -1162,9 +1802,36 @@ describe("determinism", () => {
         throw new Error("placement failed");
       }
       sim.startWave();
+      // Mutated towers join mid-run so every mutation keyword exercises the
+      // determinism script: multishot (twinbow), burn + bountyMult (pyre),
+      // towerAura (runeguard, buffing archer and boulder), auraSlow
+      // (coldwell) and incomeMult (kvarn).
+      let twinbow = 0;
+      let pyre = 0;
       for (let t = 1; t <= 200; t++) {
+        if (t === 3) {
+          const r = sim.placeTower("twinbow", { col: 2, row: 1 });
+          if (r.ok) twinbow = r.tower.id;
+        }
+        if (t === 5) sim.mutateTower(twinbow, "twin-volley");
+        if (t === 7) {
+          const r = sim.placeTower("pyre", { col: 4, row: 1 });
+          if (r.ok) pyre = r.tower.id;
+        }
+        if (t === 9) sim.mutateTower(pyre, "pyre-ember");
         if (t === 10) sim.upgradeTower(archer.tower.id);
+        if (t === 12) sim.placeTower("runeguard", { col: 1, row: 3 });
+        if (t === 14) {
+          const rune = sim.state.towers.find((tw) => tw.typeId === "runeguard")!;
+          sim.mutateTower(rune.id, "rune-aura");
+        }
+        if (t === 16) sim.placeTower("coldwell", { col: 3, row: 3 });
+        if (t === 18) {
+          const well = sim.state.towers.find((tw) => tw.typeId === "coldwell")!;
+          sim.mutateTower(well.id, "kall-aura");
+        }
         if (t === 20) sim.sellTower(sniper.tower.id);
+        if (t === 22) sim.mutateTower(kvarn.tower.id, "kvarn-gild");
         if (t === 24) sim.placeTower("boulder", { col: 2, row: 3 }); // splash, mid-run
         if (sim.state.status === "building" && sim.state.waveIndex < sim.state.totalWaves) {
           sim.startWave();
@@ -1180,6 +1847,7 @@ describe("determinism", () => {
     expect(a.events).toStrictEqual(b.events);
     expect(a.events.length).toBeGreaterThan(20); // the run actually did things
     expect(eventsOfType(a.events, "towerPulsed").length).toBeGreaterThan(0); // incl. pulses
+    expect(eventsOfType(a.events, "towerMutated")).toHaveLength(5); // every mutation landed
     expect(a.state.status).toBe("won"); // and resolved
   });
 });

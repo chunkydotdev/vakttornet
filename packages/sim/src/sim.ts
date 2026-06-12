@@ -7,7 +7,13 @@
  * happened since the previous tick. Renderers should therefore consume events
  * exclusively from tick() return values.
  */
-import type { EnemyDef, TowerDef, TowerLevel } from "@vakttornet/content";
+import type {
+  EnemyDef,
+  MutationDef,
+  MutationEffect,
+  TowerDef,
+  TowerLevel,
+} from "@vakttornet/content";
 import {
   NO_META,
   TICK_SECONDS,
@@ -29,6 +35,28 @@ interface ScheduledSpawn {
   offset: number;
   def: EnemyDef;
 }
+
+/** A tower's combat stats with its mutation (if any) and meta modifiers
+ * applied. The modifier order is part of the documented contract:
+ * - damage: base × mutation.damageMult × meta.damageMult. The towerAura
+ *   product from nearby aura towers is NOT included here — it is applied on
+ *   top at fire/pulse time (auras can appear/disappear between shots).
+ * - range:  (base + mutation.rangeAdd) × meta.rangeMult — the flat add
+ *   applies BEFORE the meta multiplier.
+ * - cooldown: round(base × mutation.cooldownMult), clamped to ≥ 1 tick.
+ */
+interface EffectiveStats {
+  damage: number;
+  range: number;
+  cooldownTicks: number;
+}
+
+/** auraSlow applications last 2 ticks and are re-applied every tick while
+ * the enemy stays in range, so the slow lapses almost immediately (≤ 2
+ * ticks) after the enemy leaves. This is keyword semantics (like "slow only
+ * hits the primary target"), not a tuning number — the tunable part of the
+ * keyword is its factor, which lives in content. */
+const AURA_SLOW_DURATION_TICKS = 2;
 
 export const createSim: CreateSim = (level, content, opts) => {
   const meta: MetaModifiers = opts.meta ?? NO_META;
@@ -55,6 +83,17 @@ export const createSim: CreateSim = (level, content, opts) => {
       throw new Error(
         `Enemy "${def.id}" splitsInto unknown enemy type "${def.splitsInto.enemyTypeId}"`,
       );
+    }
+  }
+  // Mutation ids must be unique within each tower — mutateTower and the
+  // renderer address branches by id, so a duplicate would be unreachable.
+  for (const def of content.towers) {
+    const seen = new Set<string>();
+    for (const m of def.mutations ?? []) {
+      if (seen.has(m.id)) {
+        throw new Error(`Tower "${def.id}" has duplicate mutation id "${m.id}"`);
+      }
+      seen.add(m.id);
     }
   }
 
@@ -97,6 +136,47 @@ export const createSim: CreateSim = (level, content, opts) => {
   const levelDefOf = (tower: TowerInstance): TowerLevel =>
     towerDefs.get(tower.typeId)!.levels[tower.level - 1]!;
 
+  /** The tower's chosen MutationDef, or undefined while unmutated. */
+  const mutationOf = (tower: TowerInstance): MutationDef | undefined =>
+    tower.mutationId === null
+      ? undefined
+      : towerDefs.get(tower.typeId)!.mutations?.find((m) => m.id === tower.mutationId);
+
+  /** Resolve a tower's current stats — level def + mutation + meta. See the
+   * EffectiveStats doc for the exact modifier order. */
+  function effectiveStats(tower: TowerInstance): EffectiveStats {
+    const lvl = levelDefOf(tower);
+    const effect = mutationOf(tower)?.effect;
+    return {
+      damage: lvl.damage * (effect?.damageMult ?? 1) * meta.damageMult,
+      range: (lvl.range + (effect?.rangeAdd ?? 0)) * meta.rangeMult,
+      cooldownTicks: Math.max(
+        1,
+        Math.round(lvl.cooldownTicks * (effect?.cooldownMult ?? 1)),
+      ),
+    };
+  }
+
+  /** towerAura: product of `towerAura.damageMult` over every OTHER tower
+   * whose aura mutation is active and whose tile center lies within
+   * radiusTiles (inclusive) of this tower's tile center. Aura towers never
+   * buff themselves; overlapping auras multiply. Evaluated at fire/pulse
+   * time, so building or selling an aura tower affects the next shot. */
+  function auraDamageMultFor(tower: TowerInstance): number {
+    let mult = 1;
+    const center = tileCenter(tower.tile);
+    for (const other of state.towers) {
+      if (other.id === tower.id) continue;
+      const aura = mutationOf(other)?.effect.towerAura;
+      if (!aura) continue;
+      const oc = tileCenter(other.tile);
+      if (Math.hypot(oc.x - center.x, oc.y - center.y) <= aura.radiusTiles) {
+        mult *= aura.damageMult;
+      }
+    }
+    return mult;
+  }
+
   function buildSpawnSchedule(waveIdx: number): ScheduledSpawn[] {
     const wave = level.waves[waveIdx]!;
     const schedule: ScheduledSpawn[] = [];
@@ -131,29 +211,38 @@ export const createSim: CreateSim = (level, content, opts) => {
       bounty: def.bounty,
       slowTicksLeft: 0,
       slowFactor: 1,
+      burnTicksLeft: 0,
+      burnDps: 0,
     };
     state.enemies.push(enemy);
     events.push({ type: "enemySpawned", enemyId: enemy.id, typeId: enemy.typeId });
     return enemy;
   }
 
-  /** Remove every enemy at hp ≤ 0: pay full bounty (gold + score) and emit
-   * enemyDied in enemy-array (spawn) order for determinism, then spawn
-   * splitsInto children. Shared by projectile impacts (incl. splash) and
-   * pulses — deaths always resolve only after ALL damage from one source
-   * has been applied. */
-  function resolveDeaths(events: SimEvent[]): void {
+  /** Remove every enemy at hp ≤ 0: pay bounty and emit enemyDied in
+   * enemy-array (spawn) order for determinism, then spawn splitsInto
+   * children. Shared by projectile impacts (incl. splash), pulses, burn
+   * ticks and executeBelow — deaths always resolve only after ALL damage
+   * from one source has been applied.
+   *
+   * goldMult is the bountyMult contract: GOLD paid = round(bounty × mult);
+   * SCORE always adds the BASE bounty (leaderboard fairness — documented in
+   * the content schema). The enemyDied event reports the gold actually
+   * paid. Burn-tick deaths always use mult 1 — a burn is credited to no
+   * tower, so its igniter's bountyMult only matters at hit time. */
+  function resolveDeaths(events: SimEvent[], goldMult = 1): void {
     const dead = state.enemies.filter((e) => e.hp <= 0);
     if (dead.length === 0) return;
     state.enemies = state.enemies.filter((e) => e.hp > 0);
     for (const e of dead) {
-      state.gold += e.bounty;
+      const goldPaid = Math.round(e.bounty * goldMult);
+      state.gold += goldPaid;
       state.score += e.bounty;
       events.push({
         type: "enemyDied",
         enemyId: e.id,
         typeId: e.typeId,
-        bounty: e.bounty,
+        bounty: goldPaid,
         at: { ...e.pos },
       });
       // splitsInto: a KILLED enemy (never a leaked one) spawns children
@@ -249,29 +338,95 @@ export const createSim: CreateSim = (level, content, opts) => {
     return true;
   }
 
+  /** Burn (ignite) damage-over-time: every burning enemy takes
+   * burnDps × TICK_SECONDS damage per tick for burnTicksLeft ticks; expiry
+   * zeroes both fields. slowResist NEVER applies to burn. Burn deaths
+   * resolve through the normal death path (bounty, splits, enemyDied) but
+   * are credited to no tower — bountyMult never applies (mult 1). */
+  function applyBurns(events: SimEvent[]): void {
+    let burned = false;
+    for (const enemy of state.enemies) {
+      if (enemy.burnTicksLeft <= 0) continue;
+      enemy.hp -= enemy.burnDps * TICK_SECONDS;
+      enemy.burnTicksLeft -= 1;
+      if (enemy.burnTicksLeft === 0) enemy.burnDps = 0;
+      burned = true;
+    }
+    if (burned) resolveDeaths(events);
+  }
+
+  /** auraSlow (any mutated tower with the keyword, attacking or not): every
+   * tick, every enemy within the tower's range — rangeAdd and meta rangeMult
+   * apply — is slowed by the aura's factor for AURA_SLOW_DURATION_TICKS.
+   * slowResist scales the factor exactly like projectile slow (resist 1 =
+   * immune: no state, no event). An aura application never overwrites a
+   * strictly STRONGER (lower-factor) active slow; projectile slows keep
+   * their unconditional-overwrite semantics. enemySlowed is emitted only
+   * when the aura slows a previously UN-slowed enemy — the per-tick
+   * re-applications while it stays in range are silent (no event spam). */
+  function applyAuraSlows(events: SimEvent[]): void {
+    for (const tower of state.towers) {
+      const aura = mutationOf(tower)?.effect.auraSlow;
+      if (!aura) continue;
+      const range = effectiveStats(tower).range;
+      const center = tileCenter(tower.tile);
+      for (const enemy of state.enemies) {
+        const d = Math.hypot(enemy.pos.x - center.x, enemy.pos.y - center.y);
+        if (d > range) continue;
+        const resist = enemyDefs.get(enemy.typeId)!.slowResist;
+        const effectiveFactor = aura.factor + (1 - aura.factor) * resist;
+        if (resist >= 1 || effectiveFactor >= 1) continue;
+        if (enemy.slowTicksLeft > 0 && enemy.slowFactor < effectiveFactor) {
+          continue; // an active stronger slow wins
+        }
+        const wasUnslowed = enemy.slowTicksLeft === 0;
+        enemy.slowFactor = effectiveFactor;
+        enemy.slowTicksLeft = AURA_SLOW_DURATION_TICKS;
+        if (wasUnslowed) {
+          events.push({
+            type: "enemySlowed",
+            enemyId: enemy.id,
+            durationTicks: AURA_SLOW_DURATION_TICKS,
+          });
+        }
+      }
+    }
+  }
+
   /** Pulse attack (TowerDef.attackKind "pulse"): instantly apply full damage
    * to EVERY living enemy within range — no projectiles, and the level's
    * projectileSpeed/splashRadius/slow are ignored entirely. Emits ONE
    * towerPulsed followed by the resulting deaths (resolved only after all
    * pulse damage is applied, same ordering rules as splash). With no enemy
    * in range the tower does NOT pulse and stays ready (cooldown stays 0) —
-   * it never wastes a pulse on empty air. */
+   * it never wastes a pulse on empty air.
+   *
+   * Mutations on a pulse tower: damageMult/cooldownMult/rangeAdd arrive via
+   * EffectiveStats, the towerAura product is multiplied in here, and
+   * bountyMult applies to every kill of this pulse. multishot is meaningless
+   * for pulses (they already hit everything in range) and burn/executeBelow
+   * are projectile-hit semantics — all three are ignored here. */
   function firePulse(
     tower: TowerInstance,
-    lvl: TowerLevel,
-    range: number,
+    stats: EffectiveStats,
     center: Vec,
+    effect: MutationEffect | undefined,
     events: SimEvent[],
   ): void {
     const hit = state.enemies.filter(
-      (e) => Math.hypot(e.pos.x - center.x, e.pos.y - center.y) <= range,
+      (e) => Math.hypot(e.pos.x - center.x, e.pos.y - center.y) <= stats.range,
     );
     if (hit.length === 0) return;
-    const damage = lvl.damage * meta.damageMult;
+    const damage = stats.damage * auraDamageMultFor(tower);
     for (const enemy of hit) enemy.hp -= damage;
-    events.push({ type: "towerPulsed", towerId: tower.id, range, hitCount: hit.length });
-    resolveDeaths(events);
-    tower.cooldown = lvl.cooldownTicks;
+    events.push({
+      type: "towerPulsed",
+      towerId: tower.id,
+      range: stats.range,
+      hitCount: hit.length,
+    });
+    resolveDeaths(events, effect?.bountyMult ?? 1);
+    tower.cooldown = stats.cooldownTicks;
   }
 
   function towersFire(events: SimEvent[]): void {
@@ -285,59 +440,78 @@ export const createSim: CreateSim = (level, content, opts) => {
       if (lvl.damage === 0) continue;
       if (tower.cooldown > 0) tower.cooldown -= 1;
       if (tower.cooldown > 0) continue;
-      const range = lvl.range * meta.rangeMult;
+      const stats = effectiveStats(tower);
+      const effect = mutationOf(tower)?.effect;
       const center = tileCenter(tower.tile);
 
       if (towerDefs.get(tower.typeId)!.attackKind === "pulse") {
-        firePulse(tower, lvl, range, center, events);
+        firePulse(tower, stats, center, effect, events);
         continue;
       }
 
-      // Target the in-range enemy furthest along the path: highest pathIndex,
-      // tie-break by smallest distance to its next waypoint, then lowest id.
-      let best: EnemyInstance | undefined;
-      let bestNextDist = Infinity;
+      // Rank in-range enemies by the furthest-along ordering: highest
+      // pathIndex, tie-break by smallest distance to the next waypoint, then
+      // lowest id (the enemies array is in spawn = id order and the sort is
+      // stable, so full ties keep array order).
+      const candidates: Array<{ enemy: EnemyInstance; nextDist: number }> = [];
       for (const enemy of state.enemies) {
         const d = Math.hypot(enemy.pos.x - center.x, enemy.pos.y - center.y);
-        if (d > range) continue;
+        if (d > stats.range) continue;
         const next = state.path[enemy.pathIndex];
         const nextDist = next ? Math.hypot(next.x - enemy.pos.x, next.y - enemy.pos.y) : 0;
-        if (
-          best === undefined ||
-          enemy.pathIndex > best.pathIndex ||
-          (enemy.pathIndex === best.pathIndex && nextDist < bestNextDist)
-          // Equal pathIndex + equal nextDist: keep `best` — enemies are
-          // iterated in spawn order, so it already has the lowest id.
-        ) {
-          best = enemy;
-          bestNextDist = nextDist;
-        }
+        candidates.push({ enemy, nextDist });
       }
-      if (!best) continue;
+      if (candidates.length === 0) continue;
+      candidates.sort(
+        (a, b) => b.enemy.pathIndex - a.enemy.pathIndex || a.nextDist - b.nextDist,
+      );
+      // multishot (projectile towers only): one shot fires at up to N
+      // DISTINCT targets — the top N of the ranking above. Fewer enemies in
+      // range → fewer projectiles; a target is never doubled up. Each
+      // projectile gets its own towerFired event.
+      const targets = candidates.slice(0, effect?.multishot ?? 1);
 
-      const projectile: ProjectileInstance = {
-        id: nextId++,
-        pos: { ...center },
-        prevPos: { ...center },
-        targetEnemyId: best.id,
-        speed: lvl.projectileSpeed,
-        damage: lvl.damage * meta.damageMult,
-        towerTypeId: tower.typeId,
-      };
-      if (lvl.slow) {
-        // Copy the values onto the projectile. Meta modifiers (damageMult,
-        // rangeMult) intentionally do not touch the slow payload.
-        projectile.slow = {
-          factor: lvl.slow.factor,
-          durationTicks: lvl.slow.durationTicks,
+      // Aura buffs resolve once per shot, at fire time.
+      const damage = stats.damage * auraDamageMultFor(tower);
+      for (const { enemy } of targets) {
+        const projectile: ProjectileInstance = {
+          id: nextId++,
+          pos: { ...center },
+          prevPos: { ...center },
+          targetEnemyId: enemy.id,
+          speed: lvl.projectileSpeed,
+          damage,
+          towerTypeId: tower.typeId,
         };
+        if (lvl.slow) {
+          // Copy the values onto the projectile. Meta modifiers (damageMult,
+          // rangeMult) intentionally do not touch the slow payload.
+          projectile.slow = {
+            factor: lvl.slow.factor,
+            durationTicks: lvl.slow.durationTicks,
+          };
+        }
+        if (lvl.splashRadius !== undefined) {
+          projectile.splashRadius = lvl.splashRadius;
+        }
+        // Mutation payloads ride on the projectile (copied at fire time,
+        // like slow/splash) and resolve when it lands.
+        if (effect?.burn) {
+          projectile.burn = {
+            dps: effect.burn.dps,
+            durationTicks: effect.burn.durationTicks,
+          };
+        }
+        if (effect?.executeBelow !== undefined) {
+          projectile.executeBelow = effect.executeBelow;
+        }
+        if (effect?.bountyMult !== undefined) {
+          projectile.bountyMult = effect.bountyMult;
+        }
+        state.projectiles.push(projectile);
+        events.push({ type: "towerFired", towerId: tower.id, projectileId: projectile.id });
       }
-      if (lvl.splashRadius !== undefined) {
-        projectile.splashRadius = lvl.splashRadius;
-      }
-      state.projectiles.push(projectile);
-      tower.cooldown = lvl.cooldownTicks;
-      events.push({ type: "towerFired", towerId: tower.id, projectileId: projectile.id });
+      tower.cooldown = stats.cooldownTicks;
     }
   }
 
@@ -375,30 +549,52 @@ export const createSim: CreateSim = (level, content, opts) => {
           }
         }
         // Deaths resolve only after ALL damage from this impact has been
-        // applied (primary + splash). Splash kills pay the normal bounty.
-        resolveDeaths(events);
-        // Slow applies ONLY to the primary target — splash victims are never
-        // slowed, even if a tower somehow has both slow and splashRadius —
-        // and only if the primary survived the impact.
-        if (target.hp > 0 && proj.slow) {
-          // slowResist scales the factor toward 1:
-          //   effective = factor + (1 − factor) × resist.
-          // resist 1 (effective factor 1) means immune: no slow state and no
-          // enemySlowed event — an immune enemy shows no petrify at all.
-          // Partial resist keeps the payload's full durationTicks.
-          const resist = enemyDefs.get(target.typeId)!.slowResist;
-          const effectiveFactor =
-            proj.slow.factor + (1 - proj.slow.factor) * resist;
-          if (resist < 1 && effectiveFactor < 1) {
-            // Overwrite semantics: a new application replaces both factor and
-            // duration — no stacking, no taking the stronger of the two.
-            target.slowFactor = effectiveFactor;
-            target.slowTicksLeft = proj.slow.durationTicks;
-            events.push({
-              type: "enemySlowed",
-              enemyId: target.id,
-              durationTicks: proj.slow.durationTicks,
-            });
+        // applied (primary + splash). Splash kills pay the same (bountyMult-
+        // adjusted) bounty as the primary — the whole impact is one credit.
+        const goldMult = proj.bountyMult ?? 1;
+        resolveDeaths(events, goldMult);
+        // Slow and the mutation payloads (burn, executeBelow) apply ONLY to
+        // the primary target — splash victims are never slowed, burned or
+        // executed — and only if the primary survived the impact.
+        if (target.hp > 0) {
+          if (proj.slow) {
+            // slowResist scales the factor toward 1:
+            //   effective = factor + (1 − factor) × resist.
+            // resist 1 (effective factor 1) means immune: no slow state and no
+            // enemySlowed event — an immune enemy shows no petrify at all.
+            // Partial resist keeps the payload's full durationTicks.
+            const resist = enemyDefs.get(target.typeId)!.slowResist;
+            const effectiveFactor =
+              proj.slow.factor + (1 - proj.slow.factor) * resist;
+            if (resist < 1 && effectiveFactor < 1) {
+              // Overwrite semantics: a new application replaces both factor and
+              // duration — no stacking, no taking the stronger of the two.
+              target.slowFactor = effectiveFactor;
+              target.slowTicksLeft = proj.slow.durationTicks;
+              events.push({
+                type: "enemySlowed",
+                enemyId: target.id,
+                durationTicks: proj.slow.durationTicks,
+              });
+            }
+          }
+          if (proj.burn) {
+            // Ignite: refresh, no stack — a new application overwrites the
+            // dps and resets the remaining duration. Damage ticks in
+            // applyBurns starting next tick. slowResist does not apply.
+            target.burnDps = proj.burn.dps;
+            target.burnTicksLeft = proj.burn.durationTicks;
+          }
+          if (
+            proj.executeBelow !== undefined &&
+            target.hp / target.maxHp < proj.executeBelow &&
+            !enemyDefs.get(target.typeId)!.boss
+          ) {
+            // executeBelow: a surviving non-boss strictly below the hp
+            // fraction dies through the NORMAL death path — bounty (with
+            // this projectile's bountyMult), splits, enemyDied event.
+            target.hp = 0;
+            resolveDeaths(events, goldMult);
           }
         }
       } else {
@@ -430,8 +626,10 @@ export const createSim: CreateSim = (level, content, opts) => {
     for (const tower of state.towers) {
       const income = levelDefOf(tower).incomePerWave;
       if (income === undefined) continue;
-      state.gold += income;
-      events.push({ type: "income", towerId: tower.id, amount: income });
+      // incomeMult: a mutated income tower pays round(income × mult) gold.
+      const amount = Math.round(income * (mutationOf(tower)?.effect.incomeMult ?? 1));
+      state.gold += amount;
+      events.push({ type: "income", towerId: tower.id, amount });
     }
     if (state.waveIndex >= state.totalWaves) {
       state.status = "won";
@@ -457,6 +655,12 @@ export const createSim: CreateSim = (level, content, opts) => {
 
     // 3. Move enemies; leaks may end the run.
     if (!moveEnemies(events)) return events;
+
+    // 3b. Mutation tick effects on fresh positions: burn DoT first, then
+    // aura slows — a burn-killed enemy is gone before the aura pass and is
+    // never slowed posthumously.
+    applyBurns(events);
+    applyAuraSlows(events);
 
     // 4. Towers target & fire.
     towersFire(events);
@@ -494,6 +698,7 @@ export const createSim: CreateSim = (level, content, opts) => {
       tile: { col: tile.col, row: tile.row },
       level: 1,
       cooldown: 0,
+      mutationId: null,
     };
     state.towers.push(tower);
     queuedEvents.push({ type: "towerPlaced", towerId: tower.id });
@@ -516,15 +721,40 @@ export const createSim: CreateSim = (level, content, opts) => {
     return true;
   }
 
+  /** Pick a mutation at max level. Once per tower; the mutation must belong
+   * to this tower's def; costs MutationDef.cost gold. Like every command,
+   * rejected after the run ends, and the towerMutated event is queued for
+   * the next tick(). */
+  function mutateTower(towerId: number, mutationId: string): boolean {
+    if (state.status === "won" || state.status === "lost") return false;
+    const tower = state.towers.find((t) => t.id === towerId);
+    if (!tower) return false;
+    const def = towerDefs.get(tower.typeId)!;
+    // Covers both "unknown mutation id" and "belongs to another tower type"
+    // (and towers whose def offers no mutations at all).
+    const mutation = def.mutations?.find((m) => m.id === mutationId);
+    if (!mutation) return false;
+    if (tower.level !== def.levels.length) return false; // max level only
+    if (tower.mutationId !== null) return false; // once per tower
+    if (state.gold < mutation.cost) return false;
+
+    state.gold -= mutation.cost;
+    tower.mutationId = mutationId;
+    queuedEvents.push({ type: "towerMutated", towerId: tower.id, mutationId });
+    return true;
+  }
+
   function sellTower(towerId: number): boolean {
     if (state.status === "won" || state.status === "lost") return false;
     const index = state.towers.findIndex((t) => t.id === towerId);
     if (index === -1) return false;
     const tower = state.towers[index]!;
     const def = towerDefs.get(tower.typeId)!;
-    const spent = def.levels
-      .slice(0, tower.level)
-      .reduce((sum, lvl) => sum + lvl.cost, 0);
+    // "Total spent" includes the mutation cost, so a mutated tower refunds
+    // its share of that gold too.
+    const spent =
+      def.levels.slice(0, tower.level).reduce((sum, lvl) => sum + lvl.cost, 0) +
+      (mutationOf(tower)?.cost ?? 0);
     const refund = Math.floor(globals.sellRefundRatio * spent);
 
     state.towers.splice(index, 1);
@@ -546,5 +776,5 @@ export const createSim: CreateSim = (level, content, opts) => {
     return true;
   }
 
-  return { state, tick, placeTower, upgradeTower, sellTower, startWave };
+  return { state, tick, placeTower, upgradeTower, mutateTower, sellTower, startWave };
 };

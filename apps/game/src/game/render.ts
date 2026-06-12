@@ -16,7 +16,13 @@ import type {
   TowerInstance,
   Vec,
 } from "@vakttornet/sim";
-import type { ContentBundle, EnemyDef, TowerDef, TowerLevel } from "@vakttornet/content";
+import type {
+  ContentBundle,
+  EnemyDef,
+  MutationEffect,
+  TowerDef,
+  TowerLevel,
+} from "@vakttornet/content";
 
 export const TILE_PX = 64;
 
@@ -390,12 +396,32 @@ export class Renderer {
     return this.towerDefs.get(typeId)?.levels[level - 1];
   }
 
+  /** The chosen mutation's effect for a placed tower, or null. Resolved
+   * through def data only — no mutation ids are special-cased. */
+  private mutationEffect(tower: TowerInstance): MutationEffect | null {
+    if (tower.mutationId === null) return null;
+    const def = this.towerDefs.get(tower.typeId);
+    return def?.mutations?.find((m) => m.id === tower.mutationId)?.effect ?? null;
+  }
+
   /** Range circle radius in px — 0 for non-attacking (damage 0) towers, whose
    * range is meaningless and would only mislead. */
   private towerRangePx(typeId: string, level: number): number {
     const lvl = this.towerLevelDef(typeId, level);
     if (!lvl || lvl.damage <= 0) return 0;
     return lvl.range * this.meta.rangeMult * TILE_PX;
+  }
+
+  /** Range radius for a PLACED tower — includes the mutation's rangeAdd (the
+   * mutation modifies base stats, then the meta multiplier applies) so the
+   * selected-range ring stays honest after mutating. */
+  private towerRangePxFor(tower: TowerInstance): number {
+    const base = this.towerRangePx(tower.typeId, tower.level);
+    if (base <= 0) return base;
+    const rangeAdd = this.mutationEffect(tower)?.rangeAdd ?? 0;
+    if (rangeAdd === 0) return base;
+    const lvl = this.towerLevelDef(tower.typeId, tower.level)!;
+    return Math.max(0, lvl.range + rangeAdd) * this.meta.rangeMult * TILE_PX;
   }
 
   /** Pulse towers get a slightly heavier ring — the circle IS their hit
@@ -432,10 +458,15 @@ export class Renderer {
     this.drawRangeCircle(
       cx,
       cy,
-      this.towerRangePx(tower.typeId, tower.level),
+      this.towerRangePxFor(tower),
       true,
       this.isPulseTower(tower.typeId),
     );
+
+    // Rotverk-style buff aura: show the SELECTED tower's towerAura radius so
+    // the player can plan placements around the buff zone.
+    const towerAura = this.mutationEffect(tower)?.towerAura;
+    if (towerAura) this.drawBuffRadius(cx, cy, towerAura.radiusTiles * TILE_PX);
 
     // Highlight the selected tower's tile.
     this.ctx.strokeStyle = `rgba(${ACCENT_RGB}, 0.8)`;
@@ -443,11 +474,88 @@ export class Renderer {
     this.ctx.strokeRect(tower.tile.col * TILE_PX + 2, tower.tile.row * TILE_PX + 2, TILE_PX - 4, TILE_PX - 4);
   }
 
+  /** Soft green dashed circle for a towerAura buff radius — deliberately far
+   * from the amber attack-range ring so the two never read as the same. */
+  private drawBuffRadius(cx: number, cy: number, radiusPx: number): void {
+    if (radiusPx <= 0) return;
+    const { ctx } = this;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radiusPx, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(74, 222, 128, 0.07)";
+    ctx.fill();
+    ctx.setLineDash([6, 5]);
+    ctx.strokeStyle = "rgba(74, 222, 128, 0.55)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
   private drawTowers(): void {
     for (const tower of this.sim.state.towers) {
+      const effect = this.mutationEffect(tower);
+      // Midnattssol-style auraSlow: a faint always-on sun-glow at the tower's
+      // range — the aura is constantly active, so the light never turns off.
+      if (effect?.auraSlow) this.drawSunGlow(tower);
       this.drawTowerSprite(tower);
       this.drawLevelPips(tower);
+      if (effect) this.drawMutationRune(tower);
     }
+  }
+
+  /** Faint breathing sun-glow ring out to an auraSlow tower's range. Cosmetic
+   * only — performance.now() drives the breathing, the sim never sees it. */
+  private drawSunGlow(tower: TowerInstance): void {
+    const radius = this.towerRangePxFor(tower);
+    if (radius <= 0) return;
+    const { ctx } = this;
+    const cx = (tower.tile.col + 0.5) * TILE_PX;
+    const cy = (tower.tile.row + 0.5) * TILE_PX;
+    const breathe = 0.5 + 0.5 * Math.sin(performance.now() / 900);
+    const glow = ctx.createRadialGradient(cx, cy, radius * 0.55, cx, cy, radius);
+    glow.addColorStop(0, "rgba(255, 214, 110, 0)");
+    glow.addColorStop(0.85, `rgba(255, 214, 110, ${0.05 + 0.03 * breathe})`);
+    glow.addColorStop(1, "rgba(255, 214, 110, 0)");
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fillStyle = glow;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255, 214, 110, ${0.1 + 0.06 * breathe})`;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+
+  /** Small amber rune diamond (⟡-like: hollow-centered) bobbing above any
+   * mutated tower's sprite — the at-a-glance "this one has evolved" mark. */
+  private drawMutationRune(tower: TowerInstance): void {
+    const { ctx } = this;
+    const cx = (tower.tile.col + 0.5) * TILE_PX;
+    // Per-tower phase offset so neighbouring runes don't bob in lockstep.
+    const bob = Math.sin(performance.now() / 480 + tower.id * 1.7) * 2.5;
+    const cy = tower.tile.row * TILE_PX - 4 + bob;
+    const r = 5;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.beginPath();
+    ctx.moveTo(0, -r);
+    ctx.lineTo(r * 0.7, 0);
+    ctx.lineTo(0, r);
+    ctx.lineTo(-r * 0.7, 0);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(251, 191, 36, 0.92)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Bright inner diamond suggests the ⟡ glyph's open center.
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.4);
+    ctx.lineTo(r * 0.28, 0);
+    ctx.lineTo(0, r * 0.4);
+    ctx.lineTo(-r * 0.28, 0);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255, 247, 220, 0.95)";
+    ctx.fill();
+    ctx.restore();
   }
 
   private drawTowerSprite(tower: TowerInstance): void {
@@ -494,12 +602,20 @@ export class Renderer {
       const scale = def?.scale ?? 1;
       const size = ENEMY_SPRITE_PX * scale;
       const petrified = enemy.slowTicksLeft > 0;
+      const burning = enemy.burnTicksLeft > 0;
 
       if (petrified) this.drawPetrifyRing(x, y, size);
 
-      // Petrified (sun-lantern slow): desaturate + darken the sprite so the
-      // stony state reads at a glance. Reset the filter right after.
-      if (petrified) ctx.filter = "grayscale(0.7) brightness(0.85)";
+      // Petrified (sun-lantern slow): desaturate + darken so the stony state
+      // reads at a glance. Burning: warm ember tint. Stone wins when both
+      // apply — the petrified look is the stronger gameplay signal, and the
+      // ember flecks below still mark the burn. Reset the filter right after.
+      const filter = petrified
+        ? "grayscale(0.7) brightness(0.85)"
+        : burning
+          ? "sepia(0.35) saturate(1.7) hue-rotate(-18deg) brightness(1.08)"
+          : null;
+      if (filter) ctx.filter = filter;
       if (img) {
         ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
       } else {
@@ -508,9 +624,35 @@ export class Renderer {
         ctx.arc(x, y, 14 * scale, 0, Math.PI * 2);
         ctx.fill();
       }
-      if (petrified) ctx.filter = "none";
+      if (filter) ctx.filter = "none";
+
+      if (burning) this.drawEmbers(x, y, size, enemy.id);
 
       this.drawHpBar(x, y - size / 2 - 7, enemy.hp / enemy.maxHp, HP_BAR_PX * scale);
+    }
+  }
+
+  /** 2–3 tiny ember flecks drifting up from a burning enemy. Driven by the
+   * sim tick + enemy id (deterministic-ish, purely cosmetic) so the flecks
+   * animate with game speed and freeze when the sim pauses. */
+  private drawEmbers(cx: number, cy: number, size: number, enemyId: number): void {
+    const { ctx } = this;
+    const tick = this.sim.state.tick;
+    const count = 2 + (enemyId % 2);
+    for (let i = 0; i < count; i++) {
+      const seed = enemyId * 31 + i * 47;
+      const period = 18 + ((seed >> 2) % 7); // ticks per rise cycle
+      const t = ((tick + seed) % period) / period; // 0 → 1 rising
+      const sway = Math.sin((tick + seed) * 0.45 + i) * size * 0.12;
+      const ex = cx + ((seed % 9) - 4) * (size / 26) + sway;
+      const ey = cy + size * 0.15 - t * size * 0.55;
+      ctx.beginPath();
+      ctx.arc(ex, ey, 1.2 + (seed % 3) * 0.4, 0, Math.PI * 2);
+      ctx.fillStyle =
+        i % 2 === 0
+          ? `rgba(251, 146, 60, ${0.85 * (1 - t)})`
+          : `rgba(254, 215, 102, ${0.85 * (1 - t)})`;
+      ctx.fill();
     }
   }
 

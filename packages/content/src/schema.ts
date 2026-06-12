@@ -59,6 +59,54 @@ export const towerLevelSchema = z.object({
 });
 export type TowerLevel = z.infer<typeof towerLevelSchema>;
 
+/** Mutation effects compose from this fixed keyword menu — each keyword is
+ * implemented once in the sim. All fields optional; applied on top of the
+ * tower's level-3 stats. */
+export const mutationEffectSchema = z.object({
+  damageMult: z.number().positive().optional(),
+  /** applied then rounded, min 1 tick */
+  cooldownMult: z.number().positive().optional(),
+  rangeAdd: z.number().optional(),
+  /** kills credited to this tower pay round(bounty × mult) GOLD; score is
+   * unaffected (leaderboard fairness) */
+  bountyMult: z.number().min(1).optional(),
+  /** projectile towers only: fire at N distinct targets (furthest-along
+   * first); ignored by pulse towers */
+  multishot: z.number().int().min(2).max(3).optional(),
+  /** after a surviving hit, a non-boss target below this hp fraction dies
+   * instantly (normal death: bounty, splits) */
+  executeBelow: z.number().min(0.05).max(0.5).optional(),
+  /** hits ignite: burnDps damage per second for durationTicks (refresh, no
+   * stack); slowResist does not apply to burn */
+  burn: z
+    .object({ dps: z.number().positive(), durationTicks: z.number().int().positive() })
+    .optional(),
+  /** constant slow on every enemy in range while in range (re-applied each
+   * tick; slowResist applies; strongest of aura/projectile slow wins) */
+  auraSlow: z.object({ factor: z.number().min(0.1).max(1) }).optional(),
+  incomeMult: z.number().min(1).optional(),
+  /** buff aura: other towers whose tile center is within radiusTiles of this
+   * tower hit damageMult× harder (multiple auras multiply; applies to
+   * projectile and pulse damage at fire time) */
+  towerAura: z
+    .object({
+      radiusTiles: z.number().positive(),
+      damageMult: z.number().min(1),
+    })
+    .optional(),
+});
+export type MutationEffect = z.infer<typeof mutationEffectSchema>;
+
+export const mutationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  /** gold, paid when the player picks the mutation at max level */
+  cost: z.number().positive(),
+  effect: mutationEffectSchema,
+});
+export type MutationDef = z.infer<typeof mutationSchema>;
+
 export const towerDefSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -72,6 +120,8 @@ export const towerDefSchema = z.object({
    * projectileSpeed/splashRadius/slow are ignored for pulse towers) */
   attackKind: z.enum(["projectile", "pulse"]).default("projectile"),
   levels: z.array(towerLevelSchema).min(1).max(3),
+  /** exactly two branches, offered when the tower reaches max level */
+  mutations: z.array(mutationSchema).length(2).optional(),
 });
 export type TowerDef = z.infer<typeof towerDefSchema>;
 

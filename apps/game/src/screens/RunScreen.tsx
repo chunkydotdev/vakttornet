@@ -29,6 +29,8 @@ import {
   formatSv,
   isEconomy,
   mechanicLines,
+  mutationEffectLines,
+  mutationTeaser,
   rateLabel,
   rateValue,
   roleBadge,
@@ -351,6 +353,12 @@ export function RunScreen({
     if (selectedTower && sim.upgradeTower(selectedTower.id)) syncHud();
   }
 
+  function mutateSelected(mutationId: string) {
+    // On success gold drops, so syncHud re-renders the panel into its
+    // mutated state (selectedTower is re-read from sim.state each render).
+    if (selectedTower && sim.mutateTower(selectedTower.id, mutationId)) syncHud();
+  }
+
   function sellSelected() {
     if (selectedTower && sim.sellTower(selectedTower.id)) {
       setSelectedId(null);
@@ -492,6 +500,7 @@ export function RunScreen({
               gold={hud.gold}
               meta={metaRef.current}
               onUpgrade={upgradeSelected}
+              onMutate={mutateSelected}
               onSell={sellSelected}
             />
           ) : previewDef ? (
@@ -600,6 +609,8 @@ function TowerTypePanel({ def, meta, armed, onCancel }: TowerTypePanelProps) {
         </div>
       )}
 
+      {mutationTeaser(def) && <p className="mutation-teaser">⟡ {mutationTeaser(def)}</p>}
+
       {armed && (
         <button type="button" className="btn btn-small" onClick={onCancel}>
           Avbryt (Esc)
@@ -615,15 +626,37 @@ interface SelectedTowerPanelProps {
   gold: number;
   meta: MetaModifiers;
   onUpgrade: () => void;
+  onMutate: (mutationId: string) => void;
   onSell: () => void;
 }
 
-function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: SelectedTowerPanelProps) {
+function SelectedTowerPanel({
+  tower,
+  def,
+  gold,
+  meta,
+  onUpgrade,
+  onMutate,
+  onSell,
+}: SelectedTowerPanelProps) {
   const current = def.levels[tower.level - 1];
   const next = def.levels[tower.level];
   if (!current) return null;
 
-  const spent = def.levels.slice(0, tower.level).reduce((sum, l) => sum + l.cost, 0);
+  // Mutation flow (utvecklingar): at max level a tower with mutation data
+  // offers exactly two branches; once one is bought the choice is final and
+  // all upgrade UI disappears. Everything is derived from def + instance
+  // data — no mutation ids are special-cased.
+  const chosenMutation = tower.mutationId
+    ? (def.mutations?.find((m) => m.id === tower.mutationId) ?? null)
+    : null;
+  const offersMutations =
+    next === undefined && chosenMutation === null && (def.mutations?.length ?? 0) > 0;
+
+  // Mutation cost counts toward the sell refund (sim contract).
+  const spent =
+    def.levels.slice(0, tower.level).reduce((sum, l) => sum + l.cost, 0) +
+    (chosenMutation?.cost ?? 0);
   const refund = Math.floor(spent * content.globals.sellRefundRatio);
   // Economy towers (damage 0) never attack — combat stats (including range)
   // are meaningless, so show their income instead.
@@ -639,6 +672,7 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
           <div className="tower-level">
             Nivå {tower.level}/{def.levels.length}
           </div>
+          {chosenMutation && <div className="mutation-subtitle">⟡ {chosenMutation.name}</div>}
         </div>
       </div>
 
@@ -666,6 +700,13 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
         )}
       </div>
 
+      {chosenMutation &&
+        mutationEffectLines(chosenMutation.effect).map((line) => (
+          <p key={line} className="mechanic-line">
+            {line}
+          </p>
+        ))}
+
       <div className="inspector-actions">
         {next ? (
           <>
@@ -689,7 +730,34 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
               )}
             </p>
           </>
-        ) : (
+        ) : offersMutations ? (
+          <div className="mutation-choice">
+            <p className="mutation-choice-title">Välj utveckling</p>
+            {def.mutations!.map((mutation) => {
+              const affordable = gold >= mutation.cost;
+              return (
+                <button
+                  key={mutation.id}
+                  type="button"
+                  className="mutation-card"
+                  disabled={!affordable}
+                  onClick={() => onMutate(mutation.id)}
+                >
+                  <span className="mutation-name">⟡ {mutation.name}</span>
+                  <span className="mutation-desc">{mutation.description}</span>
+                  {mutationEffectLines(mutation.effect).map((line) => (
+                    <span key={line} className="mutation-effect">
+                      {line}
+                    </span>
+                  ))}
+                  <span className={affordable ? "mutation-cost" : "mutation-cost insufficient"}>
+                    {mutation.cost}g
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : chosenMutation ? null : (
           <button type="button" className="btn" disabled>
             Maxnivå
           </button>

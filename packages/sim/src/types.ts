@@ -60,6 +60,10 @@ export interface EnemyInstance {
    * speed × slowFactor. A new application overwrites factor and duration. */
   slowTicksLeft: number;
   slowFactor: number;
+  /** burn (ignite) effect: burnDps damage per second while burnTicksLeft > 0.
+   * Re-application refreshes (no stacking). 0/0 when not burning. */
+  burnTicksLeft: number;
+  burnDps: number;
 }
 
 export interface TowerInstance {
@@ -70,6 +74,9 @@ export interface TowerInstance {
   level: number;
   /** ticks until it may fire again */
   cooldown: number;
+  /** chosen mutation (MutationDef.id) — null until the player picks one at
+   * max level */
+  mutationId: string | null;
 }
 
 export interface ProjectileInstance {
@@ -85,6 +92,10 @@ export interface ProjectileInstance {
   /** splash radius in tiles (from TowerLevel.splashRadius): on hit, full
    * damage to every enemy within this radius of the impact */
   splashRadius?: number;
+  /** mutation payloads, copied from the firing tower's mutation at fire time */
+  burn?: { dps: number; durationTicks: number };
+  executeBelow?: number;
+  bountyMult?: number;
   /** asset of the tower type that fired it, for rendering */
   towerTypeId: string;
 }
@@ -120,6 +131,7 @@ export type SimEvent =
   | { type: "income"; towerId: number; amount: number }
   | { type: "towerPlaced"; towerId: number }
   | { type: "towerUpgraded"; towerId: number; level: number }
+  | { type: "towerMutated"; towerId: number; mutationId: string }
   | { type: "towerSold"; towerId: number; refund: number }
   | { type: "runWon"; score: number }
   | { type: "runLost"; score: number };
@@ -151,6 +163,10 @@ export interface Sim {
   placeTower(typeId: string, tile: { col: number; row: number }): PlaceResult;
   /** Pay the next level's cost. False if max level / not enough gold / unknown id. */
   upgradeTower(towerId: number): boolean;
+  /** Pick a mutation at max level. False if: unknown tower/mutation id, the
+   * mutation doesn't belong to this tower type, not at max level, already
+   * mutated, or insufficient gold. Mutation cost counts toward sell refund. */
+  mutateTower(towerId: number, mutationId: string): boolean;
   /** Refund = sellRefundRatio × total gold spent on the tower. */
   sellTower(towerId: number): boolean;
   /** Start the next wave. False unless status is "building" and waves remain. */

@@ -26,6 +26,7 @@ export function sfxEnemySlowed(): void {}
 export function sfxIncome(): void {}
 export function sfxTowerPlaced(): void {}
 export function sfxTowerUpgraded(): void {}
+export function sfxTowerMutated(): void {}
 export function sfxTowerSold(): void {}
 export function sfxRunWon(): void {}
 export function sfxRunLost(): void {}
@@ -70,6 +71,9 @@ export function playEventSounds(events: SimEvent[]): void {
         break;
       case "towerUpgraded":
         sfxTowerUpgraded();
+        break;
+      case "towerMutated":
+        sfxTowerMutated();
         break;
       case "towerSold":
         sfxTowerSold();

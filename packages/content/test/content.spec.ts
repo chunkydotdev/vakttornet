@@ -551,6 +551,11 @@ describe("tower defs", () => {
     }
   });
 
+  it("nacken pays for his range: costs 115/135/170", () => {
+    const nacken = buildContent().towers.find((t) => t.id === "nacken")!;
+    expect(nacken.levels.map((l) => l.cost)).toEqual([115, 135, 170]);
+  });
+
   it("runsten pulse out-damages its old single-target self vs a 3-enemy cluster", () => {
     // The retired projectile-runsten hit ONE enemy for 22/34/50 every
     // 45/42/38 ticks → single-target DPS (damage / (cooldownTicks / 30)):
@@ -611,6 +616,7 @@ describe("tower defs", () => {
     for (const level of sollykta.levels) {
       expect(level.slow).toBeDefined();
     }
+    // the control curve: factor strictly decreasing, duration strictly rising
     for (let i = 1; i < sollykta.levels.length; i++) {
       expect(sollykta.levels[i]!.slow!.factor).toBeLessThan(
         sollykta.levels[i - 1]!.slow!.factor,
@@ -621,6 +627,19 @@ describe("tower defs", () => {
     }
   });
 
+  it("sollykta upgrades buy CONTROL, not damage: petrify 0.55/0.45/0.35 for 45/55/70 ticks, damage flat 8/11/14", () => {
+    const sollykta = buildContent().towers.find((t) => t.id === "sollykta")!;
+    expect(sollykta.levels.map((l) => l.slow!.factor)).toEqual([
+      0.55, 0.45, 0.35,
+    ]);
+    expect(sollykta.levels.map((l) => l.slow!.durationTicks)).toEqual([
+      45, 55, 70,
+    ]);
+    expect(sollykta.levels.map((l) => l.damage)).toEqual([8, 11, 14]);
+    // the control rework left the price tag alone
+    expect(sollykta.levels.map((l) => l.cost)).toEqual([70, 80, 110]);
+  });
+
   it("only sollykta has a slow — the other towers hit clean", () => {
     for (const tower of buildContent().towers) {
       if (tower.id === "sollykta") continue;
@@ -628,6 +647,125 @@ describe("tower defs", () => {
         expect(level.slow, `${tower.id} should not slow`).toBeUndefined();
       }
     }
+  });
+});
+
+describe("tower mutations", () => {
+  it("every tower offers exactly two mutations with globally unique kebab-case ids", () => {
+    const bundle = buildContent();
+    const seen = new Set<string>();
+    for (const tower of bundle.towers) {
+      expect(
+        tower.mutations,
+        `${tower.id} must ship its two mutation branches`,
+      ).toBeDefined();
+      expect(tower.mutations!).toHaveLength(2);
+      for (const mutation of tower.mutations!) {
+        expect(mutation.id, `${mutation.id} must be kebab-case`).toMatch(
+          /^[a-z]+(-[a-z]+)*$/,
+        );
+        expect(
+          seen.has(mutation.id),
+          `mutation id "${mutation.id}" must be globally unique`,
+        ).toBe(false);
+        seen.add(mutation.id);
+        expect(mutation.name.length).toBeGreaterThan(0);
+        expect(mutation.description.length).toBeGreaterThan(0);
+        // agreed price band, scaled to the tower's own cost
+        expect(mutation.cost).toBeGreaterThanOrEqual(90);
+        expect(mutation.cost).toBeLessThanOrEqual(120);
+      }
+    }
+  });
+
+  it("ships the agreed branch pairs with their exact effects", () => {
+    const bundle = buildContent();
+    const mutation = (towerId: string, mutationId: string) =>
+      bundle.towers
+        .find((t) => t.id === towerId)!
+        .mutations!.find((m) => m.id === mutationId)!;
+
+    expect(mutation("tomte", "tomtetvillingarna").effect).toEqual({
+      multishot: 2,
+    });
+    expect(mutation("tomte", "argbigga").effect).toEqual({
+      cooldownMult: 0.55,
+    });
+    expect(mutation("runsten", "askstenen").effect).toEqual({
+      damageMult: 1.6,
+      cooldownMult: 1.25,
+    });
+    expect(mutation("runsten", "offerstenen").effect).toEqual({
+      bountyMult: 1.5,
+    });
+    expect(mutation("sollykta", "midnattssol").effect).toEqual({
+      auraSlow: { factor: 0.65 },
+    });
+    expect(mutation("sollykta", "brannglas").effect).toEqual({
+      burn: { dps: 4, durationTicks: 75 },
+    });
+    expect(mutation("nacken", "djupets-ton").effect).toEqual({
+      executeBelow: 0.18,
+    });
+    expect(mutation("nacken", "dubbelton").effect).toEqual({ multishot: 2 });
+    expect(mutation("vardtradet", "gyllene-lov").effect).toEqual({
+      incomeMult: 1.75,
+    });
+    expect(mutation("vardtradet", "rotverk").effect).toEqual({
+      towerAura: { radiusTiles: 2.5, damageMult: 1.2 },
+    });
+  });
+
+  it("projectile-only keywords (multishot/burn/executeBelow) sit only on attacking projectile towers", () => {
+    for (const tower of buildContent().towers) {
+      const attacks = tower.levels.some((l) => l.damage > 0);
+      for (const mutation of tower.mutations ?? []) {
+        const e = mutation.effect;
+        if (
+          e.multishot !== undefined ||
+          e.burn !== undefined ||
+          e.executeBelow !== undefined
+        ) {
+          expect(
+            tower.attackKind,
+            `"${mutation.id}": projectile-only keyword on pulse tower ${tower.id}`,
+          ).toBe("projectile");
+          expect(
+            attacks,
+            `"${mutation.id}": projectile-only keyword on non-attacking tower ${tower.id}`,
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("bountyMult rides the pulse: only runsten claims blood-money", () => {
+    const towersWithBounty = buildContent().towers.filter((t) =>
+      (t.mutations ?? []).some((m) => m.effect.bountyMult !== undefined),
+    );
+    expect(towersWithBounty.map((t) => t.id)).toEqual(["runsten"]);
+    expect(towersWithBounty[0]!.attackKind).toBe("pulse");
+  });
+
+  it("economy keywords (incomeMult/towerAura) belong to vardtradet alone", () => {
+    const towersWithEconomy = buildContent().towers.filter((t) =>
+      (t.mutations ?? []).some(
+        (m) =>
+          m.effect.incomeMult !== undefined ||
+          m.effect.towerAura !== undefined,
+      ),
+    );
+    expect(towersWithEconomy.map((t) => t.id)).toEqual(["vardtradet"]);
+  });
+
+  it("rotverk fulfils the creator request: a wide aura that strengthens nearby defenders", () => {
+    const vardtradet = buildContent().towers.find(
+      (t) => t.id === "vardtradet",
+    )!;
+    const rotverk = vardtradet.mutations!.find((m) => m.id === "rotverk")!;
+    expect(rotverk.effect.towerAura).toBeDefined();
+    expect(rotverk.effect.towerAura!.radiusTiles).toBeGreaterThanOrEqual(2);
+    expect(rotverk.effect.towerAura!.damageMult).toBeGreaterThan(1);
   });
 });
 
