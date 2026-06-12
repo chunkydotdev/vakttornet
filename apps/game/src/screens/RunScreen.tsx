@@ -24,6 +24,16 @@ import { leaderboardEnabled } from "../leaderboard";
 import { startGameLoop, type GameLoop, type SimSpeed } from "../game/loop";
 import { Renderer, TILE_PX, assetUrl, loadImages, type TilePos } from "../game/render";
 import { playEventSounds } from "../game/sfx";
+import {
+  dps,
+  formatSv,
+  formatSv1,
+  isEconomy,
+  mechanicLines,
+  roleBadge,
+  shotsPerSecond,
+  upgradeLine,
+} from "../towerInfo";
 import { RunEndOverlay } from "./RunEndOverlay";
 
 interface RunScreenProps {
@@ -139,6 +149,9 @@ export function RunScreen({
   const [loading, setLoading] = useState(true);
   const [hud, setHud] = useState<HudState>(() => snapshotHud(sim));
   const [armed, setArmed] = useState<string | null>(null);
+  /** shop card under the mouse — drives the inspector's tower-type preview;
+   * mouse-leave reverts to the armed tower (or the idle hint) */
+  const [hoveredShopId, setHoveredShopId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [speed, setSpeed] = useState<SimSpeed>(1);
   const [toast, setToast] = useState<{ message: string; key: number } | null>(null);
@@ -321,7 +334,12 @@ export function RunScreen({
   const selectedDef = selectedTower
     ? (content.towers.find((t) => t.id === selectedTower.typeId) ?? null)
     : null;
-  const armedDef = armed ? (content.towers.find((t) => t.id === armed) ?? null) : null;
+  // Tower-type preview in the inspector: hover wins over armed, and a
+  // selected placed tower (handled below) wins over both.
+  const previewId = hoveredShopId ?? armed;
+  const previewDef = previewId
+    ? (content.towers.find((t) => t.id === previewId) ?? null)
+    : null;
 
   const { cols, rows } = sim.state.grid;
   const canStartWave =
@@ -397,6 +415,7 @@ export function RunScreen({
           <h2>Torn</h2>
           {content.towers.map((tower) => {
             const cost = tower.levels[0]?.cost ?? 0;
+            const badge = <span className="role-badge">{roleBadge(tower)}</span>;
             if (lockedTowerIds.has(tower.id)) {
               return (
                 <button
@@ -409,7 +428,7 @@ export function RunScreen({
                   <img src={assetUrl(tower.assetId)} alt="" />
                   <span>
                     <span className="tower-name">
-                      {tower.name} <span aria-hidden="true">🔒</span>
+                      {tower.name} {badge} <span aria-hidden="true">🔒</span>
                     </span>
                     <span className="tower-lock-note">
                       Låst — kräver {tower.unlockPoints} poäng
@@ -424,11 +443,16 @@ export function RunScreen({
                 type="button"
                 className={armed === tower.id ? "tower-card armed" : "tower-card"}
                 onClick={() => toggleArm(tower.id)}
-                title={tower.description}
+                onMouseEnter={() => setHoveredShopId(tower.id)}
+                onMouseLeave={() =>
+                  setHoveredShopId((current) => (current === tower.id ? null : current))
+                }
               >
                 <img src={assetUrl(tower.assetId)} alt="" />
                 <span>
-                  <span className="tower-name">{tower.name}</span>
+                  <span className="tower-name">
+                    {tower.name} {badge}
+                  </span>
                   <span className="tower-cost">
                     <img className="icon" src={manifest["ui.coin"]} alt="" />
                     {cost}
@@ -459,7 +483,7 @@ export function RunScreen({
           )}
         </div>
 
-        <aside className="side-panel">
+        <aside className="side-panel inspector-panel">
           <h2>Granska</h2>
           {selectedTower && selectedDef ? (
             <SelectedTowerPanel
@@ -470,20 +494,13 @@ export function RunScreen({
               onUpgrade={upgradeSelected}
               onSell={sellSelected}
             />
-          ) : armedDef ? (
-            <>
-              <div className="inspector-tower-head">
-                <img src={assetUrl(armedDef.assetId)} alt="" />
-                <div>
-                  <div className="tower-name">{armedDef.name}</div>
-                  <div className="tower-level">Placerar…</div>
-                </div>
-              </div>
-              <p className="inspector-empty">{armedDef.description}</p>
-              <button type="button" className="btn btn-small" onClick={() => setArmed(null)}>
-                Avbryt (Esc)
-              </button>
-            </>
+          ) : previewDef ? (
+            <TowerTypePanel
+              def={previewDef}
+              meta={metaRef.current}
+              armed={armed === previewDef.id}
+              onCancel={() => setArmed(null)}
+            />
           ) : (
             <p className="inspector-empty">
               Klicka på ett torn på spelplanen för att granska, uppgradera eller sälja det.
@@ -516,6 +533,82 @@ export function RunScreen({
   );
 }
 
+interface TowerTypePanelProps {
+  def: TowerDef;
+  meta: MetaModifiers;
+  /** true when this tower type is the one currently armed for placement */
+  armed: boolean;
+  onCancel: () => void;
+}
+
+/** Tower-type details (level 1 + upgrade path) shown while the player hovers
+ * a shop card or has one armed — before anything is bought. All stat lines
+ * are derived from content data via towerInfo; meta modifiers apply to
+ * damage/range exactly like the placed-tower inspector. */
+function TowerTypePanel({ def, meta, armed, onCancel }: TowerTypePanelProps) {
+  const l1 = def.levels[0];
+  if (!l1) return null;
+  const economy = isEconomy(l1);
+
+  return (
+    <>
+      <div className="inspector-tower-head">
+        <img src={assetUrl(def.assetId)} alt="" />
+        <div>
+          <div className="tower-name">
+            {def.name} <span className="role-badge">{roleBadge(def)}</span>
+          </div>
+          <div className="tower-level">{armed ? "Placerar…" : `Kostar ${l1.cost}g`}</div>
+        </div>
+      </div>
+
+      <p className="tower-flavor">{def.description}</p>
+
+      {!economy && (
+        <div className="stat-table">
+          <div className="stat-row">
+            <span className="stat-label">Skada</span>
+            <span className="stat-value">{formatSv(l1.damage * meta.damageMult)}</span>
+          </div>
+          <div className="stat-row">
+            <span className="stat-label">Eldtakt</span>
+            <span className="stat-value">{formatSv1(shotsPerSecond(l1))} skott/s</span>
+          </div>
+          <div className="stat-row">
+            <span className="stat-label">DPS</span>
+            <span className="stat-value">{formatSv1(dps(l1, meta.damageMult))}</span>
+          </div>
+          <div className="stat-row">
+            <span className="stat-label">Räckvidd</span>
+            <span className="stat-value">{formatSv(l1.range * meta.rangeMult)} rutor</span>
+          </div>
+        </div>
+      )}
+
+      {mechanicLines(l1).map((line) => (
+        <p key={line} className="mechanic-line">
+          {line}
+        </p>
+      ))}
+
+      {def.levels.length > 1 && (
+        <div className="upgrade-path">
+          {def.levels.map((_, index) => {
+            const line = upgradeLine(def, index, meta);
+            return line === null ? null : <p key={line}>{line}</p>;
+          })}
+        </div>
+      )}
+
+      {armed && (
+        <button type="button" className="btn btn-small" onClick={onCancel}>
+          Avbryt (Esc)
+        </button>
+      )}
+    </>
+  );
+}
+
 interface SelectedTowerPanelProps {
   tower: TowerInstance;
   def: TowerDef;
@@ -534,10 +627,10 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
   const refund = Math.floor(spent * content.globals.sellRefundRatio);
   // Economy towers (damage 0) never attack — combat stats (including range)
   // are meaningless, so show their income instead.
-  const isEconomy = current.damage === 0;
-  const damage = formatNumber(current.damage * meta.damageMult);
-  const range = formatNumber(current.range * meta.rangeMult);
-  const rate = formatNumber(TICK_RATE / current.cooldownTicks);
+  const economy = isEconomy(current);
+  const damage = formatSv(current.damage * meta.damageMult);
+  const range = formatSv(current.range * meta.rangeMult);
+  const rate = formatSv(TICK_RATE / current.cooldownTicks);
 
   return (
     <>
@@ -552,7 +645,7 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
       </div>
 
       <div className="stat-table">
-        {isEconomy ? (
+        {economy ? (
           <div className="stat-row">
             <span className="stat-label">Inkomst</span>
             <span className="stat-value">+{current.incomePerWave ?? 0}g per våg</span>
@@ -591,9 +684,9 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
                 <>Nästa nivå: +{next.incomePerWave ?? 0}g per våg</>
               ) : (
                 <>
-                  Nästa nivå: {formatNumber(next.damage * meta.damageMult)} skada,{" "}
-                  {formatNumber(next.range * meta.rangeMult)} räckvidd,{" "}
-                  {formatNumber(TICK_RATE / next.cooldownTicks)}/s
+                  Nästa nivå: {formatSv(next.damage * meta.damageMult)} skada,{" "}
+                  {formatSv(next.range * meta.rangeMult)} räckvidd,{" "}
+                  {formatSv(TICK_RATE / next.cooldownTicks)}/s
                 </>
               )}
             </p>
@@ -609,8 +702,4 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
       </div>
     </>
   );
-}
-
-function formatNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }

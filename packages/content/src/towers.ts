@@ -44,7 +44,7 @@ export const towers: TowerDef[] = [
     name: "Sollyktan",
     assetId: "tower.sollykta",
     description:
-      "Fångat solljus med lång räckvidd — bränner milt men förstenar väsen mitt i steget.",
+      "Lyktan bär infångat solljus långt över skogen — väsen som träffas stelnar till sten mitt i steget.",
     unlockPoints: 0,
     levels: [
       {
@@ -78,7 +78,7 @@ export const towers: TowerDef[] = [
     name: "Näcken",
     assetId: "tower.nacken",
     description:
-      "Spelar fiol så ljuvt att väsen glömmer vägen — tills vågen bryter och drar dem alla med sig.",
+      "Näckens fiol lockar väsen ner mot forsen — när vågen bryter stänker den över alla som trängs vid stranden.",
     unlockPoints: 300,
     levels: [
       {
@@ -112,7 +112,7 @@ export const towers: TowerDef[] = [
     name: "Vårdträdet",
     assetId: "tower.vardtradet",
     description:
-      "Det gamla trädet vid stugknuten strider aldrig — men den som vårdar det får igen med ränta, var kväll, vid varje stillad våg.",
+      "Det gamla trädet vid stugknuten strider aldrig — men den som vårdar det får gåvor i guld efter varje stillad våg.",
     unlockPoints: 800,
     levels: [
       {

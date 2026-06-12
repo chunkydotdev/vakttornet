@@ -274,7 +274,69 @@
   line-height: 1.45;
 }
 
+/* ---------- Role badge (shop cards + inspector) ---------- */
+
+/* One-word mechanic chip in lantern-amber; derived from tower data. Kept
+   visible on locked cards so players see what they're grinding toward. */
+.role-badge {
+  display: inline-block;
+  vertical-align: 0.1em;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid rgba(240, 180, 80, 0.35);
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.45rem;
+  white-space: nowrap;
+}
+
+.tower-card.locked .role-badge {
+  filter: none;
+  opacity: 1;
+}
+
 /* ---------- Inspector ---------- */
+
+/* Reserve height for the tallest content (tower-type preview with a full
+   upgrade path) so hover/armed/idle swaps never shift the layout. */
+.inspector-panel {
+  min-height: 26rem;
+}
+
+.tower-flavor {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.5;
+  padding: 0 0.2rem;
+}
+
+.mechanic-line {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.45;
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.6rem;
+}
+
+.upgrade-path {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.2rem;
+}
+
+.upgrade-path p {
+  color: var(--text-faint);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
 
 .inspector-empty {
   color: var(--text-faint);
