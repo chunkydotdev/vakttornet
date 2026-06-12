@@ -5,8 +5,7 @@ compatibility_date = "2025-05-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "vakttornet-leaderboard"
-# database_id is filled in after `wrangler d1 create vakttornet-leaderboard`
-database_id = "TBD"
+database_id = "b3336339-6e82-4fbe-a3ad-04aeb0aab321"
 
 [vars]
 # Comma-separated allowed CORS origins

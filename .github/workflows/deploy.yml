@@ -36,6 +36,8 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          VITE_LEADERBOARD_URL: https://vakttornet-leaderboard.linkbun.workers.dev
 
       - uses: actions/configure-pages@v5
 
