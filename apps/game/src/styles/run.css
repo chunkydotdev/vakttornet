@@ -98,7 +98,7 @@
    the canvas inside scales down with aspect preserved. */
 .run-layout {
   display: grid;
-  grid-template-columns: 215px minmax(0, auto) 235px;
+  grid-template-columns: 240px minmax(0, auto) 235px;
   gap: 1rem;
   align-items: start;
   justify-content: center;
@@ -180,17 +180,25 @@
 
 /* ---------- Tower shop ---------- */
 
+/* Every card shares one rigid grid — [44px sprite | content] with two
+   content rows (name / meta) — and a fixed height, so the five cards line
+   up in identical rhythm whatever their name length or locked state. */
 .tower-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 0.5rem;
+  row-gap: 0.2rem;
   align-items: center;
-  gap: 0.7rem;
+  align-content: center;
+  height: 62px;
   width: 100%;
   text-align: left;
   appearance: none;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.55rem 0.7rem;
+  padding: 0 0.6rem 0 0.45rem;
   color: var(--text);
   font-family: var(--font);
   cursor: pointer;
@@ -200,7 +208,7 @@
     transform 0.1s ease;
 }
 
-.tower-card:hover:not(:disabled) {
+.tower-card:hover:not(.locked) {
   border-color: var(--border-strong);
   background: var(--bg-hover);
   transform: translateY(-1px);
@@ -212,15 +220,63 @@
   box-shadow: 0 0 0 1px var(--accent) inset;
 }
 
-.tower-card:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.tower-card img {
+  grid-row: 1 / 3;
+  width: 38px;
+  height: 38px;
+  justify-self: center;
 }
 
-/* Locked (unlockPoints not yet earned): greyed sprite + lock note, but kept
-   readable so the player sees what to aim for. */
-.tower-card.locked:disabled {
-  opacity: 0.8;
+.tower-card .tower-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Meta row: role badge left, cost (or unlock requirement) pinned right so
+   all costs land in one straight vertical line down the column. */
+.tower-card .tower-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+/* Safety valve: a too-long badge ellipsizes rather than pushing the cost
+   out of the card, so the cost column stays a straight vertical line. */
+.tower-card .tower-meta .role-badge {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tower-card .tower-cost {
+  flex: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tower-card .tower-cost .icon {
+  width: 0.95em;
+  height: 0.95em;
+}
+
+/* Locked (unlockPoints not yet earned): greyed sprite + dim amber unlock
+   cost, but kept readable so the player sees what to aim for. The full
+   "Låst — kräver N poäng" explanation lives in the hover inspector. */
+.tower-card.locked {
+  cursor: not-allowed;
+  opacity: 0.85;
 }
 
 .tower-card.locked img {
@@ -232,39 +288,14 @@
   color: var(--text-faint);
 }
 
-.tower-lock-note {
-  display: block;
-  color: var(--text-faint);
-  font-size: 0.72rem;
-  font-weight: 600;
-  margin-top: 0.15rem;
+.tower-card.locked .tower-cost {
+  color: var(--accent);
+  opacity: 0.6;
 }
 
-.tower-card img {
-  width: 38px;
-  height: 38px;
-  flex: none;
-}
-
-.tower-card .tower-name {
-  font-weight: 700;
-  font-size: 0.9rem;
-  line-height: 1.2;
-}
-
-.tower-card .tower-cost {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: var(--gold);
-  font-weight: 700;
-  font-size: 0.8rem;
-  margin-top: 0.15rem;
-}
-
-.tower-card .tower-cost .icon {
-  width: 0.95em;
-  height: 0.95em;
+.tower-card .lock-glyph {
+  font-size: 0.85em;
+  filter: grayscale(1) brightness(1.2);
 }
 
 .shop-hint {
@@ -287,9 +318,9 @@
   border-radius: 999px;
   font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  padding: 0.1rem 0.45rem;
+  padding: 0.1rem 0.4rem;
   white-space: nowrap;
 }
 
@@ -366,6 +397,14 @@
 .inspector-tower-head .tower-level {
   color: var(--text-dim);
   font-size: 0.78rem;
+}
+
+/* Locked tower hovered in the shop: the inspector carries the unlock
+   requirement (the shop card only shows the compact "🔒 N p"). */
+.inspector-tower-head .tower-locked-line {
+  color: var(--accent);
+  font-weight: 600;
+  opacity: 0.85;
 }
 
 .stat-table {

@@ -423,48 +423,45 @@ export function RunScreen({
           <h2>Torn</h2>
           {content.towers.map((tower) => {
             const cost = tower.levels[0]?.cost ?? 0;
-            const badge = <span className="role-badge">{roleBadge(tower)}</span>;
-            if (lockedTowerIds.has(tower.id)) {
-              return (
-                <button
-                  key={tower.id}
-                  type="button"
-                  className="tower-card locked"
-                  disabled
-                  title={`Låst — kräver ${tower.unlockPoints} poäng`}
-                >
-                  <img src={assetUrl(tower.assetId)} alt="" />
-                  <span>
-                    <span className="tower-name">
-                      {tower.name} {badge} <span aria-hidden="true">🔒</span>
-                    </span>
-                    <span className="tower-lock-note">
-                      Låst — kräver {tower.unlockPoints} poäng
-                    </span>
-                  </span>
-                </button>
-              );
-            }
+            const locked = lockedTowerIds.has(tower.id);
+            // Locked cards use aria-disabled (not the disabled attribute) so
+            // hover still fires and the inspector can explain the unlock.
             return (
               <button
                 key={tower.id}
                 type="button"
-                className={armed === tower.id ? "tower-card armed" : "tower-card"}
-                onClick={() => toggleArm(tower.id)}
+                className={
+                  locked
+                    ? "tower-card locked"
+                    : armed === tower.id
+                      ? "tower-card armed"
+                      : "tower-card"
+                }
+                aria-disabled={locked || undefined}
+                title={locked ? `Låst — kräver ${tower.unlockPoints} poäng` : undefined}
+                onClick={locked ? undefined : () => toggleArm(tower.id)}
                 onMouseEnter={() => setHoveredShopId(tower.id)}
                 onMouseLeave={() =>
                   setHoveredShopId((current) => (current === tower.id ? null : current))
                 }
               >
                 <img src={assetUrl(tower.assetId)} alt="" />
-                <span>
-                  <span className="tower-name">
-                    {tower.name} {badge}
-                  </span>
-                  <span className="tower-cost">
-                    <img className="icon" src={manifest["ui.coin"]} alt="" />
-                    {cost}
-                  </span>
+                <span className="tower-name">{tower.name}</span>
+                <span className="tower-meta">
+                  <span className="role-badge">{roleBadge(tower)}</span>
+                  {locked ? (
+                    <span className="tower-cost">
+                      <span className="lock-glyph" aria-hidden="true">
+                        🔒
+                      </span>
+                      {tower.unlockPoints} p
+                    </span>
+                  ) : (
+                    <span className="tower-cost">
+                      <img className="icon" src={manifest["ui.coin"]} alt="" />
+                      {cost}
+                    </span>
+                  )}
                 </span>
               </button>
             );
@@ -508,6 +505,7 @@ export function RunScreen({
               def={previewDef}
               meta={metaRef.current}
               armed={armed === previewDef.id}
+              locked={lockedTowerIds.has(previewDef.id)}
               onCancel={() => setArmed(null)}
             />
           ) : (
@@ -547,6 +545,8 @@ interface TowerTypePanelProps {
   meta: MetaModifiers;
   /** true when this tower type is the one currently armed for placement */
   armed: boolean;
+  /** true when the tower hasn't been unlocked yet (unlockPoints not earned) */
+  locked: boolean;
   onCancel: () => void;
 }
 
@@ -554,7 +554,7 @@ interface TowerTypePanelProps {
  * a shop card or has one armed — before anything is bought. All stat lines
  * are derived from content data via towerInfo; meta modifiers apply to
  * damage/range exactly like the placed-tower inspector. */
-function TowerTypePanel({ def, meta, armed, onCancel }: TowerTypePanelProps) {
+function TowerTypePanel({ def, meta, armed, locked, onCancel }: TowerTypePanelProps) {
   const l1 = def.levels[0];
   if (!l1) return null;
   const economy = isEconomy(l1);
@@ -567,7 +567,13 @@ function TowerTypePanel({ def, meta, armed, onCancel }: TowerTypePanelProps) {
           <div className="tower-name">
             {def.name} <span className="role-badge">{roleBadge(def)}</span>
           </div>
-          <div className="tower-level">{armed ? "Placerar…" : `Kostar ${l1.cost}g`}</div>
+          {locked ? (
+            <div className="tower-level tower-locked-line">
+              🔒 Låst — kräver {def.unlockPoints} poäng
+            </div>
+          ) : (
+            <div className="tower-level">{armed ? "Placerar…" : `Kostar ${l1.cost}g`}</div>
+          )}
         </div>
       </div>
 
