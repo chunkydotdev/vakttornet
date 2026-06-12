@@ -8,7 +8,15 @@ import type { LevelDef } from "../schema";
  * each väsen, so every shot must land.
  *
  * Bäckahästarna run in herds here (slowResist 1 — never förstenad), so
- * petrify-stalling fails; bring Näckens splash and Runstenens weight.
+ * petrify-stalling fails; bring sniper-Näcken for the herds and Runstenens
+ * blixtpuls for the floods. Herd math: a 90-hp bäckahäst dies to one L3
+ * Näcken-shot (130 dmg, every 75 ticks = one horse per 2.5 s) or two L1-2
+ * shots; the biggest herd (12 at 24-tick spacing) spawns over ~9 s and
+ * spends ~13 s on the 25-tile path, so one Näcken on the spit plus tomtar
+ * mopping up holds it — wave counts stay as they were. The packed vätte
+ * trains (30 at 7-tick spacing ≈ 0.5 tiles apart) crowd 7-8 deep into
+ * Runstenens radius, and a single 12-dmg pulse kills every 12-hp vätte
+ * standing in it.
  *
  * Wave HP budget: 750 / 862 / 960 / 1170 / 1275 / 1440 / 1620 / 1810 /
  * 2040 / 2330 / 2580 / finale 4920 (Sjörået 2600 + a heavy 2320 escort —

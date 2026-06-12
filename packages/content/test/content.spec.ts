@@ -512,31 +512,21 @@ describe("tower defs", () => {
     }
   });
 
-  it("nacken splashes on every level, wider per level, hitting softer than runsten", () => {
-    const bundle = buildContent();
-    const nacken = bundle.towers.find((t) => t.id === "nacken")!;
-    const runsten = bundle.towers.find((t) => t.id === "runsten")!;
-    expect(nacken).toBeDefined();
-    expect(nacken.unlockPoints).toBe(300);
-    for (const level of nacken.levels) {
-      expect(level.splashRadius).toBeDefined();
-      expect(level.damage).toBeGreaterThan(0);
-    }
-    for (let i = 1; i < nacken.levels.length; i++) {
-      expect(nacken.levels[i]!.splashRadius!).toBeGreaterThan(
-        nacken.levels[i - 1]!.splashRadius!,
-      );
-    }
-    // splash multiplies the hit across the swarm, so per-target damage must
-    // stay below the single-target heavy hitter at every level
-    for (let i = 0; i < nacken.levels.length; i++) {
-      expect(nacken.levels[i]!.damage).toBeLessThan(runsten.levels[i]!.damage);
+  it("runsten is the only pulse tower — rune-lightning, no projectiles", () => {
+    const pulseTowers = buildContent().towers.filter(
+      (t) => t.attackKind === "pulse",
+    );
+    expect(pulseTowers.map((t) => t.id)).toEqual(["runsten"]);
+    // pulse towers never slow or splash — the sim ignores both, but the
+    // data should not pretend otherwise
+    for (const level of pulseTowers[0]!.levels) {
+      expect(level.slow).toBeUndefined();
+      expect(level.splashRadius).toBeUndefined();
     }
   });
 
-  it("only nacken has splash", () => {
+  it("no tower has splash — sim still supports it, the roster deliberately skips it", () => {
     for (const tower of buildContent().towers) {
-      if (tower.id === "nacken") continue;
       for (const level of tower.levels) {
         expect(
           level.splashRadius,
@@ -544,6 +534,45 @@ describe("tower defs", () => {
         ).toBeUndefined();
       }
     }
+  });
+
+  it("nacken is the sniper: huge single shots at extreme range", () => {
+    const bundle = buildContent();
+    const nacken = bundle.towers.find((t) => t.id === "nacken")!;
+    const tomte = bundle.towers.find((t) => t.id === "tomte")!;
+    expect(nacken.unlockPoints).toBe(300);
+    expect(nacken.attackKind).toBe("projectile");
+    // one lure-strike outhits more than three grötslungor
+    expect(nacken.levels[0]!.damage).toBeGreaterThan(
+      3 * tomte.levels[0]!.damage,
+    );
+    for (const level of nacken.levels) {
+      expect(level.range).toBeGreaterThanOrEqual(4);
+    }
+  });
+
+  it("runsten pulse out-damages its old single-target self vs a 3-enemy cluster", () => {
+    // The retired projectile-runsten hit ONE enemy for 22/34/50 every
+    // 45/42/38 ticks → single-target DPS (damage / (cooldownTicks / 30)):
+    //   L1: 22 / (45/30) ≈ 14.67
+    //   L2: 34 / (42/30) ≈ 24.29
+    //   L3: 50 / (38/30) ≈ 39.47
+    // The pulse hits EVERY enemy in range, so against a cluster of 3 its
+    // effective DPS is damage × 3 / (cooldownTicks / 30):
+    //   L1: 12 × 3 / (50/30) = 21.6   > 14.67
+    //   L2: 18 × 3 / (46/30) ≈ 35.22  > 24.29
+    //   L3: 26 × 3 / (42/30) ≈ 55.71  > 39.47
+    const oldSingleTargetDps = [
+      22 / (45 / 30),
+      34 / (42 / 30),
+      50 / (38 / 30),
+    ];
+    const runsten = buildContent().towers.find((t) => t.id === "runsten")!;
+    expect(runsten.levels).toHaveLength(3);
+    runsten.levels.forEach((level, i) => {
+      const clusterDps = (level.damage * 3) / (level.cooldownTicks / 30);
+      expect(clusterDps).toBeGreaterThan(oldSingleTargetDps[i]!);
+    });
   });
 
   it("vardtradet never attacks and pays rising income every wave", () => {

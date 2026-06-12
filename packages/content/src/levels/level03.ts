@@ -15,9 +15,11 @@ import type { LevelDef } from "../schema";
  * 2640 → 696 so the finale lands at 3296 total (+24.8% over the old 2640).
  * Waves 1-2 fall to the
  * 2-3 tomtar that 140 start gold plus early bounties buy; the vätte floods
- * (waves 6-9) want Näckens splash and the troll walls (8-9) want the gold
- * that only a tended Vårdträd provides. Mylingar come in tight rushes
- * (waves 4, 7, 9).
+ * (waves 6-9) want Runstenens blixtpuls on the corridor — a 12-dmg L1 pulse
+ * erases every 12-hp vätte in range at once — while sniper-Näckens heavy
+ * shots and the gold that only a tended Vårdträd provides answer the troll
+ * walls (8-9): L1 Näcken three-shots a 140-hp troll. Mylingar come in tight
+ * rushes (waves 4, 7, 9).
  */
 export const level03: LevelDef = {
   id: "level03",

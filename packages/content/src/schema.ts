@@ -67,6 +67,10 @@ export const towerDefSchema = z.object({
   /** lifetime meta points (totalEarned) required before this tower appears
    * unlocked in the shop; 0 = available from the start */
   unlockPoints: z.number().nonnegative().default(0),
+  /** "projectile" fires homing shots at one target; "pulse" emits an instant
+   * burst every cooldownTicks hitting ALL enemies in range (no projectiles —
+   * projectileSpeed/splashRadius/slow are ignored for pulse towers) */
+  attackKind: z.enum(["projectile", "pulse"]).default("projectile"),
   levels: z.array(towerLevelSchema).min(1).max(3),
 });
 export type TowerDef = z.infer<typeof towerDefSchema>;

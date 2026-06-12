@@ -132,6 +132,51 @@ interface SplashRing {
 
 const SPLASH_LIFE_MS = 250;
 
+/** One jagged radial bolt of a pulse burst. The shape is rolled once at
+ * event time (plain Math.random — cosmetic only, the sim never sees it) and
+ * held for the burst's lifetime so the bolt doesn't shimmer per frame. */
+interface PulseBolt {
+  angle: number;
+  /** bolt length as a fraction of the burst radius */
+  reach: number;
+  /** perpendicular offsets (fractions of the radius) at intermediate joints */
+  kinks: number[];
+}
+
+/** Rune-lightning burst around a pulse tower: an expanding ring out to the
+ * tower's range plus a handful of jagged radial bolts (~300 ms). */
+interface PulseBurst {
+  x: number;
+  y: number;
+  /** full ring radius at the end of the animation, in px (= range × TILE_PX) */
+  radiusPx: number;
+  bornAt: number;
+  bolts: PulseBolt[];
+}
+
+const PULSE_LIFE_MS = 300;
+
+/** Electric blue-white for pulse lightning — deliberately far from the amber
+ * splash ring so the two AoE effects never read as the same thing. */
+const PULSE_RGB = "157, 184, 255"; // #9db8ff
+/** Near-white core color for the bolt strokes. */
+const PULSE_CORE_RGB = "234, 240, 255";
+
+function makePulseBolts(): PulseBolt[] {
+  const count = 4 + Math.floor(Math.random() * 3); // 4–6 bolts
+  const baseAngle = Math.random() * Math.PI * 2;
+  const bolts: PulseBolt[] = [];
+  for (let i = 0; i < count; i++) {
+    bolts.push({
+      // Evenly fanned with jitter so bursts look organic but never clumped.
+      angle: baseAngle + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.7,
+      reach: 0.55 + Math.random() * 0.4,
+      kinks: [(Math.random() - 0.5) * 0.22, (Math.random() - 0.5) * 0.22],
+    });
+  }
+  return bolts;
+}
+
 /** Min ms between "förstenad!" floats per enemy — re-applied slows don't spam. */
 const SLOW_FLOAT_COOLDOWN_MS = 700;
 
@@ -161,6 +206,7 @@ export class Renderer {
   private readonly exitPos: Vec;
   private floats: FloatingText[] = [];
   private splashes: SplashRing[] = [];
+  private pulses: PulseBurst[] = [];
   private lastSlowFloatAt = new Map<number, number>();
 
   constructor(
@@ -238,6 +284,20 @@ export class Renderer {
           this.addFloat("förstenad!", PETRIFY_COLOR, enemy.pos, { italic: true });
           break;
         }
+        case "towerPulsed": {
+          const tower = this.sim.state.towers.find((t) => t.id === event.towerId);
+          if (!tower) break;
+          this.pulses.push({
+            x: (tower.tile.col + 0.5) * TILE_PX,
+            y: (tower.tile.row + 0.5) * TILE_PX,
+            // The event carries the effective range the sim actually hit with,
+            // so the ring is always honest about the pulse's reach.
+            radiusPx: event.range * TILE_PX,
+            bornAt: performance.now(),
+            bolts: makePulseBolts(),
+          });
+          break;
+        }
         case "projectileHit":
           if (event.splashRadius !== undefined) {
             this.splashes.push({
@@ -293,6 +353,7 @@ export class Renderer {
     this.drawEnemies(alpha);
     this.drawProjectiles(alpha);
     this.drawSplashes();
+    this.drawPulses();
     this.drawPlacementPreview();
     this.drawFloats();
     this.drawBossBanners();
@@ -337,7 +398,15 @@ export class Renderer {
     return lvl.range * this.meta.rangeMult * TILE_PX;
   }
 
-  private drawRangeCircle(cx: number, cy: number, radiusPx: number, ok = true): void {
+  /** Pulse towers get a slightly heavier ring — the circle IS their hit
+   * area, not just a targeting radius, so it deserves a bit more presence. */
+  private drawRangeCircle(
+    cx: number,
+    cy: number,
+    radiusPx: number,
+    ok = true,
+    pulse = false,
+  ): void {
     if (radiusPx <= 0) return;
     const { ctx } = this;
     ctx.beginPath();
@@ -345,8 +414,12 @@ export class Renderer {
     ctx.fillStyle = ok ? `rgba(${ACCENT_RGB}, 0.10)` : "rgba(248, 113, 113, 0.10)";
     ctx.fill();
     ctx.strokeStyle = ok ? `rgba(${ACCENT_RGB}, 0.45)` : "rgba(248, 113, 113, 0.45)";
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = pulse ? 2.5 : 1.5;
     ctx.stroke();
+  }
+
+  private isPulseTower(typeId: string): boolean {
+    return this.towerDefs.get(typeId)?.attackKind === "pulse";
   }
 
   private drawSelectedRange(): void {
@@ -356,7 +429,13 @@ export class Renderer {
     if (!tower) return;
     const cx = (tower.tile.col + 0.5) * TILE_PX;
     const cy = (tower.tile.row + 0.5) * TILE_PX;
-    this.drawRangeCircle(cx, cy, this.towerRangePx(tower.typeId, tower.level));
+    this.drawRangeCircle(
+      cx,
+      cy,
+      this.towerRangePx(tower.typeId, tower.level),
+      true,
+      this.isPulseTower(tower.typeId),
+    );
 
     // Highlight the selected tower's tile.
     this.ctx.strokeStyle = `rgba(${ACCENT_RGB}, 0.8)`;
@@ -482,6 +561,60 @@ export class Renderer {
     }
   }
 
+  /** Rune-lightning bursts from pulse towers (~300 ms each): an expanding
+   * electric ring out to the tower's range plus jagged radial bolts. Bolts
+   * are brightest in the first half and fade ahead of the ring. */
+  private drawPulses(): void {
+    if (this.pulses.length === 0) return;
+    const { ctx } = this;
+    const now = performance.now();
+    this.pulses = this.pulses.filter((p) => now - p.bornAt < PULSE_LIFE_MS);
+    for (const pulse of this.pulses) {
+      const t = (now - pulse.bornAt) / PULSE_LIFE_MS;
+      const eased = 1 - (1 - t) * (1 - t); // ease-out: fast pop, soft finish
+      const fade = 1 - t;
+
+      // Expanding ring out to the pulse's full reach.
+      const radius = Math.max(2, pulse.radiusPx * eased);
+      ctx.beginPath();
+      ctx.arc(pulse.x, pulse.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${PULSE_RGB}, ${0.10 * fade})`;
+      ctx.fill();
+      ctx.strokeStyle = `rgba(${PULSE_RGB}, ${0.8 * fade})`;
+      ctx.lineWidth = 1.5 + 2 * fade;
+      ctx.stroke();
+
+      // Jagged radial bolts — colored glow pass, then a near-white core.
+      const boltAlpha = Math.max(0, 1 - t * 1.7);
+      if (boltAlpha <= 0) continue;
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      for (const bolt of pulse.bolts) {
+        const len = pulse.radiusPx * bolt.reach;
+        const cos = Math.cos(bolt.angle);
+        const sin = Math.sin(bolt.angle);
+        const joints = bolt.kinks.length + 1;
+        ctx.beginPath();
+        ctx.moveTo(pulse.x, pulse.y);
+        bolt.kinks.forEach((kink, i) => {
+          const along = (len * (i + 1)) / joints;
+          const off = pulse.radiusPx * kink;
+          // offset perpendicular to the bolt direction → the jagged kinks
+          ctx.lineTo(pulse.x + cos * along - sin * off, pulse.y + sin * along + cos * off);
+        });
+        ctx.lineTo(pulse.x + cos * len, pulse.y + sin * len);
+        ctx.strokeStyle = `rgba(${PULSE_RGB}, ${0.55 * boltAlpha})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(${PULSE_CORE_RGB}, ${0.95 * boltAlpha})`;
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
   private drawProjectiles(alpha: number): void {
     const { ctx } = this;
     const size = 20;
@@ -513,7 +646,13 @@ export class Renderer {
     const y = hoverTile.row * TILE_PX;
     const { ctx } = this;
 
-    this.drawRangeCircle(cx, cy, this.towerRangePx(armedTowerTypeId, 1), ok);
+    this.drawRangeCircle(
+      cx,
+      cy,
+      this.towerRangePx(armedTowerTypeId, 1),
+      ok,
+      this.isPulseTower(armedTowerTypeId),
+    );
 
     ctx.fillStyle = ok ? "rgba(74, 222, 128, 0.22)" : "rgba(248, 113, 113, 0.28)";
     ctx.fillRect(x, y, TILE_PX, TILE_PX);

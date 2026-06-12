@@ -3,12 +3,16 @@ import type { TowerDef } from "./schema";
 /**
  * Balance @ TICK_RATE 30. DPS per level (damage / (cooldownTicks/30)):
  *   tomte:    10.0 / 16.9 / 27.9   (cheap, fast, short range)
- *   runsten:  14.7 / 24.3 / 39.5   (expensive, slow, heavy hits)
+ *   runsten:   7.2 / 11.7 / 18.6 PER ENEMY IN RANGE — pulse (attackKind
+ *              "pulse"): every cooldown the rune-lightning hits ALL väsen
+ *              in range at once. Vs a 3-enemy cluster that's 21.6 / 35.2 /
+ *              55.7 — past its old single-target self (14.7/24.3/39.5) the
+ *              moment two or more crowd the stone. THE swarm answer.
  *   sollykta:  8.0 / 14.4 / 23.8   (long range; ~30% less DPS than the old
  *              long-range tower — the petrifying slow pays for the difference)
- *   nacken:   10.5 / 15.8 / 23.3   single-target — deliberately below
- *              Runstenen, because splash repeats the full hit on every
- *              enemy within the radius (vs swarms it multiplies hard)
+ *   nacken:   19.4 / 31.9 / 52.0   sniper — top single-target DPS and the
+ *              longest range on the board, but one slow shot at a time.
+ *              Spend it on brutes and bosses, never on vättar.
  *   vardtradet: 0 DPS — pure economy, pays incomePerWave on each clear
  *              (range/cooldown/projectileSpeed are schema-required stubs)
  */
@@ -20,6 +24,7 @@ export const towers: TowerDef[] = [
     description:
       "Liten, snabb och lättretad — slungar het julgröt mot allt som hotar gården.",
     unlockPoints: 0,
+    attackKind: "projectile",
     levels: [
       { cost: 50, damage: 6, range: 2.2, cooldownTicks: 18, projectileSpeed: 9 },
       { cost: 60, damage: 9, range: 2.4, cooldownTicks: 16, projectileSpeed: 9 },
@@ -31,12 +36,14 @@ export const towers: TowerDef[] = [
     name: "Runstenen",
     assetId: "tower.runsten",
     description:
-      "Urgammal runmagi som laddar långsamt, men varje runa slår som ett stenras.",
+      "Forntida runor glöder till liv — blixtar slår ur stenen och bränner allt väsen som vågar sig nära.",
     unlockPoints: 0,
+    attackKind: "pulse",
+    // projectileSpeed is schema-required but ignored for pulse towers.
     levels: [
-      { cost: 90, damage: 22, range: 2.0, cooldownTicks: 45, projectileSpeed: 6 },
-      { cost: 100, damage: 34, range: 2.2, cooldownTicks: 42, projectileSpeed: 6 },
-      { cost: 140, damage: 50, range: 2.4, cooldownTicks: 38, projectileSpeed: 7 },
+      { cost: 90, damage: 12, range: 1.9, cooldownTicks: 50, projectileSpeed: 1 },
+      { cost: 105, damage: 18, range: 2.1, cooldownTicks: 46, projectileSpeed: 1 },
+      { cost: 145, damage: 26, range: 2.3, cooldownTicks: 42, projectileSpeed: 1 },
     ],
   },
   {
@@ -46,6 +53,7 @@ export const towers: TowerDef[] = [
     description:
       "Lyktan bär infångat solljus långt över skogen — väsen som träffas stelnar till sten mitt i steget.",
     unlockPoints: 0,
+    attackKind: "projectile",
     levels: [
       {
         cost: 70,
@@ -78,32 +86,30 @@ export const towers: TowerDef[] = [
     name: "Näcken",
     assetId: "tower.nacken",
     description:
-      "Näckens fiol lockar väsen ner mot forsen — när vågen bryter stänker den över alla som trängs vid stranden.",
+      "Näcken spelar en enda ton över vattnet — ett väsen lockas ur ledet och dras under ytan.",
     unlockPoints: 300,
+    attackKind: "projectile",
     levels: [
       {
-        cost: 85,
-        damage: 14,
-        range: 2.4,
-        cooldownTicks: 40,
-        projectileSpeed: 7,
-        splashRadius: 0.9,
+        cost: 100,
+        damage: 55,
+        range: 4.4,
+        cooldownTicks: 85,
+        projectileSpeed: 14,
       },
       {
-        cost: 95,
-        damage: 20,
-        range: 2.6,
-        cooldownTicks: 38,
-        projectileSpeed: 7,
-        splashRadius: 1.0,
+        cost: 115,
+        damage: 85,
+        range: 4.8,
+        cooldownTicks: 80,
+        projectileSpeed: 14,
       },
       {
-        cost: 130,
-        damage: 28,
-        range: 2.8,
-        cooldownTicks: 36,
-        projectileSpeed: 7,
-        splashRadius: 1.1,
+        cost: 150,
+        damage: 130,
+        range: 5.2,
+        cooldownTicks: 75,
+        projectileSpeed: 14,
       },
     ],
   },
@@ -114,6 +120,8 @@ export const towers: TowerDef[] = [
     description:
       "Det gamla trädet vid stugknuten strider aldrig — men den som vårdar det får gåvor i guld efter varje stillad våg.",
     unlockPoints: 800,
+    // never attacks (damage 0) — attackKind is a required-field formality
+    attackKind: "projectile",
     levels: [
       {
         cost: 60,

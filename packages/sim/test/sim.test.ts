@@ -633,6 +633,187 @@ describe("splash", () => {
   });
 });
 
+describe("pulse towers", () => {
+  it("hits ALL enemies in range simultaneously; one towerPulsed before the deaths; outsiders untouched", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "wisp", count: 3, spacingTicks: 2 }] }],
+    });
+    sim.startWave();
+    // Wisps spawn on ticks 1, 3, 5. After tick 9's movement: A x=2.75
+    // (1.60 tiles from the storm center (1.5,1.5) — out of range 1.5),
+    // B x=2.25 (1.25, in), C x=1.75 (1.03, in).
+    const spawned: number[] = [];
+    for (let t = 1; t <= 8; t++) {
+      spawned.push(...eventsOfType(sim.tick(), "enemySpawned").map((e) => e.enemyId));
+    }
+    expect(spawned).toHaveLength(3);
+    const [a, b, c] = spawned as [number, number, number];
+
+    // Place mid-wave so the storm's first ready tick is tick 9.
+    const storm = sim.placeTower("storm", { col: 1, row: 1 });
+    if (!storm.ok) throw new Error("placement failed");
+    const goldBefore = sim.state.gold;
+    const scoreBefore = sim.state.score;
+
+    const t9 = sim.tick();
+    // ONE towerPulsed (damage 9 one-shots wisps), then the deaths in
+    // enemy-array (spawn) order — B before C — each paying full bounty.
+    expect(t9.map((e) => e.type)).toEqual([
+      "towerPlaced",
+      "towerPulsed",
+      "enemyDied",
+      "enemyDied",
+    ]);
+    expect(eventsOfType(t9, "towerPulsed")).toEqual([
+      { type: "towerPulsed", towerId: storm.tower.id, range: 1.5, hitCount: 2 },
+    ]);
+    expect(eventsOfType(t9, "enemyDied").map((d) => d.enemyId)).toEqual([b, c]);
+    expect(eventsOfType(t9, "enemyDied").map((d) => d.bounty)).toEqual([5, 5]);
+    expect(sim.state.gold).toBe(goldBefore + 10);
+    expect(sim.state.score).toBe(scoreBefore + 10);
+
+    // The outsider A is completely untouched — even though the storm's level
+    // carries splashRadius 5, pulse towers ignore splash entirely.
+    expect(sim.state.enemies.map((e) => e.id)).toEqual([a]);
+    expect(sim.state.enemies[0]!.hp).toBe(9);
+
+    // Pulses are instant: no projectiles, no towerFired.
+    expect(eventsOfType(t9, "towerFired")).toEqual([]);
+    expect(sim.state.projectiles).toEqual([]);
+  });
+
+  it("does not pulse on empty range — stays ready and fires the exact tick an enemy enters", () => {
+    const { sim } = setup(); // 1 runt
+    const storm = sim.placeTower("storm", { col: 4, row: 1 });
+    if (!storm.ok) throw new Error("placement failed");
+    sim.startWave();
+
+    // The runt enters the storm's range (1.5 from center (4.5,1.5)) on
+    // tick 12: x=3.5 → d=√2 ≈ 1.41. On tick 11 (x=3.25) d ≈ 1.60 — still out.
+    for (let t = 1; t <= 11; t++) {
+      expect(eventsOfType(sim.tick(), "towerPulsed")).toEqual([]);
+      expect(storm.tower.cooldown).toBe(0); // never wasted on empty air
+    }
+    expect(sim.state.enemies[0]!.hp).toBe(10);
+
+    const t12 = sim.tick();
+    expect(eventsOfType(t12, "towerPulsed")).toEqual([
+      { type: "towerPulsed", towerId: storm.tower.id, range: 1.5, hitCount: 1 },
+    ]);
+    expect(storm.tower.cooldown).toBe(60);
+    const runt = sim.state.enemies[0]!;
+    expect(runt.hp).toBe(1);
+    // The storm's slow payload is ignored: no enemySlowed, no slow state.
+    expect(eventsOfType(t12, "enemySlowed")).toEqual([]);
+    expect(runt).toMatchObject({ slowTicksLeft: 0, slowFactor: 1 });
+  });
+
+  it("respects cooldown between pulses — damage lands exactly cooldownTicks apart", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "slug", count: 1, spacingTicks: 1 }] }],
+    });
+    sim.placeTower("storm", { col: 1, row: 1 });
+    sim.startWave();
+
+    // The slug (0.03125 tiles/tick) spawns in range and stays there past two
+    // cooldown windows; by tick 121 it has crawled out, so exactly 2 pulses.
+    const pulseTicks: number[] = [];
+    const hpAtPulse: number[] = [];
+    const all: SimEvent[] = [];
+    for (let t = 1; t <= 130; t++) {
+      const events = sim.tick();
+      all.push(...events);
+      if (eventsOfType(events, "towerPulsed").length > 0) {
+        pulseTicks.push(sim.state.tick);
+        hpAtPulse.push(sim.state.enemies[0]!.hp);
+      }
+    }
+    expect(pulseTicks).toEqual([1, 61]); // exactly cooldownTicks (60) apart
+    expect(hpAtPulse).toEqual([991, 982]); // 9 damage per pulse
+    // The slow payload on the storm's level is ignored on every pulse.
+    expect(eventsOfType(all, "enemySlowed")).toEqual([]);
+    expect(sim.state.enemies[0]).toMatchObject({ slowTicksLeft: 0, slowFactor: 1 });
+  });
+
+  it("pulse kills pay bounty and trigger splitsInto children, spawned after the death", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "wispmother", count: 1, spacingTicks: 1 }] }],
+    });
+    sim.placeTower("storm", { col: 1, row: 1 }); // 9 dmg one-shots hp 9
+    sim.startWave();
+    const goldBefore = sim.state.gold;
+
+    const t1 = sim.tick();
+    expect(t1.map((e) => e.type)).toEqual([
+      "towerPlaced",
+      "waveStarted",
+      "enemySpawned",
+      "towerPulsed",
+      "enemyDied",
+      "enemySpawned",
+      "enemySpawned",
+    ]);
+    const died = eventsOfType(t1, "enemyDied")[0]!;
+    expect(died).toMatchObject({ typeId: "wispmother", bounty: 8 });
+    expect(sim.state.gold).toBe(goldBefore + 8);
+    expect(sim.state.score).toBe(8);
+
+    // Children continue the parent's journey from where it died.
+    expect(sim.state.enemies.map((e) => e.typeId)).toEqual(["wisp", "wisp"]);
+    for (const child of sim.state.enemies) {
+      expect(child.pos).toEqual(died.at);
+      expect(child.pathIndex).toBe(1);
+    }
+    // The wave is NOT cleared while children live.
+    expect(eventsOfType(t1, "waveCleared")).toEqual([]);
+    expect(sim.state.status).toBe("wave");
+  });
+
+  it("applies meta damageMult to pulse damage", () => {
+    const { sim } = setup(
+      { waves: [{ entries: [{ enemyTypeId: "tank", count: 1, spacingTicks: 1 }] }] },
+      { meta: { ...NO_META, damageMult: 2 } },
+    );
+    sim.placeTower("storm", { col: 1, row: 1 }); // base damage 9 → 18
+    sim.startWave();
+    const t1 = sim.tick();
+    expect(eventsOfType(t1, "towerPulsed")).toHaveLength(1);
+    expect(sim.state.enemies[0]!.hp).toBe(1000 - 18);
+  });
+
+  it("applies meta rangeMult to pulse range and reports the effective range", () => {
+    // Storm at (3,0) is 2 tiles above the path — beyond its base range 1.5.
+    const run = (rangeMult?: number) => {
+      const { sim } = setup({}, rangeMult ? { meta: { ...NO_META, rangeMult } } : {});
+      sim.placeTower("storm", { col: 3, row: 0 });
+      sim.startWave();
+      const pulses: Array<Extract<SimEvent, { type: "towerPulsed" }>> = [];
+      for (let t = 1; t <= 24; t++) pulses.push(...eventsOfType(sim.tick(), "towerPulsed"));
+      return pulses;
+    };
+    expect(run()).toEqual([]); // out of range without meta
+    const pulses = run(2);
+    expect(pulses.length).toBeGreaterThan(0);
+    expect(pulses[0]!.range).toBe(3); // event carries the effective 1.5 × 2
+  });
+
+  it("a damage-0 pulse tower never pulses; its income still pays on wave clear", () => {
+    const { sim } = setup(); // 1 wave, 1 runt
+    const mill = sim.placeTower("stormkvarn", { col: 3, row: 1 }); // range 20 sees all
+    const archer = sim.placeTower("archer", { col: 1, row: 1 });
+    if (!mill.ok || !archer.ok) throw new Error("placement failed");
+    sim.startWave();
+
+    const all: SimEvent[] = [];
+    for (let t = 0; t < 50 && sim.state.status !== "won"; t++) all.push(...sim.tick());
+    expect(sim.state.status).toBe("won");
+    expect(eventsOfType(all, "towerPulsed")).toEqual([]);
+    expect(eventsOfType(all, "income")).toEqual([
+      { type: "income", towerId: mill.tower.id, amount: 7 },
+    ]);
+  });
+});
+
 describe("splitsInto", () => {
   const splitterWave = {
     waves: [{ entries: [{ enemyTypeId: "splitter", count: 1, spacingTicks: 1 }] }],
@@ -974,7 +1155,10 @@ describe("determinism", () => {
       const sniper = sim.placeTower("sniper", { col: 3, row: 1 });
       const lantern = sim.placeTower("lantern", { col: 5, row: 1 });
       const kvarn = sim.placeTower("kvarn", { col: 5, row: 3 }); // income on each clear
-      if (!archer.ok || !sniper.ok || !lantern.ok || !kvarn.ok) {
+      // Pulse tower covering the spawn tile: pulses every wave's opening
+      // spawns, so the pulse mechanic runs inside the determinism script.
+      const storm = sim.placeTower("storm", { col: 0, row: 1 });
+      if (!archer.ok || !sniper.ok || !lantern.ok || !kvarn.ok || !storm.ok) {
         throw new Error("placement failed");
       }
       sim.startWave();
@@ -995,6 +1179,7 @@ describe("determinism", () => {
     expect(a.state).toStrictEqual(b.state);
     expect(a.events).toStrictEqual(b.events);
     expect(a.events.length).toBeGreaterThan(20); // the run actually did things
+    expect(eventsOfType(a.events, "towerPulsed").length).toBeGreaterThan(0); // incl. pulses
     expect(a.state.status).toBe("won"); // and resolved
   });
 });

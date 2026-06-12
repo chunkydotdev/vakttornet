@@ -137,6 +137,43 @@ export const createSim: CreateSim = (level, content, opts) => {
     return enemy;
   }
 
+  /** Remove every enemy at hp ≤ 0: pay full bounty (gold + score) and emit
+   * enemyDied in enemy-array (spawn) order for determinism, then spawn
+   * splitsInto children. Shared by projectile impacts (incl. splash) and
+   * pulses — deaths always resolve only after ALL damage from one source
+   * has been applied. */
+  function resolveDeaths(events: SimEvent[]): void {
+    const dead = state.enemies.filter((e) => e.hp <= 0);
+    if (dead.length === 0) return;
+    state.enemies = state.enemies.filter((e) => e.hp > 0);
+    for (const e of dead) {
+      state.gold += e.bounty;
+      state.score += e.bounty;
+      events.push({
+        type: "enemyDied",
+        enemyId: e.id,
+        typeId: e.typeId,
+        bounty: e.bounty,
+        at: { ...e.pos },
+      });
+      // splitsInto: a KILLED enemy (never a leaked one) spawns children
+      // at its position, continuing the parent's journey (same pathIndex,
+      // fresh hp/speed/bounty, no inherited slow). enemySpawned events go
+      // right after the parent's enemyDied, same tick. Because deaths
+      // resolve after the movement phase, children first move next tick.
+      // Splits happen before checkWaveClear, so a wave can never clear
+      // while freshly split children are alive — and they chain: a child
+      // with its own splitsInto splits again when killed.
+      const split = enemyDefs.get(e.typeId)!.splitsInto;
+      if (split) {
+        const childDef = enemyDefs.get(split.enemyTypeId)!;
+        for (let c = 0; c < split.count; c++) {
+          spawnEnemy(childDef, e.pos, e.pathIndex, events);
+        }
+      }
+    }
+  }
+
   function spawnDueEnemies(events: SimEvent[]): void {
     while (
       spawnCursor < spawnSchedule.length &&
@@ -212,18 +249,49 @@ export const createSim: CreateSim = (level, content, opts) => {
     return true;
   }
 
+  /** Pulse attack (TowerDef.attackKind "pulse"): instantly apply full damage
+   * to EVERY living enemy within range — no projectiles, and the level's
+   * projectileSpeed/splashRadius/slow are ignored entirely. Emits ONE
+   * towerPulsed followed by the resulting deaths (resolved only after all
+   * pulse damage is applied, same ordering rules as splash). With no enemy
+   * in range the tower does NOT pulse and stays ready (cooldown stays 0) —
+   * it never wastes a pulse on empty air. */
+  function firePulse(
+    tower: TowerInstance,
+    lvl: TowerLevel,
+    range: number,
+    center: Vec,
+    events: SimEvent[],
+  ): void {
+    const hit = state.enemies.filter(
+      (e) => Math.hypot(e.pos.x - center.x, e.pos.y - center.y) <= range,
+    );
+    if (hit.length === 0) return;
+    const damage = lvl.damage * meta.damageMult;
+    for (const enemy of hit) enemy.hp -= damage;
+    events.push({ type: "towerPulsed", towerId: tower.id, range, hitCount: hit.length });
+    resolveDeaths(events);
+    tower.cooldown = lvl.cooldownTicks;
+  }
+
   function towersFire(events: SimEvent[]): void {
     for (const tower of state.towers) {
       const lvl = levelDefOf(tower);
       // damage 0 = non-attacking tower (e.g. income): it never targets or
       // fires. Skipped before cooldown handling so even a tower carrying
       // stale cooldown state (e.g. upgraded into a damage-0 level) stays
-      // inert while its current level deals no damage.
+      // inert while its current level deals no damage. Applies to both
+      // attack kinds — a damage-0 pulse tower never pulses.
       if (lvl.damage === 0) continue;
       if (tower.cooldown > 0) tower.cooldown -= 1;
       if (tower.cooldown > 0) continue;
       const range = lvl.range * meta.rangeMult;
       const center = tileCenter(tower.tile);
+
+      if (towerDefs.get(tower.typeId)!.attackKind === "pulse") {
+        firePulse(tower, lvl, range, center, events);
+        continue;
+      }
 
       // Target the in-range enemy furthest along the path: highest pathIndex,
       // tie-break by smallest distance to its next waypoint, then lowest id.
@@ -307,38 +375,8 @@ export const createSim: CreateSim = (level, content, opts) => {
           }
         }
         // Deaths resolve only after ALL damage from this impact has been
-        // applied. Splash kills pay the normal bounty (gold + score), in
-        // enemy-array (spawn) order for determinism.
-        const dead = state.enemies.filter((e) => e.hp <= 0);
-        if (dead.length > 0) {
-          state.enemies = state.enemies.filter((e) => e.hp > 0);
-          for (const e of dead) {
-            state.gold += e.bounty;
-            state.score += e.bounty;
-            events.push({
-              type: "enemyDied",
-              enemyId: e.id,
-              typeId: e.typeId,
-              bounty: e.bounty,
-              at: { ...e.pos },
-            });
-            // splitsInto: a KILLED enemy (never a leaked one) spawns children
-            // at its position, continuing the parent's journey (same pathIndex,
-            // fresh hp/speed/bounty, no inherited slow). enemySpawned events go
-            // right after the parent's enemyDied, same tick. Because deaths
-            // resolve after the movement phase, children first move next tick.
-            // Splits happen before checkWaveClear, so a wave can never clear
-            // while freshly split children are alive — and they chain: a child
-            // with its own splitsInto splits again when killed.
-            const split = enemyDefs.get(e.typeId)!.splitsInto;
-            if (split) {
-              const childDef = enemyDefs.get(split.enemyTypeId)!;
-              for (let c = 0; c < split.count; c++) {
-                spawnEnemy(childDef, e.pos, e.pathIndex, events);
-              }
-            }
-          }
-        }
+        // applied (primary + splash). Splash kills pay the normal bounty.
+        resolveDeaths(events);
         // Slow applies ONLY to the primary target — splash victims are never
         // slowed, even if a tower somehow has both slow and splashRadius —
         // and only if the primary survived the impact.

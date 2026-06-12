@@ -114,6 +114,7 @@ export type SimEvent =
   | { type: "enemyDied"; enemyId: number; typeId: string; bounty: number; at: Vec }
   | { type: "enemyLeaked"; enemyId: number; livesLeft: number }
   | { type: "towerFired"; towerId: number; projectileId: number }
+  | { type: "towerPulsed"; towerId: number; range: number; hitCount: number }
   | { type: "projectileHit"; projectileId: number; enemyId: number; damage: number; at: Vec; splashRadius?: number }
   | { type: "enemySlowed"; enemyId: number; durationTicks: number }
   | { type: "income"; towerId: number; amount: number }

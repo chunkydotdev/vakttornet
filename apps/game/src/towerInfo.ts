@@ -21,7 +21,8 @@ export function shotsPerSecond(level: TowerLevel): number {
   return TICK_RATE / level.cooldownTicks;
 }
 
-/** Damage per second; pass the meta damage multiplier to match displayed damage. */
+/** Damage per second; pass the meta damage multiplier to match displayed damage.
+ * For pulse towers this is per enemy hit (every enemy in range takes it). */
 export function dps(level: TowerLevel, damageMult = 1): number {
   return level.damage * damageMult * shotsPerSecond(level);
 }
@@ -32,27 +33,71 @@ export function isEconomy(level: TowerLevel): boolean {
   return level.damage === 0;
 }
 
-/** One-word role chip, derived from level-1 data — never hand-assigned. */
+/** Pulse tower — instant burst hitting ALL enemies in range, no projectiles. */
+export function isPulse(def: TowerDef): boolean {
+  return def.attackKind === "pulse";
+}
+
+/** Range at/above which a projectile tower counts as a sniper ("Prickskytt"). */
+const SNIPER_RANGE = 4;
+
+/**
+ * One-word role chip, derived from data — never hand-assigned.
+ * Precedence: Inkomst > Blixt > Förstenar > Stänk > Prickskytt > Snabb/Tung.
+ * Blixt outranks Förstenar/Stänk because the sim ignores slow/splash on pulse
+ * towers (see the content schema) — those badges would lie. Prickskytt only
+ * applies to projectile towers (pulse range is its hit area, not sniping).
+ */
 export function roleBadge(def: TowerDef): string {
   const l1 = def.levels[0]!;
   if (l1.incomePerWave !== undefined) return "Inkomst";
+  if (isPulse(def)) return "Blixt";
   if (l1.slow) return "Förstenar";
   if (l1.splashRadius !== undefined) return "Stänk";
+  if (l1.range >= SNIPER_RANGE) return "Prickskytt";
   return l1.cooldownTicks <= 20 ? "Snabb" : "Tung";
 }
 
-/** Special-mechanic lines (petrify / splash / income) for one tower level. */
-export function mechanicLines(level: TowerLevel): string[] {
+/** Stat-row label for the firing-rate row: pulse towers pulse, others shoot. */
+export function rateLabel(def: TowerDef): string {
+  return isPulse(def) ? "Pulstakt" : "Eldtakt";
+}
+
+/** Firing-rate stat value with unit: "1,7 skott/s" or "0,7 pulser/s". */
+export function rateValue(def: TowerDef, level: TowerLevel): string {
+  return `${formatSv1(shotsPerSecond(level))} ${isPulse(def) ? "pulser/s" : "skott/s"}`;
+}
+
+/** Damage stat value; pulse damage applies to every enemy in range at once. */
+export function damageValue(def: TowerDef, level: TowerLevel, damageMult = 1): string {
+  const damage = formatSv(level.damage * damageMult);
+  return isPulse(def) ? `${damage} (alla inom räckvidd)` : damage;
+}
+
+/** DPS stat value; for pulse towers the figure is per enemy hit. */
+export function dpsValue(def: TowerDef, level: TowerLevel, damageMult = 1): string {
+  const value = formatSv1(dps(level, damageMult));
+  return isPulse(def) ? `${value} per fiende` : value;
+}
+
+/** Special-mechanic lines (pulse / petrify / splash / income) for one tower
+ * level. Pulse towers never show slow/splash lines — the sim ignores those
+ * fields for them (content schema contract). */
+export function mechanicLines(def: TowerDef, level: TowerLevel): string[] {
   const lines: string[] = [];
-  if (level.slow) {
-    const pct = Math.round((1 - level.slow.factor) * 100);
-    const secs = formatSv1(level.slow.durationTicks / TICK_RATE);
-    lines.push(`Förstenar: fiender rör sig ${pct} % långsammare i ${secs} s`);
-  }
-  if (level.splashRadius !== undefined) {
-    lines.push(
-      `Stänkskada: full skada på alla fiender inom ${formatSv(level.splashRadius)} rutor av nedslaget`,
-    );
+  if (isPulse(def)) {
+    lines.push("Blixtpuls: träffar ALLA fiender inom räckvidd samtidigt");
+  } else {
+    if (level.slow) {
+      const pct = Math.round((1 - level.slow.factor) * 100);
+      const secs = formatSv1(level.slow.durationTicks / TICK_RATE);
+      lines.push(`Förstenar: fiender rör sig ${pct} % långsammare i ${secs} s`);
+    }
+    if (level.splashRadius !== undefined) {
+      lines.push(
+        `Stänkskada: full skada på alla fiender inom ${formatSv(level.splashRadius)} rutor av nedslaget`,
+      );
+    }
   }
   if (level.incomePerWave !== undefined) {
     lines.push(`Ger +${formatSv(level.incomePerWave)} guld efter varje klarad våg. Anfaller inte.`);

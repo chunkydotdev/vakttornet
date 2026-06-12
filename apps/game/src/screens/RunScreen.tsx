@@ -7,7 +7,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createSim,
-  TICK_RATE,
   type MetaModifiers,
   type PlaceResult,
   type RunStatus,
@@ -25,13 +24,14 @@ import { startGameLoop, type GameLoop, type SimSpeed } from "../game/loop";
 import { Renderer, TILE_PX, assetUrl, loadImages, type TilePos } from "../game/render";
 import { playEventSounds } from "../game/sfx";
 import {
-  dps,
+  damageValue,
+  dpsValue,
   formatSv,
-  formatSv1,
   isEconomy,
   mechanicLines,
+  rateLabel,
+  rateValue,
   roleBadge,
-  shotsPerSecond,
   upgradeLine,
 } from "../towerInfo";
 import { RunEndOverlay } from "./RunEndOverlay";
@@ -568,15 +568,15 @@ function TowerTypePanel({ def, meta, armed, onCancel }: TowerTypePanelProps) {
         <div className="stat-table">
           <div className="stat-row">
             <span className="stat-label">Skada</span>
-            <span className="stat-value">{formatSv(l1.damage * meta.damageMult)}</span>
+            <span className="stat-value">{damageValue(def, l1, meta.damageMult)}</span>
           </div>
           <div className="stat-row">
-            <span className="stat-label">Eldtakt</span>
-            <span className="stat-value">{formatSv1(shotsPerSecond(l1))} skott/s</span>
+            <span className="stat-label">{rateLabel(def)}</span>
+            <span className="stat-value">{rateValue(def, l1)}</span>
           </div>
           <div className="stat-row">
             <span className="stat-label">DPS</span>
-            <span className="stat-value">{formatSv1(dps(l1, meta.damageMult))}</span>
+            <span className="stat-value">{dpsValue(def, l1, meta.damageMult)}</span>
           </div>
           <div className="stat-row">
             <span className="stat-label">Räckvidd</span>
@@ -585,7 +585,7 @@ function TowerTypePanel({ def, meta, armed, onCancel }: TowerTypePanelProps) {
         </div>
       )}
 
-      {mechanicLines(l1).map((line) => (
+      {mechanicLines(def, l1).map((line) => (
         <p key={line} className="mechanic-line">
           {line}
         </p>
@@ -628,9 +628,7 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
   // Economy towers (damage 0) never attack — combat stats (including range)
   // are meaningless, so show their income instead.
   const economy = isEconomy(current);
-  const damage = formatSv(current.damage * meta.damageMult);
   const range = formatSv(current.range * meta.rangeMult);
-  const rate = formatSv(TICK_RATE / current.cooldownTicks);
 
   return (
     <>
@@ -654,15 +652,15 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
           <>
             <div className="stat-row">
               <span className="stat-label">Skada</span>
-              <span className="stat-value">{damage}</span>
+              <span className="stat-value">{damageValue(def, current, meta.damageMult)}</span>
             </div>
             <div className="stat-row">
               <span className="stat-label">Räckvidd</span>
               <span className="stat-value">{range} rutor</span>
             </div>
             <div className="stat-row">
-              <span className="stat-label">Eldtakt</span>
-              <span className="stat-value">{rate}/s</span>
+              <span className="stat-label">{rateLabel(def)}</span>
+              <span className="stat-value">{rateValue(def, current)}</span>
             </div>
           </>
         )}
@@ -686,7 +684,7 @@ function SelectedTowerPanel({ tower, def, gold, meta, onUpgrade, onSell }: Selec
                 <>
                   Nästa nivå: {formatSv(next.damage * meta.damageMult)} skada,{" "}
                   {formatSv(next.range * meta.rangeMult)} räckvidd,{" "}
-                  {formatSv(TICK_RATE / next.cooldownTicks)}/s
+                  {rateValue(def, next)}
                 </>
               )}
             </p>

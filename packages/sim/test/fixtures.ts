@@ -100,6 +100,22 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
         bounty: 12,
         splitsInto: { enemyTypeId: "splitter", count: 2 },
       },
+      // hp 9 → one-shot by the storm's pulse (damage 9) — for pulse tests.
+      { id: "wisp", name: "Wisp", assetId: "enemy-wisp", hp: 9, speed: 7.5, bounty: 5 },
+      // hp 9 + splits → for pulse-kill split tests.
+      {
+        id: "wispmother",
+        name: "Wisp Mother",
+        assetId: "enemy-wispmother",
+        hp: 9,
+        speed: 7.5,
+        bounty: 8,
+        splitsInto: { enemyTypeId: "wisp", count: 2 },
+      },
+      // 0.9375 tiles/s = exactly 0.03125 tiles/tick (0.25/8, float-exact):
+      // crawls slowly enough to sit inside a pulse tower's range across
+      // multiple cooldown windows — for pulse cooldown tests.
+      { id: "slug", name: "Slug", assetId: "enemy-slug", hp: 1000, speed: 0.9375, bounty: 1 },
       ...extraEnemies,
     ],
     towers: [
@@ -184,6 +200,44 @@ export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): Cont
         assetId: "tower-ballista",
         description: "One-shots runts every 2 ticks, whole map — for split-chain tests",
         levels: [{ cost: 30, damage: 12, range: 20, cooldownTicks: 2, projectileSpeed: 60 }],
+      },
+      {
+        id: "storm",
+        name: "Storm",
+        assetId: "tower-storm",
+        description: "Pulse: 9 dmg to ALL enemies in range 1.5 every 60 ticks — for pulse tests",
+        attackKind: "pulse",
+        // projectileSpeed/splashRadius/slow are set ON PURPOSE: pulse towers
+        // must ignore all three — tests assert no slow/splash ever happens.
+        levels: [
+          {
+            cost: 30,
+            damage: 9,
+            range: 1.5,
+            cooldownTicks: 60,
+            projectileSpeed: 60,
+            slow: { factor: 0.5, durationTicks: 12 },
+            splashRadius: 5,
+          },
+        ],
+      },
+      {
+        id: "stormkvarn",
+        name: "Storm Mill",
+        assetId: "tower-stormkvarn",
+        description: "damage-0 pulse + income — damage-0 pulse towers stay inert",
+        attackKind: "pulse",
+        // range 20 on purpose: if damage-0 pulse towers ever pulsed, this would.
+        levels: [
+          {
+            cost: 20,
+            damage: 0,
+            range: 20,
+            cooldownTicks: 10,
+            projectileSpeed: 30,
+            incomePerWave: 7,
+          },
+        ],
       },
       {
         id: "kvarn",

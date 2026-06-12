@@ -20,6 +20,7 @@ export function sfxBossSpawned(): void {}
 export function sfxBossDied(): void {}
 export function sfxEnemyLeaked(): void {}
 export function sfxTowerFired(): void {}
+export function sfxTowerPulsed(): void {}
 export function sfxProjectileHit(): void {}
 export function sfxEnemySlowed(): void {}
 export function sfxIncome(): void {}
@@ -51,6 +52,9 @@ export function playEventSounds(events: SimEvent[]): void {
         break;
       case "towerFired":
         sfxTowerFired();
+        break;
+      case "towerPulsed":
+        sfxTowerPulsed();
         break;
       case "projectileHit":
         sfxProjectileHit();
