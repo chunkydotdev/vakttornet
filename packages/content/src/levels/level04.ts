@@ -12,7 +12,8 @@ import type { LevelDef } from "../schema";
  * Wave HP budget: 400 / 516 / 610 / 808 / 920 / 1150 / 1364 / 1570 / 1740 /
  * finale 2002 (Vättekungen 700 + 1302 escort — a far stronger retinue than
  * the 884 he mustered in Gläntan; the old king has learned).
- * Unlocks at 1800 (post-level03 grind, ~Näcken + a couple of meta ranks).
+ * Unlocks at 450 lifetime trollsilver (post-level03 grind, ~Näcken + a
+ * couple of meta ranks bought along the way).
  */
 export const level04: LevelDef = {
   id: "level04",
@@ -102,5 +103,5 @@ export const level04: LevelDef = {
   ],
   startGold: 160,
   startLives: 10,
-  unlockPoints: 1800,
+  unlockPoints: 450,
 };

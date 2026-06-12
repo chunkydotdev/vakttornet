@@ -62,10 +62,10 @@ describe("buildContent", () => {
     expect(bundle.levels[1]!.unlockPoints).toBeGreaterThan(0);
   });
 
-  it("ships nine levels on the exact unlock ladder, strictly increasing", () => {
+  it("ships nine levels on the exact unlock ladder (lifetime trollsilver), strictly increasing", () => {
     const levelPoints = buildContent().levels.map((l) => l.unlockPoints);
     expect(levelPoints).toEqual([
-      0, 400, 1000, 1800, 2800, 4200, 6000, 8200, 11000,
+      0, 100, 250, 450, 700, 1050, 1500, 2050, 2750,
     ]);
     // strictly increasing — guards against reorders and copy-paste unlocks
     for (let i = 1; i < levelPoints.length; i++) {
@@ -78,25 +78,29 @@ describe("buildContent", () => {
     expect(counts).toEqual([7, 8, 9, 10, 10, 11, 12, 13, 14]);
   });
 
-  it("the unlock ladder is sensible: free starters, then nacken 300, vardtradet 800, level03 1000", () => {
+  it("the shop ladder is sensible: free starters, then nacken 250, vardtradet 550 trollsilver", () => {
     const bundle = buildContent();
     const tower = (id: string) => bundle.towers.find((t) => t.id === id)!;
-    expect(tower("tomte").unlockPoints).toBe(0);
-    expect(tower("runsten").unlockPoints).toBe(0);
-    expect(tower("sollykta").unlockPoints).toBe(0);
-    expect(tower("nacken").unlockPoints).toBe(300);
-    expect(tower("vardtradet").unlockPoints).toBe(800);
+    expect(tower("tomte").silverPrice).toBe(0);
+    expect(tower("runsten").silverPrice).toBe(0);
+    expect(tower("sollykta").silverPrice).toBe(0);
+    expect(tower("nacken").silverPrice).toBe(250);
+    expect(tower("vardtradet").silverPrice).toBe(550);
 
     const levelPoints = bundle.levels.map((l) => l.unlockPoints);
-    expect(levelPoints[2]).toBe(1000);
-    // the level02 grind unlocks nacken before level03 opens
-    expect(tower("nacken").unlockPoints).toBeLessThan(levelPoints[2]!);
-    expect(tower("vardtradet").unlockPoints).toBeLessThan(levelPoints[2]!);
+    expect(levelPoints[2]).toBe(250);
+    // one good Gläntan win (~1100 score) pays for the sniper outright
+    expect(tower("nacken").silverPrice).toBeLessThanOrEqual(
+      1100 * bundle.globals.silverPerScore,
+    );
+    // the economy tree lands after ~2 wins, before level05 opens (700)
+    expect(tower("vardtradet").silverPrice).toBeLessThan(levelPoints[4]!);
   });
 
   it("every map starts within the agreed band: 120-170 gold, 8-10 lives (new maps 130-170)", () => {
     for (const level of buildContent().levels) {
-      const minGold = level.unlockPoints >= 1800 ? 130 : 120;
+      // level04+ are the "new maps" — they sit at ≥450 on the silver ladder
+      const minGold = level.unlockPoints >= 450 ? 130 : 120;
       expect(level.startGold).toBeGreaterThanOrEqual(minGold);
       expect(level.startGold).toBeLessThanOrEqual(170);
       expect(level.startLives).toBeGreaterThanOrEqual(8);
@@ -511,9 +515,25 @@ describe("meta upgrade economy", () => {
 
     const total = bundle.metaUpgrades.reduce((s, u) => s + maxOutCost(u), 0);
     expect(total).toBe(6073);
-    // sanity: several won maps of earnings (a won map yields ~1100+ points),
-    // not the single-map shop of old (~860)
-    expect(total).toBeGreaterThan(5 * 860);
+    // sanity: maxing the shop is a long-haul silver sink — 20+ won maps at
+    // ≈280 trollsilver per win, not the single-map shop of old
+    expect(total).toBeGreaterThan(20 * 280);
+  });
+});
+
+describe("globals economy", () => {
+  it("converts score to trollsilver at 0.25 — one Gläntan win banks ≈ 280 silver", () => {
+    const { globals, towers, metaUpgrades } = buildContent();
+    expect(globals.silverPerScore).toBe(0.25);
+    // a good Gläntan win scores ~1100-1200 → 275-300 trollsilver
+    const winSilver = 1120 * globals.silverPerScore;
+    expect(winSilver).toBe(280);
+    // that win covers two rank-1 meta upgrades (cheapest pair: 80 + 100)...
+    const rank1Costs = metaUpgrades.map((u) => u.cost).sort((a, b) => a - b);
+    expect(rank1Costs[0]! + rank1Costs[1]!).toBeLessThanOrEqual(winSilver);
+    // ...or pays for Näcken (250) with change to spare
+    const nacken = towers.find((t) => t.id === "nacken")!;
+    expect(nacken.silverPrice).toBeLessThanOrEqual(winSilver);
   });
 });
 
@@ -568,7 +588,7 @@ describe("tower defs", () => {
     const bundle = buildContent();
     const nacken = bundle.towers.find((t) => t.id === "nacken")!;
     const tomte = bundle.towers.find((t) => t.id === "tomte")!;
-    expect(nacken.unlockPoints).toBe(300);
+    expect(nacken.silverPrice).toBe(250);
     expect(nacken.attackKind).toBe("projectile");
     // one lure-strike outhits more than three grötslungor
     expect(nacken.levels[0]!.damage).toBeGreaterThan(
@@ -613,7 +633,7 @@ describe("tower defs", () => {
       (t) => t.id === "vardtradet",
     )!;
     expect(vardtradet).toBeDefined();
-    expect(vardtradet.unlockPoints).toBe(800);
+    expect(vardtradet.silverPrice).toBe(550);
     for (const level of vardtradet.levels) {
       expect(level.damage).toBe(0);
       expect(level.incomePerWave).toBeDefined();

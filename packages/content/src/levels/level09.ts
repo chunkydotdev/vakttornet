@@ -12,7 +12,7 @@ import type { LevelDef } from "../schema";
  *
  * Wave HP budget: 1110 / 1320 / 1350 / 1585 / 1740 / 2030 / 2250 / 2520 /
  * 2800 / 3150 / 3390 / 3690 / 3940 / finale 8950 (Skogsrået 7500 + 1450).
- * Unlocks at 11000 — the end of the ladder.
+ * Unlocks at 2750 lifetime trollsilver — the end of the ladder.
  */
 export const level09: LevelDef = {
   id: "level09",
@@ -129,5 +129,5 @@ export const level09: LevelDef = {
   ],
   startGold: 130,
   startLives: 8,
-  unlockPoints: 11000,
+  unlockPoints: 2750,
 };

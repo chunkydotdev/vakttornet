@@ -3,6 +3,7 @@ import { content } from "./content";
 import { music } from "./game/music";
 import {
   applyRunEnd,
+  buyTower,
   buyUpgrade,
   computeMetaModifiers,
   loadSave,
@@ -49,7 +50,7 @@ export function App() {
           level={level}
           meta={meta}
           save={save}
-          onRunEnd={(score, deeds) => setSave((s) => applyRunEnd(s, score, deeds))}
+          onRunEnd={(silverEarned, deeds) => setSave((s) => applyRunEnd(s, silverEarned, deeds))}
           onPlayerName={(name) => setSave((s) => setPlayerName(s, name))}
           onExit={() => setScreen({ kind: "title" })}
           onRetry={() =>
@@ -89,6 +90,12 @@ export function App() {
         const upgrade = content.metaUpgrades.find((u) => u.id === upgradeId);
         if (!upgrade) return;
         const next = buyUpgrade(save, upgrade);
+        if (next) setSave(next);
+      }}
+      onBuyTower={(towerId) => {
+        const tower = content.towers.find((t) => t.id === towerId);
+        if (!tower || tower.silverPrice <= 0) return;
+        const next = buyTower(save, tower.id, tower.silverPrice);
         if (next) setSave(next);
       }}
       onCodex={() => setScreen({ kind: "codex" })}

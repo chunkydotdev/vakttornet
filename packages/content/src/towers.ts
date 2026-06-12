@@ -20,6 +20,9 @@ import type { TowerDef } from "./schema";
  *
  * Mutations: exactly two branches per tower, offered at max level.
  * Costs sit in the 90-120g band, scaled to the tower's own price.
+ *
+ * FÖRRÅDET (trollsilver shop): tomte/runsten/sollykta are free starters;
+ * nacken costs 250 (≈ one good Gläntan win) and vardtradet 550 (≈ two).
  */
 export const towers: TowerDef[] = [
   {
@@ -28,7 +31,7 @@ export const towers: TowerDef[] = [
     assetId: "tower.tomte",
     description:
       "Liten är han, snabb och lättretad, och het julgröt slungar han mot allt som hotar gården.",
-    unlockPoints: 0,
+    silverPrice: 0,
     attackKind: "projectile",
     levels: [
       { cost: 50, damage: 6, range: 2.2, cooldownTicks: 18, projectileSpeed: 9 },
@@ -60,7 +63,7 @@ export const towers: TowerDef[] = [
     assetId: "tower.runsten",
     description:
       "När de forntida runorna glöder till liv slår blixtar ur stenen och bränner allt väsen som vågar sig nära.",
-    unlockPoints: 0,
+    silverPrice: 0,
     attackKind: "pulse",
     // projectileSpeed is schema-required but ignored for pulse towers.
     levels: [
@@ -93,7 +96,7 @@ export const towers: TowerDef[] = [
     assetId: "tower.sollykta",
     description:
       "Lyktan bär infångat solljus långt över skogen, där väsen som träffas stelnar till sten mitt i steget.",
-    unlockPoints: 0,
+    silverPrice: 0,
     attackKind: "projectile",
     levels: [
       {
@@ -146,7 +149,7 @@ export const towers: TowerDef[] = [
     assetId: "tower.nacken",
     description:
       "Näcken spelar en enda ton över vattnet — ett väsen lockas ur ledet och dras under ytan.",
-    unlockPoints: 300,
+    silverPrice: 250,
     attackKind: "projectile",
     levels: [
       {
@@ -196,7 +199,7 @@ export const towers: TowerDef[] = [
     assetId: "tower.vardtradet",
     description:
       "Det gamla trädet vid stugknuten strider aldrig, men den som vårdar det får gåvor i guld efter varje stillad våg.",
-    unlockPoints: 800,
+    silverPrice: 550,
     // never attacks (damage 0) — attackKind is a required-field formality
     attackKind: "projectile",
     levels: [

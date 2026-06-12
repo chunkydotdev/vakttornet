@@ -13,7 +13,8 @@ import type { LevelDef } from "../schema";
  *
  * Wave HP budget: 515 / 600 / 720 / 812 / 990 / 1100 / 1410 / 1596 / 1930 /
  * finale 2758 (Trollmodern 1600 + 1158 escort).
- * Unlocks at 2800 — Vårdträdet and 2-3 meta ranks expected.
+ * Unlocks at 700 lifetime trollsilver — enough earned for Vårdträdet (550)
+ * or Näcken plus a few meta ranks.
  */
 export const level05: LevelDef = {
   id: "level05",
@@ -104,5 +105,5 @@ export const level05: LevelDef = {
   ],
   startGold: 160,
   startLives: 9,
-  unlockPoints: 2800,
+  unlockPoints: 700,
 };

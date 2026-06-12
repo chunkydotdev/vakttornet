@@ -17,7 +17,7 @@ import {
 import type { LevelDef, SagenDef, TowerDef } from "@vakttornet/content";
 import { manifest } from "@vakttornet/assets/manifest";
 import { content } from "../content";
-import { mergeDeeds, type RunDeeds, type SaveData } from "../save";
+import { mergeDeeds, silverFromScore, towerAvailable, type RunDeeds, type SaveData } from "../save";
 import { newlyUnlockedSagner } from "../sagner";
 import { leaderboardEnabled } from "../leaderboard";
 import { startGameLoop, type GameLoop, type SimSpeed } from "../game/loop";
@@ -43,7 +43,8 @@ interface RunScreenProps {
   level: LevelDef;
   meta: MetaModifiers;
   save: SaveData;
-  onRunEnd: (score: number, deeds: RunDeeds) => void;
+  /** silverEarned is the CONVERTED trollsilver (silverFromScore), not the raw score */
+  onRunEnd: (silverEarned: number, deeds: RunDeeds) => void;
   /** persist the leaderboard name after a successful submit */
   onPlayerName: (name: string) => void;
   onExit: () => void;
@@ -140,11 +141,12 @@ export function RunScreen({
   const runPetrifiedRef = useRef(0);
   const startLivesRef = useRef(sim.state.lives);
 
-  // The shop holds ONLY unlocked towers, computed ONCE at run start — locked
-  // towers never appear in a run (they live in the hub's Förrådet), and
-  // points banked when this run ends must not pop new towers in mid-run.
+  // The shop holds ONLY available towers (starters + bought in Förrådet),
+  // computed ONCE at run start — locked towers never appear in a run (they
+  // live in the hub's Förrådet), and silver banked when this run ends must
+  // not pop new towers in mid-run.
   const [shopTowers] = useState<readonly TowerDef[]>(() =>
-    content.towers.filter((t) => t.unlockPoints <= save.totalEarned),
+    content.towers.filter((t) => towerAvailable(save, t)),
   );
 
   const [loading, setLoading] = useState(true);
@@ -222,11 +224,14 @@ export function RunScreen({
     }
   }, [armed, selectedId, loading]);
 
-  // ---- Run end: bank the score + deeds exactly once. Kills count won or
-  // lost; the level only joins wonLevelIds (and may count as flawless) on a
-  // win. Newly satisfied sägner conditions are diffed against the pre-merge
-  // save so the overlay can announce them.
+  // ---- Run end: bank the converted trollsilver + deeds exactly once. The
+  // score stays a leaderboard figure; what's banked is silverFromScore (the
+  // exchange rate lives in content.globals). Kills count won or lost; the
+  // level only joins wonLevelIds (and may count as flawless) on a win. Newly
+  // satisfied sägner conditions are diffed against the pre-merge save so the
+  // overlay can announce them.
   const runEnded = hud.status === "won" || hud.status === "lost";
+  const silverEarned = silverFromScore(sim.state.score, content.globals.silverPerScore);
   useEffect(() => {
     if (runEnded && !endedNotifiedRef.current) {
       endedNotifiedRef.current = true;
@@ -241,7 +246,7 @@ export function RunScreen({
         newlyUnlockedSagner(content.sagner, save.deeds, mergeDeeds(save.deeds, deeds)),
       );
       if (won) setVardtrad(countVardtrad(sim.state.towers));
-      onRunEnd(sim.state.score, deeds);
+      onRunEnd(silverFromScore(sim.state.score, content.globals.silverPerScore), deeds);
     }
   }, [runEnded, onRunEnd, sim, level.id, save.deeds]);
 
@@ -500,6 +505,7 @@ export function RunScreen({
         <RunEndOverlay
           won={hud.status === "won"}
           score={sim.state.score}
+          silverEarned={silverEarned}
           newSagner={newSagner.map((s) => s.title)}
           leaderboard={
             hud.status === "won" && leaderboardEnabled()

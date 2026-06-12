@@ -112,9 +112,9 @@ export const towerDefSchema = z.object({
   name: z.string(),
   assetId: z.string(),
   description: z.string(),
-  /** lifetime meta points (totalEarned) required before this tower appears
-   * unlocked in the shop; 0 = available from the start */
-  unlockPoints: z.number().nonnegative().default(0),
+  /** trollsilver price to buy this tower in FÖRRÅDET; 0 = starter tower,
+   * available from the beginning. Bought towers are recorded in the save. */
+  silverPrice: z.number().nonnegative().default(0),
   /** "projectile" fires homing shots at one target; "pulse" emits an instant
    * burst every cooldownTicks hitting ALL enemies in range (no projectiles —
    * projectileSpeed/splashRadius/slow are ignored for pulse towers) */
@@ -181,6 +181,9 @@ export const metaUpgradeSchema = z.object({
 export type MetaUpgradeDef = z.infer<typeof metaUpgradeSchema>;
 
 export const globalsSchema = z.object({
+  /** trollsilver earned per run-score point (score itself is untouched —
+   * this is the exchange rate that keeps the meta economy in check) */
+  silverPerScore: z.number().positive().max(1),
   /** fraction of gold spent returned when selling a tower */
   sellRefundRatio: z.number().min(0).max(1),
   /** score bonus on clearing wave i (0-based): (i+1) * waveClearBonusPerWave */

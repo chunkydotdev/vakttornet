@@ -12,7 +12,7 @@ import type { LevelDef } from "../schema";
  *
  * Wave HP budget: 600 / 768 / 920 / 1050 / 1380 / 1520 / 1710 / 1990 /
  * 2160 / 2410 / finale 4700 (Gruvkungen 3800, slowResist 0.8, + 900 escort).
- * Unlocks at 4200.
+ * Unlocks at 1050 lifetime trollsilver.
  */
 export const level06: LevelDef = {
   id: "level06",
@@ -109,5 +109,5 @@ export const level06: LevelDef = {
   ],
   startGold: 150,
   startLives: 9,
-  unlockPoints: 4200,
+  unlockPoints: 1050,
 };

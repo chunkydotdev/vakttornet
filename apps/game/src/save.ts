@@ -1,10 +1,11 @@
 /**
  * Save system — zod-validated localStorage persistence for meta progression.
  *
- * - `points` is the spendable meta-point balance.
- * - `totalEarned` is the lifetime score total; it only ever grows and drives
- *   level + tower unlocks (unlocked when totalEarned >= unlockPoints).
+ * - `points` is the spendable trollsilver balance.
+ * - `totalEarned` is the lifetime trollsilver total; it only ever grows and
+ *   drives level unlocks (unlocked when totalEarned >= level.unlockPoints).
  * - `upgradeRanks` maps meta-upgrade id -> purchased rank.
+ * - `ownedTowerIds` lists towers bought in Förrådet (silverPrice > 0).
  * - `deeds` holds lifetime deed counters that unlock sägner codex entries.
  *
  * Versioning: the payload carries a `version` field. v1 saves (pre-deeds)
@@ -49,6 +50,9 @@ const saveSchemaV2 = z.object({
   /** last name used on the leaderboard — optional, so pre-existing v2 saves
    * keep parsing without a version bump */
   playerName: z.string().optional(),
+  /** ids of towers bought in Förrådet — defaulted, so pre-existing v2 saves
+   * keep parsing without a version bump (they simply own none yet) */
+  ownedTowerIds: z.array(z.string()).default([]),
 });
 
 export type SaveData = z.infer<typeof saveSchemaV2>;
@@ -58,7 +62,14 @@ export function zeroDeeds(): DeedCounters {
 }
 
 export function freshSave(): SaveData {
-  return { version: 2, points: 0, totalEarned: 0, upgradeRanks: {}, deeds: zeroDeeds() };
+  return {
+    version: 2,
+    points: 0,
+    totalEarned: 0,
+    upgradeRanks: {},
+    ownedTowerIds: [],
+    deeds: zeroDeeds(),
+  };
 }
 
 /** v1 → v2: keep all progression, start deed counters from zero. */
@@ -68,6 +79,7 @@ function migrateV1(old: z.infer<typeof saveSchemaV1>): SaveData {
     points: old.points,
     totalEarned: old.totalEarned,
     upgradeRanks: old.upgradeRanks,
+    ownedTowerIds: [],
     deeds: zeroDeeds(),
   };
 }
@@ -125,13 +137,20 @@ export function mergeDeeds(deeds: DeedCounters, run: RunDeeds): DeedCounters {
   };
 }
 
-/** Run ended (won OR lost): the run score becomes spendable + lifetime
- * points, and the run's deeds fold into the lifetime counters. */
-export function applyRunEnd(save: SaveData, score: number, run: RunDeeds): SaveData {
+/** Trollsilver earned from a run score: round(score × silverPerScore), never
+ * less than 1 for a scoring run — any played run pays at least one silver. */
+export function silverFromScore(score: number, silverPerScore: number): number {
+  return score > 0 ? Math.max(1, Math.round(score * silverPerScore)) : 0;
+}
+
+/** Run ended (won OR lost): the CONVERTED trollsilver (silverFromScore, not
+ * the raw score) becomes spendable + lifetime silver, and the run's deeds
+ * fold into the lifetime counters. */
+export function applyRunEnd(save: SaveData, silverEarned: number, run: RunDeeds): SaveData {
   const next: SaveData = {
     ...save,
-    points: save.points + score,
-    totalEarned: save.totalEarned + score,
+    points: save.points + silverEarned,
+    totalEarned: save.totalEarned + silverEarned,
     deeds: mergeDeeds(save.deeds, run),
   };
   persistSave(next);
@@ -165,6 +184,29 @@ export function buyUpgrade(save: SaveData, upgrade: MetaUpgradeDef): SaveData | 
   };
   persistSave(next);
   return next;
+}
+
+/** Buy a tower in Förrådet for `price` trollsilver. Returns the updated
+ * save, or null if it's already owned or the silver doesn't cover the price. */
+export function buyTower(save: SaveData, towerId: string, price: number): SaveData | null {
+  if (save.ownedTowerIds.includes(towerId)) return null;
+  if (save.points < price) return null;
+  const next: SaveData = {
+    ...save,
+    points: save.points - price,
+    ownedTowerIds: [...save.ownedTowerIds, towerId],
+  };
+  persistSave(next);
+  return next;
+}
+
+/** A tower is available in runs when it's a starter (silverPrice 0) or has
+ * been bought in Förrådet. */
+export function towerAvailable(
+  save: SaveData,
+  tower: { id: string; silverPrice: number },
+): boolean {
+  return tower.silverPrice === 0 || save.ownedTowerIds.includes(tower.id);
 }
 
 /**

@@ -483,7 +483,8 @@ export function makeContent(
     levels: [level],
     metaUpgrades: [],
     sagner: [],
-    globals: { sellRefundRatio: 0.5, waveClearBonusPerWave: 10, winBonusPerLife: 2 },
+    // silverPerScore is schema-required but ignored by the sim (meta-economy only)
+    globals: { silverPerScore: 0.25, sellRefundRatio: 0.5, waveClearBonusPerWave: 10, winBonusPerLife: 2 },
   });
 }
 

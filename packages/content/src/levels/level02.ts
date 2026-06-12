@@ -10,7 +10,8 @@ import type { LevelDef } from "../schema";
  * Boss pass: wave 8 closes with Trollmodern (1600 hp). Escort trimmed
  * 1800 → 630 so the finale lands at 2230 total (+23.9% over the old 1800)
  * — she IS the wall the old troll column only pretended to be.
- * Fewer lives (8) and heavier waves; meta upgrades expected (unlocks at 400).
+ * Fewer lives (8) and heavier waves; meta upgrades expected (unlocks at
+ * 100 lifetime trollsilver — one Gläntan win banks ≈ 280).
  * Waves 6 and 8 are deliberately troll-heavy — Sollyktans petrify is the
  * intended answer to the lumbering columns.
  */
@@ -86,5 +87,5 @@ export const level02: LevelDef = {
   ],
   startGold: 130,
   startLives: 8,
-  unlockPoints: 400,
+  unlockPoints: 100,
 };

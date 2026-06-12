@@ -10,7 +10,7 @@ import type { LevelDef } from "../schema";
  * Wave HP budget: 915 / 1020 / 1260 / 1400 / 1530 / 1680 / 1980 / 2160 /
  * 2350 / 2640 / 2945 / 3330 / finale 6360 (Isfursten 5200 + 1160 escort —
  * and when he shatters, four mylingar rise from the snow where he fell).
- * Unlocks at 8200.
+ * Unlocks at 2050 lifetime trollsilver.
  */
 export const level08: LevelDef = {
   id: "level08",
@@ -119,5 +119,5 @@ export const level08: LevelDef = {
   ],
   startGold: 140,
   startLives: 8,
-  unlockPoints: 8200,
+  unlockPoints: 2050,
 };

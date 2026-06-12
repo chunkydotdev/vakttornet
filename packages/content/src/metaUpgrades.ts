@@ -2,7 +2,9 @@ import type { MetaUpgradeDef } from "./schema";
 
 /**
  * Economy rebalance (2026-06): one won map used to pay for nearly the whole
- * shop (~860 total vs ~1100 points/map). Costs now escalate per rank:
+ * shop. Costs are TROLLSILVER (earned at globals.silverPerScore = 0.25 per
+ * score point — one Gläntan win ≈ 280 silver → 2 rank-1 upgrades OR saves
+ * toward Näcken at 250). Costs escalate per rank:
  * rank r costs round(cost × costGrowth^(r−1)).
  *
  * Max-out cost per upgrade:
@@ -11,8 +13,9 @@ import type { MetaUpgradeDef } from "./schema";
  *   skattkista   80 × 1.6^r, 5 ranks:  80+128+205+328+524  = 1265
  *   stugvarme   140 × 1.8^r, 4 ranks: 140+252+454+816      = 1662
  *   ─────────────────────────────────────────────────────────────
- *   TOTAL MAX-OUT: 6073 meta points (≈ several won maps of earnings —
- *   the content.spec.ts economy test asserts this exact figure).
+ *   TOTAL MAX-OUT: 6073 trollsilver (≈ 20+ won maps at ~280 silver/win —
+ *   deliberately a long-haul sink; the content.spec.ts economy test
+ *   asserts this exact figure).
  */
 export const metaUpgrades: MetaUpgradeDef[] = [
   {

@@ -102,5 +102,5 @@ export const level03: LevelDef = {
   ],
   startGold: 140,
   startLives: 8,
-  unlockPoints: 1000,
+  unlockPoints: 250,
 };

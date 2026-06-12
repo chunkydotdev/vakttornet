@@ -22,6 +22,7 @@ interface TitleScreenProps {
   onPlay: (levelId: string) => void;
   onShowLevels: () => void;
   onBuyUpgrade: (upgradeId: string) => void;
+  onBuyTower: (towerId: string) => void;
   onCodex: () => void;
   onTopplista: () => void;
 }
@@ -32,6 +33,7 @@ export function TitleScreen({
   onPlay,
   onShowLevels,
   onBuyUpgrade,
+  onBuyTower,
   onCodex,
   onTopplista,
 }: TitleScreenProps) {
@@ -48,9 +50,9 @@ export function TitleScreen({
     ? Math.min(1, save.totalEarned / Math.max(1, nextUnlock.unlockPoints))
     : 1;
 
-  // Förrådet: towers that have to be earned (unlockPoints > 0); the three
+  // Förrådet: towers that have to be bought (silverPrice > 0); the three
   // starter towers are always available and stay out of the shop.
-  const shopTowers = content.towers.filter((t) => t.unlockPoints > 0);
+  const shopTowers = content.towers.filter((t) => t.silverPrice > 0);
 
   return (
     <div className="screen">
@@ -137,7 +139,7 @@ export function TitleScreen({
           <header className="forrad-head">
             <h2 className="hub-section-title">Förrådet</h2>
             <p className="forrad-sub">
-              Varaktiga förstärkningar och torn att låsa upp. Klicka för detaljer.
+              Varaktiga förstärkningar och torn att köpa för trollsilver. Klicka för detaljer.
             </p>
           </header>
           <div className="forrad-grid">
@@ -179,16 +181,12 @@ export function TitleScreen({
               );
             })}
             {shopTowers.map((tower) => {
-              const locked = save.totalEarned < tower.unlockPoints;
-              const progress = Math.min(
-                1,
-                save.totalEarned / Math.max(1, tower.unlockPoints),
-              );
+              const owned = save.ownedTowerIds.includes(tower.id);
               return (
                 <button
                   key={tower.id}
                   type="button"
-                  className={locked ? "forrad-tile locked" : "forrad-tile"}
+                  className={owned ? "forrad-tile" : "forrad-tile locked"}
                   onClick={() => setShopItem({ kind: "tower", tower })}
                 >
                   <img
@@ -198,25 +196,17 @@ export function TitleScreen({
                   />
                   <span className="forrad-name">{tower.name}</span>
                   <span className="forrad-status">
-                    {locked ? (
-                      <>
-                        <span className="progress progress-mini">
-                          <span
-                            className="progress-fill"
-                            style={{ width: `${progress * 100}%` }}
-                          />
-                        </span>
-                        <span className="forrad-substatus cost">
-                          <img
-                            className="icon"
-                            src={manifest["ui.trollsilver"]}
-                            alt="Trollsilver"
-                          />
-                          {formatSilver(save.totalEarned)}/{formatSilver(tower.unlockPoints)}
-                        </span>
-                      </>
-                    ) : (
+                    {owned ? (
                       <span className="forrad-substatus unlocked">Upplåst ✓</span>
+                    ) : (
+                      <span className="forrad-substatus cost">
+                        <img
+                          className="icon"
+                          src={manifest["ui.trollsilver"]}
+                          alt="Trollsilver"
+                        />
+                        {formatSilver(tower.silverPrice)}
+                      </span>
                     )}
                   </span>
                 </button>
@@ -236,6 +226,7 @@ export function TitleScreen({
           save={save}
           meta={meta}
           onBuy={onBuyUpgrade}
+          onBuyTower={onBuyTower}
           onClose={() => setShopItem(null)}
         />
       )}

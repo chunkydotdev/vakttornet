@@ -19,6 +19,9 @@ export interface RunEndLeaderboard {
 interface RunEndOverlayProps {
   won: boolean;
   score: number;
+  /** trollsilver banked from this run — the CONVERTED amount (silverFromScore),
+   * deliberately different from the raw score */
+  silverEarned: number;
   /** titles of sägner whose conditions this run newly satisfied */
   newSagner: string[];
   leaderboard: RunEndLeaderboard | null;
@@ -29,6 +32,7 @@ interface RunEndOverlayProps {
 export function RunEndOverlay({
   won,
   score,
+  silverEarned,
   newSagner,
   leaderboard,
   onRetry,
@@ -49,7 +53,7 @@ export function RunEndOverlay({
         </p>
         <span className="run-end-points">
           <img className="icon" src={manifest["ui.trollsilver"]} alt="" />+
-          {formatSilver(score)} trollsilver
+          {formatSilver(silverEarned)} trollsilver
         </span>
         {newSagner.length > 0 && (
           <ul className="run-end-sagner">

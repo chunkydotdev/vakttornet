@@ -21,7 +21,7 @@ import type { LevelDef } from "../schema";
  * Wave HP budget: 750 / 862 / 960 / 1170 / 1275 / 1440 / 1620 / 1810 /
  * 2040 / 2330 / 2580 / finale 4920 (Sjörået 2600 + a heavy 2320 escort —
  * the delta is her home turf and the whole river rises with her).
- * Unlocks at 6000.
+ * Unlocks at 1500 lifetime trollsilver.
  */
 export const level07: LevelDef = {
   id: "level07",
@@ -126,5 +126,5 @@ export const level07: LevelDef = {
   ],
   startGold: 150,
   startLives: 8,
-  unlockPoints: 6000,
+  unlockPoints: 1500,
 };

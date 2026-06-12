@@ -1,8 +1,9 @@
 /**
  * Detail popup for Förrådet items on the hub — one modal, two bodies:
- * meta upgrades (buyable here) and unlockable towers (informational).
+ * meta upgrades and towers, both buyable here for trollsilver.
  * Closes on Esc, backdrop click, or the ✕ button. All numbers are derived
- * from content data — costs via nextUpgradeCost, tower stats via towerInfo.
+ * from content data — costs via nextUpgradeCost/silverPrice, tower stats
+ * via towerInfo.
  */
 import { useEffect, useRef } from "react";
 import { manifest } from "@vakttornet/assets/manifest";
@@ -32,6 +33,7 @@ interface ShopItemModalProps {
   save: SaveData;
   meta: MetaModifiers;
   onBuy: (upgradeId: string) => void;
+  onBuyTower: (towerId: string) => void;
   onClose: () => void;
 }
 
@@ -55,7 +57,14 @@ export function upgradeIconUrl(upgrade: MetaUpgradeDef): string {
   return assetUrl(upgrade.assetId) ?? manifest["ui.coin"];
 }
 
-export function ShopItemModal({ item, save, meta, onBuy, onClose }: ShopItemModalProps) {
+export function ShopItemModal({
+  item,
+  save,
+  meta,
+  onBuy,
+  onBuyTower,
+  onClose,
+}: ShopItemModalProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   // Esc closes; focus moves into the dialog so keyboard users land inside.
@@ -91,7 +100,7 @@ export function ShopItemModal({ item, save, meta, onBuy, onClose }: ShopItemModa
         {item.kind === "upgrade" ? (
           <UpgradeBody upgrade={item.upgrade} save={save} onBuy={onBuy} />
         ) : (
-          <TowerBody tower={item.tower} save={save} meta={meta} />
+          <TowerBody tower={item.tower} save={save} meta={meta} onBuy={onBuyTower} />
         )}
       </div>
     </div>
@@ -180,16 +189,18 @@ function TowerBody({
   tower,
   save,
   meta,
+  onBuy,
 }: {
   tower: TowerDef;
   save: SaveData;
   meta: MetaModifiers;
+  onBuy: (towerId: string) => void;
 }) {
   const l1 = tower.levels[0];
   if (!l1) return null;
   const economy = isEconomy(l1);
-  const locked = save.totalEarned < tower.unlockPoints;
-  const progress = Math.min(1, save.totalEarned / Math.max(1, tower.unlockPoints));
+  const owned = tower.silverPrice === 0 || save.ownedTowerIds.includes(tower.id);
+  const affordable = save.points >= tower.silverPrice;
   const teaser = mutationTeaser(tower);
 
   return (
@@ -237,22 +248,25 @@ function TowerBody({
 
       {teaser && <p className="mutation-teaser">⟡ {teaser}</p>}
 
-      {locked ? (
-        <div className="shop-modal-unlock">
-          <p className="unlock-label">
-            🔒 Låses upp vid {formatSilver(tower.unlockPoints)} trollsilver
-          </p>
-          <div className="progress">
-            <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
-          </div>
-          <p className="unlock-remaining">
-            <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
-            {formatSilver(save.totalEarned)}/{formatSilver(tower.unlockPoints)} ·{" "}
-            {formatSilver(tower.unlockPoints - save.totalEarned)} kvar
-          </p>
-        </div>
-      ) : (
+      {owned ? (
         <p className="shop-modal-available">✓ Tillgänglig i försvaret</p>
+      ) : (
+        <div className="shop-modal-buy">
+          <button
+            type="button"
+            className="btn btn-primary"
+            disabled={!affordable}
+            title={affordable ? undefined : "För lite trollsilver"}
+            onClick={() => onBuy(tower.id)}
+          >
+            Köp — <img className="icon" src={manifest["ui.trollsilver"]} alt="" />{" "}
+            {formatSilver(tower.silverPrice)}
+          </button>
+          <span className="points-chip points-chip-small" title="Trollsilver att spendera">
+            <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+            {formatSilver(save.points)}
+          </span>
+        </div>
       )}
     </>
   );
