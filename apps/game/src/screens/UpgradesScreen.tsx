@@ -1,7 +1,7 @@
 import { manifest } from "@vakttornet/assets/manifest";
 import type { MetaUpgradeDef } from "@vakttornet/content";
 import { content } from "../content";
-import type { SaveData } from "../save";
+import { nextUpgradeCost, type SaveData } from "../save";
 
 interface UpgradesScreenProps {
   save: SaveData;
@@ -45,7 +45,9 @@ export function UpgradesScreen({ save, onBuy, onBack }: UpgradesScreenProps) {
           {content.metaUpgrades.map((upgrade) => {
             const rank = save.upgradeRanks[upgrade.id] ?? 0;
             const maxed = rank >= upgrade.maxRank;
-            const affordable = save.points >= upgrade.cost;
+            // Escalating prices: the next rank costs cost × costGrowth^rank.
+            const cost = nextUpgradeCost(upgrade, rank);
+            const affordable = save.points >= cost;
             return (
               <li key={upgrade.id} className="upgrade-card">
                 <div>
@@ -64,21 +66,15 @@ export function UpgradesScreen({ save, onBuy, onBack }: UpgradesScreenProps) {
                   {maxed ? (
                     <span className="upgrade-maxed">Maxad</span>
                   ) : (
-                    <>
-                      <span className="upgrade-cost">
-                        <img className="icon" src={manifest["ui.coin"]} alt="" />
-                        {upgrade.cost}
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-small"
-                        disabled={!affordable}
-                        title={affordable ? undefined : "För få poäng"}
-                        onClick={() => onBuy(upgrade.id)}
-                      >
-                        Köp
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-small"
+                      disabled={!affordable}
+                      title={affordable ? undefined : "För få poäng"}
+                      onClick={() => onBuy(upgrade.id)}
+                    >
+                      Köp — {cost} p
+                    </button>
                   )}
                 </div>
               </li>

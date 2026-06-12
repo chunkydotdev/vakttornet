@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- skattvätte: a vätte at a dead sprint with a stolen gold sack over the
+       shoulder — coins spilling behind. Kill it before it escapes! (~44u) -->
+  <ellipse cx="30" cy="55" rx="11" ry="3" fill="rgba(0,0,0,0.18)"/>
+  <!-- coins bouncing loose in its wake -->
+  <circle cx="10" cy="50" r="2" fill="#d9a441"/>
+  <circle cx="10" cy="50" r="0.8" fill="#f2d98c"/>
+  <circle cx="16" cy="55" r="1.6" fill="#d9a441"/>
+  <!-- legs mid-sprint -->
+  <g fill="#3f3327">
+    <rect x="18" y="49" width="8" height="5" rx="2" transform="rotate(-14 22 51)"/>
+    <rect x="33" y="50" width="8" height="5" rx="2" transform="rotate(10 37 52)"/>
+  </g>
+  <!-- body leaning hard into the run -->
+  <path d="M22 38 Q23 30 33 31 Q42 32 41 39 L40 50 L23 49 Z" fill="#5f6b52"/>
+  <path d="M25 40 Q26 34 32 33" fill="none" stroke="#74815f" stroke-width="3" stroke-linecap="round"/>
+  <!-- arm clamped over the sack strap -->
+  <path d="M34 34 Q40 30 44 26" fill="none" stroke="#5f6b52" stroke-width="4" stroke-linecap="round"/>
+  <!-- THE GOLD SACK, bulging over the shoulder -->
+  <path d="M38 12 Q52 8 56 20 Q58 30 48 32 Q38 32 36 23 Q35 15 38 12 Z" fill="#c8a05e"/>
+  <path d="M40 15 Q38 22 42 28" fill="none" stroke="#dfc089" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- knotted neck of the sack -->
+  <path d="M38 13 Q36 10 39 8 Q42 10 41 13 Z" fill="#a3814a"/>
+  <path d="M36 13 L43 11" stroke="#7d6238" stroke-width="2" stroke-linecap="round"/>
+  <!-- coins peeking from the knot -->
+  <circle cx="44" cy="9" r="2" fill="#d9a441"/>
+  <circle cx="44" cy="9" r="0.8" fill="#f2d98c"/>
+  <circle cx="48" cy="11" r="1.6" fill="#d9a441"/>
+  <!-- beard streaming back -->
+  <path d="M16 26 Q20 32 28 33 Q33 31 33 26 Q28 22 23 22 Q18 22 16 26 Z" fill="#b9b3a7"/>
+  <!-- face, wild-eyed with the loot -->
+  <ellipse cx="25" cy="21" rx="8" ry="6" fill="#cfa57e"/>
+  <circle cx="25" cy="25" r="2.2" fill="#c08a60"/>
+  <circle cx="21.5" cy="20" r="2.8" fill="#ffffff"/>
+  <circle cx="29" cy="20" r="2.8" fill="#ffffff"/>
+  <circle cx="20.8" cy="20.5" r="1.4" fill="#2a2118"/>
+  <circle cx="28.3" cy="20.5" r="1.4" fill="#2a2118"/>
+  <!-- pointy hat blown flat by the speed -->
+  <path d="M14 16 Q18 8 26 9 L35 14 Q29 17 24 16 Q19 18 14 16 Z" fill="#a3402f"/>
+  <path d="M26 9 L33 10" stroke="#b9543f" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- speed lines -->
+  <path d="M6 30 l6 0 M4 37 l7 0" stroke="#8fa3b5" stroke-width="1.6" stroke-linecap="round" opacity="0.6"/>
+</svg>

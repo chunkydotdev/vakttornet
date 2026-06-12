@@ -5,6 +5,12 @@ import { towers } from "./towers";
 import { level01 } from "./levels/level01";
 import { level02 } from "./levels/level02";
 import { level03 } from "./levels/level03";
+import { level04 } from "./levels/level04";
+import { level05 } from "./levels/level05";
+import { level06 } from "./levels/level06";
+import { level07 } from "./levels/level07";
+import { level08 } from "./levels/level08";
+import { level09 } from "./levels/level09";
 import { metaUpgrades } from "./metaUpgrades";
 import { sagner } from "./sagner";
 import { globals } from "./globals";
@@ -15,11 +21,27 @@ export { towers } from "./towers";
 export { level01 } from "./levels/level01";
 export { level02 } from "./levels/level02";
 export { level03 } from "./levels/level03";
+export { level04 } from "./levels/level04";
+export { level05 } from "./levels/level05";
+export { level06 } from "./levels/level06";
+export { level07 } from "./levels/level07";
+export { level08 } from "./levels/level08";
+export { level09 } from "./levels/level09";
 export { metaUpgrades } from "./metaUpgrades";
 export { sagner } from "./sagner";
 export { globals } from "./globals";
 
-export const levels = [level01, level02, level03];
+export const levels = [
+  level01,
+  level02,
+  level03,
+  level04,
+  level05,
+  level06,
+  level07,
+  level08,
+  level09,
+];
 
 /**
  * Cross-reference checks beyond what zod schemas can express.
@@ -45,6 +67,14 @@ export function collectIntegrityViolations(bundle: ContentBundle): string[] {
   }
 
   const enemyIds = new Set(bundle.enemies.map((e) => e.id));
+  for (const enemy of bundle.enemies) {
+    if (enemy.splitsInto && !enemyIds.has(enemy.splitsInto.enemyTypeId)) {
+      violations.push(
+        `enemy "${enemy.id}": splitsInto enemyTypeId ` +
+          `"${enemy.splitsInto.enemyTypeId}" does not match any enemy def`,
+      );
+    }
+  }
   for (const level of bundle.levels) {
     level.waves.forEach((wave, waveIdx) => {
       wave.entries.forEach((entry, entryIdx) => {

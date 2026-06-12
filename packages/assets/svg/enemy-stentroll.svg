@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- stentroll: a walking boulder — granite hide, deep cracks (it splits
+       when it breaks!), moss saddle, tiny dim eyes under a stone brow (~56u) -->
+  <ellipse cx="32" cy="59" rx="22" ry="4" fill="rgba(0,0,0,0.2)"/>
+  <!-- stumpy stone legs -->
+  <g fill="#6b6f66">
+    <path d="M14 48 L12 58 L22 58 L21 49 Z"/>
+    <path d="M43 49 L42 58 L52 58 L50 48 Z"/>
+  </g>
+  <!-- boulder body -->
+  <path d="M9 38 Q7 14 32 10 Q57 14 55 38 Q55 52 32 53 Q9 52 9 38 Z" fill="#7d8175"/>
+  <path d="M14 36 Q13 19 30 14" fill="none" stroke="#969a8c" stroke-width="5" stroke-linecap="round"/>
+  <!-- moss saddle on the crown -->
+  <path d="M18 13 Q24 7 32 8 Q42 7 47 14 Q40 10 32 11 Q24 10 18 13 Z" fill="#5a6a48"/>
+  <circle cx="20" cy="14" r="2.6" fill="#5a6a48"/>
+  <circle cx="45" cy="15" r="2.2" fill="#5a6a48"/>
+  <!-- the deep cracks where it will split -->
+  <g fill="none" stroke="#4f5349" stroke-width="2.4" stroke-linecap="round">
+    <path d="M32 16 L30 26 L34 33 L31 42"/>
+    <path d="M30 26 L24 30"/>
+    <path d="M34 33 L41 36"/>
+  </g>
+  <!-- heavy stone arms -->
+  <g stroke="#6b6f66" stroke-width="8" stroke-linecap="round">
+    <path d="M11 30 L5 44"/>
+    <path d="M53 30 L59 44"/>
+  </g>
+  <!-- stone brow -->
+  <path d="M15 24 Q22 20 28 23 M49 24 Q42 20 36 23" fill="none" stroke="#565a50" stroke-width="4" stroke-linecap="round"/>
+  <!-- small dim eyes -->
+  <circle cx="23" cy="27" r="2.8" fill="#d8d4c4"/>
+  <circle cx="41" cy="27" r="2.8" fill="#d8d4c4"/>
+  <circle cx="23.6" cy="27.6" r="1.4" fill="#2c2f28"/>
+  <circle cx="40.4" cy="27.6" r="1.4" fill="#2c2f28"/>
+  <!-- broad flat nose, grim mouth -->
+  <ellipse cx="32" cy="34" rx="4" ry="3" fill="#969a8c"/>
+  <path d="M26 44 Q32 46 38 44" fill="none" stroke="#4f5349" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- lichen spots -->
+  <circle cx="14" cy="40" r="1.6" fill="#8a9a6e" opacity="0.8"/>
+  <circle cx="49" cy="42" r="1.4" fill="#8a9a6e" opacity="0.8"/>
+</svg>

@@ -18,6 +18,17 @@ export const enemyDefSchema = z.object({
   scale: z.number().min(0.5).max(2).default(1),
   /** boss treatment in the UI: hp banner while alive, spawn fanfare */
   boss: z.boolean().default(false),
+  /** resistance to slow/petrify: effective factor = factor + (1−factor)×resist.
+   * 0 = fully affected (default), 1 = immune. */
+  slowResist: z.number().min(0).max(1).default(0),
+  /** on death (killed, not leaked), spawns children at the parent's position
+   * continuing along the path */
+  splitsInto: z
+    .object({
+      enemyTypeId: z.string(),
+      count: z.number().int().positive().max(4),
+    })
+    .optional(),
 });
 export type EnemyDef = z.infer<typeof enemyDefSchema>;
 
@@ -100,8 +111,10 @@ export const metaUpgradeSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
-  /** meta-point cost per rank */
+  /** meta-point cost of rank 1; rank r costs round(cost × costGrowth^(r−1)) */
   cost: z.number().positive(),
+  /** per-rank cost escalation factor (1 = flat) */
+  costGrowth: z.number().min(1).default(1),
   maxRank: z.number().int().positive(),
   effect: z.object({
     kind: z.enum(["damageMult", "rangeMult", "startGold", "startLives"]),

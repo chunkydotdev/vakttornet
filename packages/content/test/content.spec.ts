@@ -17,10 +17,19 @@ describe("buildContent", () => {
   it("contains the expected defs", () => {
     const bundle = buildContent();
     expect(bundle.enemies.map((e) => e.id).sort()).toEqual([
+      "backahast",
+      "gruvkungen",
+      "isfursten",
+      "kyrkogrim",
       "myling",
       "sjoraet",
+      "skattvatte",
+      "skogsraet",
+      "skuggvarg",
+      "stentroll",
       "troll",
       "trollmodern",
+      "trollyngel",
       "vatte",
       "vattekungen",
     ]);
@@ -35,15 +44,37 @@ describe("buildContent", () => {
       "level01",
       "level02",
       "level03",
+      "level04",
+      "level05",
+      "level06",
+      "level07",
+      "level08",
+      "level09",
     ]);
     expect(bundle.metaUpgrades).toHaveLength(4);
-    expect(bundle.sagner).toHaveLength(10);
+    expect(bundle.sagner).toHaveLength(14);
   });
 
   it("level01 is unlocked from the start, level02 is not", () => {
     const bundle = buildContent();
     expect(bundle.levels[0]!.unlockPoints).toBe(0);
     expect(bundle.levels[1]!.unlockPoints).toBeGreaterThan(0);
+  });
+
+  it("ships nine levels on the exact unlock ladder, strictly increasing", () => {
+    const levelPoints = buildContent().levels.map((l) => l.unlockPoints);
+    expect(levelPoints).toEqual([
+      0, 400, 1000, 1800, 2800, 4200, 6000, 8200, 11000,
+    ]);
+    // strictly increasing — guards against reorders and copy-paste unlocks
+    for (let i = 1; i < levelPoints.length; i++) {
+      expect(levelPoints[i]!).toBeGreaterThan(levelPoints[i - 1]!);
+    }
+  });
+
+  it("wave counts rise across the campaign: 7,8,9,10,10,11,12,13,14", () => {
+    const counts = buildContent().levels.map((l) => l.waves.length);
+    expect(counts).toEqual([7, 8, 9, 10, 10, 11, 12, 13, 14]);
   });
 
   it("the unlock ladder is sensible: free starters, then nacken 300, vardtradet 800, level03 1000", () => {
@@ -57,13 +88,19 @@ describe("buildContent", () => {
 
     const levelPoints = bundle.levels.map((l) => l.unlockPoints);
     expect(levelPoints[2]).toBe(1000);
-    // levels unlock strictly later and later
-    for (let i = 1; i < levelPoints.length; i++) {
-      expect(levelPoints[i]!).toBeGreaterThan(levelPoints[i - 1]!);
-    }
     // the level02 grind unlocks nacken before level03 opens
     expect(tower("nacken").unlockPoints).toBeLessThan(levelPoints[2]!);
     expect(tower("vardtradet").unlockPoints).toBeLessThan(levelPoints[2]!);
+  });
+
+  it("every map starts within the agreed band: 120-170 gold, 8-10 lives (new maps 130-170)", () => {
+    for (const level of buildContent().levels) {
+      const minGold = level.unlockPoints >= 1800 ? 130 : 120;
+      expect(level.startGold).toBeGreaterThanOrEqual(minGold);
+      expect(level.startGold).toBeLessThanOrEqual(170);
+      expect(level.startLives).toBeGreaterThanOrEqual(8);
+      expect(level.startLives).toBeLessThanOrEqual(10);
+    }
   });
 });
 
@@ -95,6 +132,39 @@ describe("integrity cross-checks", () => {
 
   it("assertContentIntegrity passes a healthy bundle through silently", () => {
     expect(() => assertContentIntegrity(buildContent())).not.toThrow();
+  });
+
+  it("splitsInto references valid enemy ids in the healthy bundle", () => {
+    const bundle = buildContent();
+    const enemyIds = new Set(bundle.enemies.map((e) => e.id));
+    for (const enemy of bundle.enemies) {
+      if (!enemy.splitsInto) continue;
+      expect(
+        enemyIds.has(enemy.splitsInto.enemyTypeId),
+        `enemy "${enemy.id}" splits into unknown "${enemy.splitsInto.enemyTypeId}"`,
+      ).toBe(true);
+    }
+    // the two splitters we actually ship
+    const byId = (id: string) => bundle.enemies.find((e) => e.id === id)!;
+    expect(byId("stentroll").splitsInto).toEqual({
+      enemyTypeId: "trollyngel",
+      count: 2,
+    });
+    expect(byId("isfursten").splitsInto).toEqual({
+      enemyTypeId: "myling",
+      count: 4,
+    });
+  });
+
+  it("flags splitsInto references to unknown enemy ids", () => {
+    const broken: ContentBundle = structuredClone(buildContent());
+    const stentroll = broken.enemies.find((e) => e.id === "stentroll")!;
+    stentroll.splitsInto = { enemyTypeId: "grottyngel", count: 2 };
+
+    const violations = collectIntegrityViolations(broken);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain('"grottyngel"');
+    expect(violations[0]).toContain("stentroll");
   });
 });
 
@@ -178,19 +248,30 @@ describe("level maps", () => {
     ).toBe(countChar(level.map, "P"));
   }
 
-  it("level01 has a contiguous S→P…→E path", () => {
-    checkLevel(buildContent().levels[0]!);
+  it("EVERY level has a contiguous S→P…→E path that never touches water", () => {
+    const bundle = buildContent();
+    expect(bundle.levels).toHaveLength(9);
+    for (const level of bundle.levels) {
+      checkLevel(level);
+    }
   });
 
-  it("level02 has a contiguous S→P…→E path", () => {
-    checkLevel(buildContent().levels[1]!);
+  it("the water-identity maps actually carry water", () => {
+    const bundle = buildContent();
+    const byId = (id: string) => bundle.levels.find((l) => l.id === id)!;
+    // level03: the tarn fills the center
+    expect(countChar(byId("level03").map, "~")).toBeGreaterThanOrEqual(20);
+    // level05: a brook trickles through the ravine
+    expect(countChar(byId("level05").map, "~")).toBeGreaterThanOrEqual(6);
+    // level07: the delta is more water than land
+    expect(countChar(byId("level07").map, "~")).toBeGreaterThanOrEqual(40);
   });
 
-  it("level03 has a contiguous S→P…→E path that skirts the tarn", () => {
-    const level03 = buildContent().levels[2]!;
-    checkLevel(level03); // exactly one S/E, full connectivity, no water walked
-    // the tarn must actually be there — plenty of water tiles
-    expect(countChar(level03.map, "~")).toBeGreaterThanOrEqual(20);
+  it("boards stay within the 16×11 cap", () => {
+    for (const level of buildContent().levels) {
+      expect(level.map[0]!.length).toBeLessThanOrEqual(16);
+      expect(level.map.length).toBeLessThanOrEqual(11);
+    }
   });
 });
 
@@ -199,24 +280,54 @@ describe("boss waves", () => {
     level01: "vattekungen",
     level02: "trollmodern",
     level03: "sjoraet",
+    level04: "vattekungen", // returns with a far stronger escort
+    level05: "trollmodern",
+    level06: "gruvkungen",
+    level07: "sjoraet", // home turf — heavy escort
+    level08: "isfursten",
+    level09: "skogsraet", // the final boss
   };
 
   it("each boss def is flagged boss:true and drawn larger than a tile", () => {
     const bundle = buildContent();
-    for (const bossId of Object.values(expectedBossByLevel)) {
+    for (const bossId of new Set(Object.values(expectedBossByLevel))) {
       const def = bundle.enemies.find((e) => e.id === bossId);
       expect(def, `boss def "${bossId}" must exist`).toBeDefined();
       expect(def!.boss).toBe(true);
       expect(def!.scale).toBeGreaterThan(1);
     }
+    // the new bosses fill the 1.8-2.0 band — rendered up to 2x a tile
+    for (const bossId of ["gruvkungen", "isfursten", "skogsraet"]) {
+      const def = bundle.enemies.find((e) => e.id === bossId)!;
+      expect(def.scale).toBeGreaterThanOrEqual(1.8);
+      expect(def.scale).toBeLessThanOrEqual(2);
+    }
   });
 
   it("the rank-and-file enemies are not bosses", () => {
     const bundle = buildContent();
-    for (const id of ["myling", "vatte", "troll"]) {
-      const def = bundle.enemies.find((e) => e.id === id)!;
-      expect(def.boss, `${id} must not be a boss`).toBe(false);
-      expect(def.scale).toBe(1);
+    const bossIds = new Set(Object.values(expectedBossByLevel));
+    for (const def of bundle.enemies) {
+      if (bossIds.has(def.id)) continue;
+      expect(def.boss, `${def.id} must not be a boss`).toBe(false);
+    }
+    // the founding three stay tile-sized; the new silhouettes diverge on purpose
+    for (const id of ["myling", "vatte", "troll", "skuggvarg", "kyrkogrim"]) {
+      expect(bundle.enemies.find((e) => e.id === id)!.scale).toBe(1);
+    }
+    expect(bundle.enemies.find((e) => e.id === "backahast")!.scale).toBe(1.2);
+    expect(bundle.enemies.find((e) => e.id === "trollyngel")!.scale).toBe(0.7);
+  });
+
+  it("petrify resistance sits on the intended väsen only", () => {
+    const bundle = buildContent();
+    const resist = new Map(bundle.enemies.map((e) => [e.id, e.slowResist]));
+    expect(resist.get("kyrkogrim")).toBe(0.7);
+    expect(resist.get("backahast")).toBe(1); // immune — already of the water
+    expect(resist.get("gruvkungen")).toBe(0.8);
+    expect(resist.get("skogsraet")).toBe(0.5);
+    for (const id of ["myling", "vatte", "troll", "skuggvarg", "stentroll", "trollyngel", "skattvatte", "vattekungen", "trollmodern", "sjoraet", "isfursten"]) {
+      expect(resist.get(id), `${id} should petrify normally`).toBe(0);
     }
   });
 
@@ -255,7 +366,7 @@ describe("boss waves", () => {
   it("each boss has a first-kill sägen referencing its real enemy id", () => {
     const bundle = buildContent();
     const conditions = bundle.sagner.map((s) => s.condition);
-    for (const bossId of Object.values(expectedBossByLevel)) {
+    for (const bossId of new Set(Object.values(expectedBossByLevel))) {
       expect(conditions).toContainEqual({
         kind: "kills",
         enemyTypeId: bossId,
@@ -266,10 +377,115 @@ describe("boss waves", () => {
     expect(titles).toContain("Vättekungens fall");
     expect(titles).toContain("Trollmoderns sista vagga");
     expect(titles).toContain("Sjörået stiger");
+    expect(titles).toContain("Gruvkungens sista ådra");
+    expect(titles).toContain("Isfurstens töväder");
+    expect(titles).toContain("Skogsrået vänder sig om");
   });
 
   it("the bundle with bosses still passes the full integrity check", () => {
     expect(collectIntegrityViolations(buildContent())).toEqual([]);
+  });
+});
+
+describe("skattvatte — the treasure-carrier gimmick", () => {
+  it("bounty 40 on a 60 hp sprinter: the fastest, richest regular in the woods", () => {
+    const bundle = buildContent();
+    const skattvatte = bundle.enemies.find((e) => e.id === "skattvatte")!;
+    expect(skattvatte.bounty).toBe(40);
+    expect(skattvatte.boss).toBe(false);
+    // fastest regular on the board — it is trying to escape
+    for (const def of bundle.enemies) {
+      if (def.id === "skattvatte") continue;
+      expect(def.speed).toBeLessThan(skattvatte.speed);
+    }
+  });
+
+  it("out-bounties every wave-peer by more than 3x, in every appearance", () => {
+    const bundle = buildContent();
+    const byId = new Map(bundle.enemies.map((e) => [e.id, e]));
+    const skattvatte = byId.get("skattvatte")!;
+    let appearances = 0;
+    for (const level of bundle.levels) {
+      for (const wave of level.waves) {
+        if (!wave.entries.some((e) => e.enemyTypeId === "skattvatte")) continue;
+        appearances++;
+        for (const entry of wave.entries) {
+          if (entry.enemyTypeId === "skattvatte") continue;
+          const peer = byId.get(entry.enemyTypeId)!;
+          expect(
+            skattvatte.bounty,
+            `${level.id}: skattvatte must out-bounty peer "${peer.id}" 3x`,
+          ).toBeGreaterThan(3 * peer.bounty);
+        }
+      }
+    }
+    // sprinkled rarely from level05 on — present, but never common
+    expect(appearances).toBeGreaterThanOrEqual(4);
+    expect(appearances).toBeLessThanOrEqual(8);
+    // never before level05
+    for (const level of bundle.levels.slice(0, 4)) {
+      for (const wave of level.waves) {
+        expect(
+          wave.entries.some((e) => e.enemyTypeId === "skattvatte"),
+          `${level.id} must not contain skattvatte yet`,
+        ).toBe(false);
+      }
+    }
+  });
+});
+
+describe("meta upgrade economy", () => {
+  function rankCost(cost: number, growth: number, rank: number): number {
+    return Math.round(cost * Math.pow(growth, rank - 1));
+  }
+  function maxOutCost(u: {
+    cost: number;
+    costGrowth: number;
+    maxRank: number;
+  }): number {
+    let total = 0;
+    for (let r = 1; r <= u.maxRank; r++) {
+      total += rankCost(u.cost, u.costGrowth, r);
+    }
+    return total;
+  }
+
+  it("keeps the four upgrades, deeper and escalating", () => {
+    const bundle = buildContent();
+    const byId = (id: string) => bundle.metaUpgrades.find((u) => u.id === id)!;
+    expect(bundle.metaUpgrades).toHaveLength(4);
+
+    const expected: Record<
+      string,
+      { cost: number; costGrowth: number; maxRank: number }
+    > = {
+      bjornstyrka: { cost: 100, costGrowth: 1.7, maxRank: 5 },
+      ugglesyn: { cost: 120, costGrowth: 1.7, maxRank: 4 },
+      skattkista: { cost: 80, costGrowth: 1.6, maxRank: 5 },
+      stugvarme: { cost: 140, costGrowth: 1.8, maxRank: 4 },
+    };
+    for (const [id, exp] of Object.entries(expected)) {
+      const def = byId(id);
+      expect(def.cost, `${id} cost`).toBe(exp.cost);
+      expect(def.costGrowth, `${id} costGrowth`).toBe(exp.costGrowth);
+      expect(def.maxRank, `${id} maxRank`).toBe(exp.maxRank);
+    }
+  });
+
+  it("maxing the whole shop costs exactly the documented 6073 points", () => {
+    const bundle = buildContent();
+    const byId = (id: string) => bundle.metaUpgrades.find((u) => u.id === id)!;
+    // per-upgrade totals documented in metaUpgrades.ts
+    expect(maxOutCost(byId("bjornstyrka"))).toBe(1885);
+    expect(maxOutCost(byId("ugglesyn"))).toBe(1261);
+    expect(maxOutCost(byId("skattkista"))).toBe(1265);
+    expect(maxOutCost(byId("stugvarme"))).toBe(1662);
+
+    const total = bundle.metaUpgrades.reduce((s, u) => s + maxOutCost(u), 0);
+    expect(total).toBe(6073);
+    // sanity: several won maps of earnings (a won map yields ~1100+ points),
+    // not the single-map shop of old (~860)
+    expect(total).toBeGreaterThan(5 * 860);
   });
 });
 
@@ -429,6 +645,12 @@ describe("sagner", () => {
     expect(conditions).toContainEqual({ kind: "winLevel", levelId: "level01" });
     expect(conditions).toContainEqual({ kind: "winLevel", levelId: "level02" });
     expect(conditions).toContainEqual({ kind: "flawlessWin" });
+    // the treasure-carrier hunt: ten gold sacks claimed
+    expect(conditions).toContainEqual({
+      kind: "kills",
+      enemyTypeId: "skattvatte",
+      count: 10,
+    });
 
     const firstTrollKill = bundle.sagner.find(
       (s) => s.condition.kind === "kills" && s.condition.enemyTypeId === "troll",
@@ -438,6 +660,12 @@ describe("sagner", () => {
       (s) => s.condition.kind === "flawlessWin",
     )!;
     expect(flawless.title).toBe("Obefläckad");
+    const treasureHunt = bundle.sagner.find(
+      (s) =>
+        s.condition.kind === "kills" &&
+        s.condition.enemyTypeId === "skattvatte",
+    )!;
+    expect(treasureHunt.title).toBe("Skattvättens flykt");
   });
 
   it("integrity check fires on bogus condition enemyTypeIds and levelIds", () => {

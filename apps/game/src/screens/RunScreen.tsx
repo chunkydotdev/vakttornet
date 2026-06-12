@@ -261,13 +261,16 @@ export function RunScreen({
   }, [toast]);
 
   // ---- Canvas input. ----
+  // Large boards are CSS-scaled below their logical size to fit the viewport,
+  // so tile math maps pointer coords through the RENDERED rect — never TILE_PX.
   function tileFromEvent(e: React.MouseEvent<HTMLCanvasElement>): TilePos | null {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    const col = Math.floor((e.clientX - rect.left) / TILE_PX);
-    const row = Math.floor((e.clientY - rect.top) / TILE_PX);
+    if (rect.width <= 0 || rect.height <= 0) return null;
     const { cols, rows } = sim.state.grid;
+    const col = Math.floor(((e.clientX - rect.left) / rect.width) * cols);
+    const row = Math.floor(((e.clientY - rect.top) / rect.height) * rows);
     if (col < 0 || row < 0 || col >= cols || row >= rows) return null;
     return { col, row };
   }
@@ -444,7 +447,6 @@ export function RunScreen({
             ref={canvasRef}
             width={cols * TILE_PX}
             height={rows * TILE_PX}
-            style={{ width: cols * TILE_PX, height: rows * TILE_PX }}
             onClick={handleCanvasClick}
             onMouseMove={handleCanvasMove}
             onMouseLeave={handleCanvasLeave}

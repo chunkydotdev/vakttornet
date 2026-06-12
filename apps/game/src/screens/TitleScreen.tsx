@@ -14,7 +14,8 @@ interface TitleScreenProps {
 export function TitleScreen({ save, onPlay, onUpgrades, onCodex, onTopplista }: TitleScreenProps) {
   return (
     <div className="screen">
-      <div className="screen-inner">
+      {/* Wider inner so the level grid fits two columns of readable cards. */}
+      <div className="screen-inner screen-inner-wide">
         <header className="title-header">
           <h1>Vakttornet</h1>
           <p className="tagline">Mörka skogen vaknar. Håll stigen — försvara stugan.</p>

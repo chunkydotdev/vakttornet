@@ -22,9 +22,18 @@ import projectileNacken from "../svg/projectile-nacken.svg?url";
 import enemyMyling from "../svg/enemy-myling.svg?url";
 import enemyVatte from "../svg/enemy-vatte.svg?url";
 import enemyTroll from "../svg/enemy-troll.svg?url";
+import enemySkuggvarg from "../svg/enemy-skuggvarg.svg?url";
+import enemyKyrkogrim from "../svg/enemy-kyrkogrim.svg?url";
+import enemyBackahast from "../svg/enemy-backahast.svg?url";
+import enemyStentroll from "../svg/enemy-stentroll.svg?url";
+import enemyTrollyngel from "../svg/enemy-trollyngel.svg?url";
+import enemySkattvatte from "../svg/enemy-skattvatte.svg?url";
 import enemyVattekungen from "../svg/enemy-vattekungen.svg?url";
 import enemyTrollmodern from "../svg/enemy-trollmodern.svg?url";
 import enemySjoraet from "../svg/enemy-sjoraet.svg?url";
+import enemyGruvkungen from "../svg/enemy-gruvkungen.svg?url";
+import enemyIsfursten from "../svg/enemy-isfursten.svg?url";
+import enemySkogsraet from "../svg/enemy-skogsraet.svg?url";
 import uiHeart from "../svg/ui-heart.svg?url";
 import uiCoin from "../svg/ui-coin.svg?url";
 
@@ -47,9 +56,18 @@ export const manifest: Record<AssetId, string> = {
   "enemy.myling": enemyMyling,
   "enemy.vatte": enemyVatte,
   "enemy.troll": enemyTroll,
+  "enemy.skuggvarg": enemySkuggvarg,
+  "enemy.kyrkogrim": enemyKyrkogrim,
+  "enemy.backahast": enemyBackahast,
+  "enemy.stentroll": enemyStentroll,
+  "enemy.trollyngel": enemyTrollyngel,
+  "enemy.skattvatte": enemySkattvatte,
   "enemy.vattekungen": enemyVattekungen,
   "enemy.trollmodern": enemyTrollmodern,
   "enemy.sjoraet": enemySjoraet,
+  "enemy.gruvkungen": enemyGruvkungen,
+  "enemy.isfursten": enemyIsfursten,
+  "enemy.skogsraet": enemySkogsraet,
   "ui.heart": uiHeart,
   "ui.coin": uiCoin,
 };

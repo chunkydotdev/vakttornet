@@ -93,12 +93,16 @@
 
 /* ---------- Layout ---------- */
 
+/* Middle column: minmax(0, auto) lets big boards (16×11 = 1024px logical)
+   shrink below their content size instead of overflowing the viewport;
+   the canvas inside scales down with aspect preserved. */
 .run-layout {
   display: grid;
-  grid-template-columns: 215px auto 235px;
+  grid-template-columns: 215px minmax(0, auto) 235px;
   gap: 1rem;
   align-items: start;
   justify-content: center;
+  max-width: 100%;
 }
 
 .side-panel {
@@ -130,11 +134,17 @@
   background: var(--bg-raised);
   box-shadow: var(--shadow);
   line-height: 0;
+  max-width: 100%;
 }
 
+/* The renderer pins style.width to the logical size (cols × 64); max-width
+   shrinks it on large boards and height:auto follows the canvas's intrinsic
+   aspect ratio. Input math reads the rendered rect, so clicks stay aligned. */
 .board-wrap canvas {
   display: block;
   cursor: crosshair;
+  max-width: 100%;
+  height: auto;
 }
 
 .board-loading {

@@ -176,8 +176,12 @@ export class Renderer {
     this.dpr = Math.max(1, window.devicePixelRatio || 1);
     canvas.width = Math.round(this.cssWidth * this.dpr);
     canvas.height = Math.round(this.cssHeight * this.dpr);
+    // Display at logical size, but let CSS shrink large boards to fit the
+    // viewport: `max-width: 100%` + `height: auto` (run.css) scale the bitmap
+    // down with the aspect ratio preserved. Pointer→tile math must therefore
+    // always use the RENDERED size (getBoundingClientRect), never TILE_PX.
     canvas.style.width = `${this.cssWidth}px`;
-    canvas.style.height = `${this.cssHeight}px`;
+    canvas.style.removeProperty("height");
 
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Canvas 2D context unavailable");

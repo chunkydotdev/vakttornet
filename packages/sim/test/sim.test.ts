@@ -521,6 +521,70 @@ describe("slow (petrify)", () => {
     sim.tick();
     expect(enemy.pos.x - before).toBeCloseTo(0.25, 10);
   });
+
+  // slowResist 0 (the default, used by runt/tank in every test above) leaves
+  // behavior unchanged: effective factor = payload factor. The suite above is
+  // the regression coverage for that case.
+
+  it("slowResist 1: no slow state, no enemySlowed event, full speed after the hit", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "stoneskin", count: 1, spacingTicks: 1 }] }],
+    });
+    sim.placeTower("lantern", { col: 3, row: 1 }); // damage 1, slow 0.5 × 12
+    sim.startWave();
+
+    let hit: SimEvent | undefined;
+    for (let t = 1; t <= 5 && !hit; t++) {
+      const events = sim.tick();
+      // An immune enemy shows no petrify: the event never fires.
+      expect(eventsOfType(events, "enemySlowed")).toEqual([]);
+      hit = eventsOfType(events, "projectileHit")[0];
+    }
+    expect(hit).toBeDefined(); // the projectile DID land (damage applies)...
+    const enemy = sim.state.enemies[0]!;
+    expect(enemy.hp).toBe(9);
+    // ...but no slow state was set.
+    expect(enemy).toMatchObject({ slowTicksLeft: 0, slowFactor: 1 });
+
+    // Full speed on every following tick (0.25 tiles/tick, exact).
+    for (let t = 0; t < 5; t++) {
+      const before = enemy.pos.x;
+      expect(eventsOfType(sim.tick(), "enemySlowed")).toEqual([]);
+      expect(enemy.pos.x - before).toBe(0.25);
+    }
+  });
+
+  it("slowResist 0.5 against factor 0.5: effective factor 0.75, duration unchanged", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "halfskin", count: 1, spacingTicks: 1 }] }],
+    });
+    sim.placeTower("lantern", { col: 3, row: 1 }); // slow 0.5 × 12, fires once
+    sim.startWave();
+
+    const events = tickUntilSlowed(sim);
+    const enemy = sim.state.enemies[0]!;
+    // Partial resist still emits enemySlowed, with the payload's duration.
+    expect(eventsOfType(events, "enemySlowed")).toEqual([
+      { type: "enemySlowed", enemyId: enemy.id, durationTicks: 12 },
+    ]);
+    expect(enemy.slowFactor).toBe(0.75); // 0.5 + (1 − 0.5) × 0.5
+    expect(enemy.slowTicksLeft).toBe(12);
+
+    // 0.75 × 0.25 = exactly 0.1875 tiles/tick for the full 12-tick duration
+    // (all positions are multiples of 1/16, so the math is float-exact).
+    for (let i = 0; i < 12; i++) {
+      const before = enemy.pos.x;
+      sim.tick();
+      expect(enemy.pos.x - before).toBe(0.1875);
+    }
+    expect(enemy.slowTicksLeft).toBe(0);
+    expect(enemy.slowFactor).toBe(1);
+
+    // Back to full speed once the slow expires.
+    const before = enemy.pos.x;
+    sim.tick();
+    expect(enemy.pos.x - before).toBe(0.25);
+  });
 });
 
 describe("splash", () => {
@@ -566,6 +630,175 @@ describe("splash", () => {
     }
     expect(hit).toBeDefined();
     expect("splashRadius" in hit!).toBe(false);
+  });
+});
+
+describe("splitsInto", () => {
+  const splitterWave = {
+    waves: [{ entries: [{ enemyTypeId: "splitter", count: 1, spacingTicks: 1 }] }],
+  };
+
+  it("killing a splitter spawns its children at the parent's position, same tick, after enemyDied", () => {
+    const { sim } = setup(splitterWave);
+    sim.placeTower("archer", { col: 1, row: 1 }); // 12 dmg one-shots hp 10
+    sim.startWave();
+    sim.tick(); // t1: spawn + fire
+    const t2 = sim.tick(); // t2: hit kills the parent
+    expect(t2.map((e) => e.type)).toEqual([
+      "projectileHit",
+      "enemyDied",
+      "enemySpawned",
+      "enemySpawned",
+    ]);
+    const died = eventsOfType(t2, "enemyDied")[0]!;
+    expect(died).toMatchObject({ typeId: "splitter", bounty: 8 });
+
+    const spawned = eventsOfType(t2, "enemySpawned");
+    expect(spawned.map((e) => e.typeId)).toEqual(["runt", "runt"]);
+    expect(sim.state.enemies.map((e) => e.id)).toEqual(spawned.map((e) => e.enemyId));
+    for (const child of sim.state.enemies) {
+      // Spawned exactly where the parent died, continuing its journey:
+      // same pathIndex, prevPos = spawn pos, fresh stats, no inherited slow.
+      expect(child.pos).toEqual(died.at);
+      expect(child.prevPos).toEqual(child.pos);
+      expect(child).toMatchObject({
+        typeId: "runt",
+        hp: 10,
+        maxHp: 10,
+        speed: 7.5,
+        pathIndex: 1,
+        bounty: 5,
+        slowTicksLeft: 0,
+        slowFactor: 1,
+      });
+    }
+    // Distinct, deterministic ids in spawn order.
+    expect(sim.state.enemies[1]!.id).toBe(sim.state.enemies[0]!.id + 1);
+
+    // The wave is NOT cleared while children live.
+    expect(eventsOfType(t2, "waveCleared")).toEqual([]);
+    expect(sim.state.status).toBe("wave");
+  });
+
+  it("children walk the rest of the path and leak, costing lives", () => {
+    const { sim } = setup({ ...splitterWave, startLives: 3 });
+    sim.placeTower("beacon", { col: 3, row: 1 }); // 50 dmg one-shot, cooldown 90
+    sim.startWave();
+
+    // Kill the parent; children spawn mid-path.
+    let died: Array<Extract<SimEvent, { type: "enemyDied" }>> = [];
+    for (let t = 1; t <= 10 && died.length === 0; t++) {
+      died = eventsOfType(sim.tick(), "enemyDied");
+    }
+    expect(died).toHaveLength(1);
+    const childIds = sim.state.enemies.map((e) => e.id);
+    expect(childIds).toHaveLength(2);
+
+    // Both children (same pos, same speed) reach the exit in the same tick.
+    let leaks: Array<Extract<SimEvent, { type: "enemyLeaked" }>> = [];
+    let finalEvents: SimEvent[] = [];
+    for (let t = 1; t <= 30 && leaks.length === 0; t++) {
+      finalEvents = sim.tick();
+      leaks = eventsOfType(finalEvents, "enemyLeaked");
+    }
+    expect(leaks.map((l) => l.enemyId)).toEqual(childIds);
+    expect(leaks.map((l) => l.livesLeft)).toEqual([2, 1]);
+    expect(sim.state.lives).toBe(1);
+    expect(sim.state.enemies).toEqual([]);
+    // Everything spawned and nothing alive → the wave clears in the leak tick.
+    expect(eventsOfType(finalEvents, "waveCleared")).toHaveLength(1);
+  });
+
+  it("a LEAKED splitter does not split", () => {
+    const { sim } = setup(splitterWave); // no towers — the parent walks through
+    sim.startWave();
+    const all: SimEvent[] = [];
+    for (let t = 1; t <= 24; t++) all.push(...sim.tick());
+    expect(eventsOfType(all, "enemyLeaked")).toHaveLength(1);
+    expect(eventsOfType(all, "enemySpawned")).toHaveLength(1); // only the parent
+    expect(eventsOfType(all, "enemyDied")).toEqual([]);
+    expect(sim.state.enemies).toEqual([]);
+    expect(sim.state.lives).toBe(2);
+  });
+
+  it("children pay their own bounty when killed; the wave clears only once they are all dead", () => {
+    const { sim } = setup(splitterWave);
+    sim.placeTower("ballista", { col: 1, row: 1 }); // 12 dmg every 2 ticks, hits same tick
+    sim.startWave();
+
+    // t1: the ballista one-shots the parent the moment it spawns — the death
+    // and both child spawns land in the very first wave tick.
+    const t1 = sim.tick();
+    expect(t1.map((e) => e.type)).toEqual([
+      "towerPlaced",
+      "waveStarted",
+      "enemySpawned",
+      "towerFired",
+      "projectileHit",
+      "enemyDied",
+      "enemySpawned",
+      "enemySpawned",
+    ]);
+    expect(eventsOfType(t1, "waveCleared")).toEqual([]);
+
+    const rest: SimEvent[] = [];
+    for (let t = 1; t <= 20 && sim.state.status !== "won"; t++) rest.push(...sim.tick());
+    expect(sim.state.status).toBe("won");
+    const died = [...eventsOfType(t1, "enemyDied"), ...eventsOfType(rest, "enemyDied")];
+    expect(died.map((d) => ({ typeId: d.typeId, bounty: d.bounty }))).toEqual([
+      { typeId: "splitter", bounty: 8 },
+      { typeId: "runt", bounty: 5 },
+      { typeId: "runt", bounty: 5 },
+    ]);
+    expect(eventsOfType(rest, "waveCleared")).toHaveLength(1);
+    expect(sim.state.gold).toBe(88); // 100 − 30 ballista + 8 + 5 + 5 bounty
+    expect(sim.state.score).toBe(34); // bounties 18 + clear bonus 10 + 3 lives × 2
+  });
+
+  it("splits chain: a child with splitsInto splits again (grandchildren)", () => {
+    const { sim } = setup({
+      waves: [{ entries: [{ enemyTypeId: "bigsplitter", count: 1, spacingTicks: 1 }] }],
+    });
+    sim.placeTower("ballista", { col: 1, row: 1 });
+    sim.startWave();
+
+    const all: SimEvent[] = [];
+    for (let t = 1; t <= 60 && sim.state.status !== "won"; t++) all.push(...sim.tick());
+    expect(sim.state.status).toBe("won");
+    expect(eventsOfType(all, "enemyLeaked")).toEqual([]);
+
+    // 1 bigsplitter → 2 splitters → 4 runts: 7 spawns, 7 deaths.
+    const spawnCounts = eventsOfType(all, "enemySpawned").reduce<Record<string, number>>(
+      (acc, e) => ({ ...acc, [e.typeId]: (acc[e.typeId] ?? 0) + 1 }),
+      {},
+    );
+    expect(spawnCounts).toEqual({ bigsplitter: 1, splitter: 2, runt: 4 });
+    const died = eventsOfType(all, "enemyDied");
+    expect(died).toHaveLength(7);
+    const bountySum = died.reduce((sum, d) => sum + d.bounty, 0);
+    expect(bountySum).toBe(48); // 12 + 2×8 + 4×5
+    expect(sim.state.gold).toBe(100 - 30 + 48);
+  });
+
+  it("createSim throws when splitsInto references an unknown enemy type", () => {
+    expect(() =>
+      setup(
+        {},
+        {
+          extraEnemies: [
+            {
+              id: "ghost",
+              name: "Ghost",
+              assetId: "enemy-ghost",
+              hp: 5,
+              speed: 7.5,
+              bounty: 1,
+              splitsInto: { enemyTypeId: "no-such-enemy", count: 2 },
+            },
+          ],
+        },
+      ),
+    ).toThrow('Enemy "ghost" splitsInto unknown enemy type "no-such-enemy"');
   });
 });
 
@@ -720,6 +953,16 @@ describe("determinism", () => {
                 // Tight cluster (0.5 tiles apart) so the boulder's splash
                 // resolves multi-kills inside the determinism script.
                 { enemyTypeId: "runt", count: 3, spacingTicks: 2 },
+              ],
+            },
+            {
+              // Splitters (children spawn on kill) plus slow-resistant enemies
+              // (partial + full resist) so both new mechanics run inside the
+              // determinism script.
+              entries: [
+                { enemyTypeId: "splitter", count: 2, spacingTicks: 8 },
+                { enemyTypeId: "halfskin", count: 1, spacingTicks: 4, delayTicks: 6 },
+                { enemyTypeId: "stoneskin", count: 1, spacingTicks: 4, delayTicks: 2 },
               ],
             },
           ],

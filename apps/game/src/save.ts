@@ -145,14 +145,22 @@ export function setPlayerName(save: SaveData, playerName: string): SaveData {
   return next;
 }
 
+/** Meta-point cost of the NEXT rank when `ownedRank` ranks are already
+ * bought: round(cost × costGrowth^ownedRank). The first rank (ownedRank 0)
+ * costs exactly `cost`; with costGrowth 1 every rank stays flat. */
+export function nextUpgradeCost(upgrade: MetaUpgradeDef, ownedRank: number): number {
+  return Math.round(upgrade.cost * Math.pow(upgrade.costGrowth, ownedRank));
+}
+
 /** Returns the updated save, or null if the upgrade can't be bought. */
 export function buyUpgrade(save: SaveData, upgrade: MetaUpgradeDef): SaveData | null {
   const rank = save.upgradeRanks[upgrade.id] ?? 0;
   if (rank >= upgrade.maxRank) return null;
-  if (save.points < upgrade.cost) return null;
+  const cost = nextUpgradeCost(upgrade, rank);
+  if (save.points < cost) return null;
   const next: SaveData = {
     ...save,
-    points: save.points - upgrade.cost,
+    points: save.points - cost,
     upgradeRanks: { ...save.upgradeRanks, [upgrade.id]: rank + 1 },
   };
   persistSave(next);

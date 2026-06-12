@@ -96,4 +96,40 @@ export const sagner: SagenDef[] = [
       "Den som ror över tjärnen håller ändå handen om sin lykta — för säkerhets skull.",
     condition: { kind: "kills", enemyTypeId: "sjoraet", count: 1 },
   },
+  {
+    id: "skattvattens-flykt",
+    title: "Skattvättens flykt",
+    text:
+      "Det sägs att skattvättarna bär guld som aldrig varit deras, och att de springer som om säcken brann. " +
+      "Tio säckar har nu stannat vid tornet, fast tio små vättar sprang vidare med bara mössan i behåll. " +
+      "Guldet rullar de in i mossan vid stuggrunden — men räkna det aldrig, för räknat guld slutar växa.",
+    condition: { kind: "kills", enemyTypeId: "skattvatte", count: 10 },
+  },
+  {
+    id: "gruvkungens-sista-adra",
+    title: "Gruvkungens sista ådra",
+    text:
+      "Det sägs att Gruvkungen räknade varje åder i berget som sin, och att hans krona av hackor klingade i takt med hans steg. " +
+      "När han föll vid tornet slocknade gruvans alla ljus på en och samma gång — utom ett, som vandrade upp ur schaktet och stannade hos stugan. " +
+      "Malmletare lägger än i dag örat mot berget, men berget håller andan.",
+    condition: { kind: "kills", enemyTypeId: "gruvkungen", count: 1 },
+  },
+  {
+    id: "isfurstens-tovader",
+    title: "Isfurstens töväder",
+    text:
+      "Det sägs att Isfursten bar vintern som en mantel, och att hans andedräkt lade sjö efter sjö i bojor. " +
+      "Vid tornet brast kronan av is, och för första gången på hundra år droppade det ur granarna mitt i mörkaste natten. " +
+      "De gamla kallar den natten det stora tövädret, och än kan man höra bäckarna skratta åt alltihop.",
+    condition: { kind: "kills", enemyTypeId: "isfursten", count: 1 },
+  },
+  {
+    id: "skogsraet-vander-sig-om",
+    title: "Skogsrået vänder sig om",
+    text:
+      "Det sägs att Skogsrået var skogens egen längtan — skön framifrån som en sommarkväll, men ihålig i ryggen som ett murket träd. " +
+      "Vid tornet vände hon sig om en sista gång, och den som höll i lyktan vågade inte se efter vart hon gick. " +
+      "Sedan dess står urskogen alldeles stilla, och rävsvansen skymtar bara för den som slutat leta.",
+    condition: { kind: "kills", enemyTypeId: "skogsraet", count: 1 },
+  },
 ];

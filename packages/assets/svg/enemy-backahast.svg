@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- bäckahästen: the pale brook-horse — too-beautiful white mare, mane
+       and tail streaming into running water, kelp at the fetlocks. Already
+       of the water: sunlight glances off (slowResist 1) (~54u) -->
+  <ellipse cx="32" cy="57" rx="18" ry="3" fill="rgba(0,0,0,0.15)"/>
+  <!-- water swirling where hooves should strike -->
+  <g fill="none" stroke="#6fa3a0" stroke-width="2" stroke-linecap="round" opacity="0.7">
+    <path d="M12 55 Q18 52 24 55"/>
+    <path d="M34 56 Q40 53 46 56"/>
+  </g>
+  <!-- legs dissolving into water -->
+  <g stroke="#c9d7da" stroke-width="5" stroke-linecap="round">
+    <path d="M20 42 L17 52"/>
+    <path d="M27 44 L26 53"/>
+    <path d="M40 44 L42 53"/>
+    <path d="M46 41 L50 50"/>
+  </g>
+  <g fill="none" stroke="#8fb8b5" stroke-width="3" stroke-linecap="round" opacity="0.8">
+    <path d="M17 52 Q15 55 12 55"/>
+    <path d="M50 50 Q53 53 56 52"/>
+  </g>
+  <!-- body -->
+  <path d="M14 38 Q15 28 27 27 Q38 26 45 30 L49 34 Q50 42 42 44 Q30 47 21 44 Q14 43 14 38 Z" fill="#dde7e9"/>
+  <path d="M19 36 Q20 30 28 29" fill="none" stroke="#f2f7f7" stroke-width="4" stroke-linecap="round"/>
+  <!-- tail pouring away like a rill -->
+  <path d="M15 37 Q6 36 4 45 Q9 46 13 42 Q10 47 14 49 Q18 45 17 40 Z" fill="#9fc6c3"/>
+  <!-- arched neck and head -->
+  <path d="M44 31 Q46 18 53 14 Q57 13 58 17 Q59 22 55 24 Q60 25 59 29 Q57 34 51 35 Q46 35 44 31 Z" fill="#dde7e9"/>
+  <!-- mane running down the neck like falling water -->
+  <path d="M46 30 Q49 18 54 14 Q50 12 46 17 Q43 23 44 30 Z" fill="#9fc6c3"/>
+  <path d="M45 26 Q47 19 51 15" fill="none" stroke="#6fa3a0" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+  <!-- ears -->
+  <path d="M52 14 L51 9 L55 12 Z" fill="#c9d7da"/>
+  <!-- deep drowning-dark eye -->
+  <circle cx="53.5" cy="21" r="2.4" fill="#1e3833"/>
+  <circle cx="54.2" cy="20.3" r="0.8" fill="#cfe6e2"/>
+  <!-- soft muzzle, nostril -->
+  <circle cx="57.5" cy="27.5" r="1.2" fill="#9fb4b8"/>
+  <!-- kelp wound round a fetlock -->
+  <path d="M26 48 Q24 50 26 52 Q28 50 26 48 Z" fill="#5a6a48"/>
+  <!-- droplets -->
+  <circle cx="20" cy="32" r="1" fill="#9fc6c3" opacity="0.8"/>
+  <circle cx="44" cy="40" r="1" fill="#9fc6c3" opacity="0.8"/>
+</svg>

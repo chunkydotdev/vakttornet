@@ -50,6 +50,13 @@ export const createSim: CreateSim = (level, content, opts) => {
       }
     }
   });
+  for (const def of content.enemies) {
+    if (def.splitsInto && !enemyDefs.has(def.splitsInto.enemyTypeId)) {
+      throw new Error(
+        `Enemy "${def.id}" splitsInto unknown enemy type "${def.splitsInto.enemyTypeId}"`,
+      );
+    }
+  }
 
   // Seeded RNG — unused by current mechanics (they are fully deterministic
   // without randomness) but instantiated here so future randomized features
@@ -108,6 +115,28 @@ export const createSim: CreateSim = (level, content, opts) => {
     return schedule;
   }
 
+  /** Create an enemy of `def` at `pos` heading for path[pathIndex], add it to
+   * the world and emit enemySpawned. Used by wave spawning (at path[0]) and by
+   * splitsInto (at the dead parent's position). */
+  function spawnEnemy(def: EnemyDef, pos: Vec, pathIndex: number, events: SimEvent[]): EnemyInstance {
+    const enemy: EnemyInstance = {
+      id: nextId++,
+      typeId: def.id,
+      pos: { ...pos },
+      prevPos: { ...pos },
+      hp: def.hp,
+      maxHp: def.hp,
+      speed: def.speed,
+      pathIndex,
+      bounty: def.bounty,
+      slowTicksLeft: 0,
+      slowFactor: 1,
+    };
+    state.enemies.push(enemy);
+    events.push({ type: "enemySpawned", enemyId: enemy.id, typeId: enemy.typeId });
+    return enemy;
+  }
+
   function spawnDueEnemies(events: SimEvent[]): void {
     while (
       spawnCursor < spawnSchedule.length &&
@@ -115,22 +144,8 @@ export const createSim: CreateSim = (level, content, opts) => {
     ) {
       const { def } = spawnSchedule[spawnCursor]!;
       spawnCursor += 1;
-      const start = state.path[0]!;
-      const enemy: EnemyInstance = {
-        id: nextId++,
-        typeId: def.id,
-        pos: { ...start },
-        prevPos: { ...start },
-        hp: def.hp,
-        maxHp: def.hp,
-        speed: def.speed,
-        pathIndex: 1, // spawned at path[0], moving toward path[1]
-        bounty: def.bounty,
-        slowTicksLeft: 0,
-        slowFactor: 1,
-      };
-      state.enemies.push(enemy);
-      events.push({ type: "enemySpawned", enemyId: enemy.id, typeId: enemy.typeId });
+      // Spawned at path[0], moving toward path[1].
+      spawnEnemy(def, state.path[0]!, 1, events);
     }
     waveTicks += 1;
   }
@@ -307,21 +322,46 @@ export const createSim: CreateSim = (level, content, opts) => {
               bounty: e.bounty,
               at: { ...e.pos },
             });
+            // splitsInto: a KILLED enemy (never a leaked one) spawns children
+            // at its position, continuing the parent's journey (same pathIndex,
+            // fresh hp/speed/bounty, no inherited slow). enemySpawned events go
+            // right after the parent's enemyDied, same tick. Because deaths
+            // resolve after the movement phase, children first move next tick.
+            // Splits happen before checkWaveClear, so a wave can never clear
+            // while freshly split children are alive — and they chain: a child
+            // with its own splitsInto splits again when killed.
+            const split = enemyDefs.get(e.typeId)!.splitsInto;
+            if (split) {
+              const childDef = enemyDefs.get(split.enemyTypeId)!;
+              for (let c = 0; c < split.count; c++) {
+                spawnEnemy(childDef, e.pos, e.pathIndex, events);
+              }
+            }
           }
         }
         // Slow applies ONLY to the primary target — splash victims are never
         // slowed, even if a tower somehow has both slow and splashRadius —
         // and only if the primary survived the impact.
         if (target.hp > 0 && proj.slow) {
-          // Overwrite semantics: a new application replaces both factor and
-          // duration — no stacking, no taking the stronger of the two.
-          target.slowFactor = proj.slow.factor;
-          target.slowTicksLeft = proj.slow.durationTicks;
-          events.push({
-            type: "enemySlowed",
-            enemyId: target.id,
-            durationTicks: proj.slow.durationTicks,
-          });
+          // slowResist scales the factor toward 1:
+          //   effective = factor + (1 − factor) × resist.
+          // resist 1 (effective factor 1) means immune: no slow state and no
+          // enemySlowed event — an immune enemy shows no petrify at all.
+          // Partial resist keeps the payload's full durationTicks.
+          const resist = enemyDefs.get(target.typeId)!.slowResist;
+          const effectiveFactor =
+            proj.slow.factor + (1 - proj.slow.factor) * resist;
+          if (resist < 1 && effectiveFactor < 1) {
+            // Overwrite semantics: a new application replaces both factor and
+            // duration — no stacking, no taking the stronger of the two.
+            target.slowFactor = effectiveFactor;
+            target.slowTicksLeft = proj.slow.durationTicks;
+            events.push({
+              type: "enemySlowed",
+              enemyId: target.id,
+              durationTicks: proj.slow.durationTicks,
+            });
+          }
         }
       } else {
         proj.pos = {

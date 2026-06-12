@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- isfursten: the winter-night prince — tall gaunt figure in a frosted
+       mantle, crown of ice crystals, breath like falling snow. Cold blues
+       kept dusky, never neon. Boss: renders up to 2x tile, fills ~60u -->
+  <ellipse cx="32" cy="60" rx="16" ry="3.5" fill="rgba(0,0,0,0.18)"/>
+  <!-- drifting snow at the hem -->
+  <g fill="#dce8ee" opacity="0.8">
+    <circle cx="16" cy="55" r="1.2"/>
+    <circle cx="48" cy="53" r="1.2"/>
+    <circle cx="24" cy="58" r="1"/>
+  </g>
+  <!-- long frosted mantle -->
+  <path d="M17 26 Q14 46 15 58 L49 58 Q50 46 47 26 Q40 20 32 20 Q24 20 17 26 Z" fill="#5d7287"/>
+  <path d="M20 30 Q17 44 18 56" fill="none" stroke="#71889e" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- rime crusting the hem -->
+  <path d="M15 56 Q22 52 32 56 Q42 52 49 56" fill="none" stroke="#c5d6e0" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- frost ferns on the mantle -->
+  <g fill="none" stroke="#a9c0cf" stroke-width="1.6" stroke-linecap="round" opacity="0.9">
+    <path d="M22 36 L26 41 M26 41 L24 45 M26 41 L29 44"/>
+    <path d="M42 34 L39 40 M39 40 L41 44 M39 40 L36 43"/>
+  </g>
+  <!-- icicle-fringed shoulders -->
+  <g fill="#c5d6e0">
+    <path d="M18 28 l2 7 l2 -6 Z"/>
+    <path d="M42 29 l2 6 l2 -7 Z"/>
+  </g>
+  <!-- one arm raised, holding the ice scepter -->
+  <path d="M44 30 Q51 30 53 24" fill="none" stroke="#5d7287" stroke-width="5" stroke-linecap="round"/>
+  <path d="M54 26 L52 6" stroke="#a9c0cf" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M52 6 l-3 5 l3 3 l3 -3 Z" fill="#dce8ee"/>
+  <path d="M20 30 Q14 33 13 39" fill="none" stroke="#5d7287" stroke-width="5" stroke-linecap="round"/>
+  <!-- frozen collar -->
+  <path d="M22 22 Q22 28 32 30 Q42 28 42 22 Q37 18 32 18 Q27 18 22 22 Z" fill="#8fa7b6"/>
+  <!-- gaunt pale face -->
+  <ellipse cx="32" cy="15" rx="8.5" ry="7" fill="#dce8ee"/>
+  <!-- hollow cheeks -->
+  <path d="M26 18 Q28 20 30 19 M38 18 Q36 20 34 19" fill="none" stroke="#a9c0cf" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- pale cold eyes, no warmth in them -->
+  <circle cx="28.5" cy="14" r="2.6" fill="#ffffff"/>
+  <circle cx="35.5" cy="14" r="2.6" fill="#ffffff"/>
+  <circle cx="28.8" cy="14.4" r="1.3" fill="#31506b"/>
+  <circle cx="35.2" cy="14.4" r="1.3" fill="#31506b"/>
+  <path d="M25 10.5 L30 12 M39 10.5 L34 12" stroke="#71889e" stroke-width="1.8" stroke-linecap="round"/>
+  <!-- thin frozen mouth, breath of snow -->
+  <path d="M29.5 19.5 L34.5 19.5" stroke="#71889e" stroke-width="1.6" stroke-linecap="round"/>
+  <circle cx="40" cy="21" r="0.9" fill="#dce8ee" opacity="0.8"/>
+  <circle cx="43" cy="19" r="0.7" fill="#dce8ee" opacity="0.7"/>
+  <!-- CROWN OF ICE CRYSTALS -->
+  <path d="M23 9.5 Q32 6 41 9.5" fill="none" stroke="#a9c0cf" stroke-width="3" stroke-linecap="round"/>
+  <g fill="#c5d6e0">
+    <path d="M24 8 L22 1 L27 6 Z"/>
+    <path d="M30 6 L32 -1 L34 6 Z"/>
+    <path d="M40 8 L42 1 L37 6 Z"/>
+  </g>
+  <g fill="#eef5f8">
+    <path d="M23.4 6.4 L22.6 3.4 L25 5.6 Z"/>
+    <path d="M31.2 4.6 L32 1.6 L32.8 4.6 Z"/>
+  </g>
+</svg>

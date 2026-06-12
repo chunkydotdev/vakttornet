@@ -52,13 +52,55 @@ export function makeLevel(overrides: LevelOverrides = {}): LevelDef {
   });
 }
 
-export function makeContent(level: LevelDef): ContentBundle {
+export function makeContent(level: LevelDef, extraEnemies: unknown[] = []): ContentBundle {
   return contentBundleSchema.parse({
     enemies: [
       // 7.5 tiles/s = exactly 0.25 tiles/tick
       { id: "runt", name: "Runt", assetId: "enemy-runt", hp: 10, speed: 7.5, bounty: 5 },
       // 3.75 tiles/s = exactly 0.125 tiles/tick
       { id: "tank", name: "Tank", assetId: "enemy-tank", hp: 1000, speed: 3.75, bounty: 20 },
+      // slowResist 1 = fully immune to petrify — for resist tests
+      {
+        id: "stoneskin",
+        name: "Stoneskin",
+        assetId: "enemy-stoneskin",
+        hp: 10,
+        speed: 7.5,
+        bounty: 5,
+        slowResist: 1,
+      },
+      // slowResist 0.5: lantern's 0.5 payload → effective 0.5 + 0.5×0.5 = 0.75,
+      // so 0.75 × 0.25 = exactly 0.1875 tiles/tick while petrified.
+      {
+        id: "halfskin",
+        name: "Halfskin",
+        assetId: "enemy-halfskin",
+        hp: 10,
+        speed: 7.5,
+        bounty: 5,
+        slowResist: 0.5,
+      },
+      // Splits into 2 runts on kill. hp 10 → one-shot by archer/ballista (12).
+      {
+        id: "splitter",
+        name: "Splitter",
+        assetId: "enemy-splitter",
+        hp: 10,
+        speed: 7.5,
+        bounty: 8,
+        splitsInto: { enemyTypeId: "runt", count: 2 },
+      },
+      // Splits into 2 splitters — for chained (grandchildren) split tests.
+      {
+        id: "bigsplitter",
+        name: "Big Splitter",
+        assetId: "enemy-bigsplitter",
+        hp: 10,
+        speed: 7.5,
+        bounty: 12,
+        splitsInto: { enemyTypeId: "splitter", count: 2 },
+      },
+      ...extraEnemies,
     ],
     towers: [
       {
@@ -137,6 +179,13 @@ export function makeContent(level: LevelDef): ContentBundle {
         ],
       },
       {
+        id: "ballista",
+        name: "Ballista",
+        assetId: "tower-ballista",
+        description: "One-shots runts every 2 ticks, whole map — for split-chain tests",
+        levels: [{ cost: 30, damage: 12, range: 20, cooldownTicks: 2, projectileSpeed: 60 }],
+      },
+      {
         id: "kvarn",
         name: "Mill",
         assetId: "tower-kvarn",
@@ -163,10 +212,10 @@ export function makeContent(level: LevelDef): ContentBundle {
 
 export function setup(
   levelOverrides: LevelOverrides = {},
-  opts: { seed?: number; meta?: MetaModifiers } = {},
+  opts: { seed?: number; meta?: MetaModifiers; extraEnemies?: unknown[] } = {},
 ): { sim: Sim; level: LevelDef; content: ContentBundle } {
   const level = makeLevel(levelOverrides);
-  const content = makeContent(level);
+  const content = makeContent(level, opts.extraEnemies ?? []);
   const sim = createSim(level, content, { seed: opts.seed ?? 42, meta: opts.meta });
   return { sim, level, content };
 }
