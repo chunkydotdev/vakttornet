@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { NAME_PATTERN } from "@vakttornet/leaderboard/api";
 import { manifest } from "@vakttornet/assets/manifest";
 import { LeaderboardError, submitScore } from "../leaderboard";
+import { useT, type StringKey } from "../i18n";
 import { formatSilver } from "../towerInfo";
 
 /** Present only on a WON run with the leaderboard configured — losses and
@@ -38,28 +39,25 @@ export function RunEndOverlay({
   onRetry,
   onExit,
 }: RunEndOverlayProps) {
+  const { t } = useT();
   return (
     <div className="run-end-overlay" role="dialog" aria-modal="true">
       <div className="run-end-card">
-        <h2 className={won ? "won" : "lost"}>{won ? "Seger!" : "Nederlag"}</h2>
-        <p className="run-end-sub">
-          {won
-            ? "Stugan står kvar. Mörkret drar sig tillbaka i skogen."
-            : "Mörkret nådde fram till stugan…"}
-        </p>
+        <h2 className={won ? "won" : "lost"}>{won ? t("victory") : t("defeat")}</h2>
+        <p className="run-end-sub">{won ? t("wonSub") : t("lostSub")}</p>
         <p className="run-end-score">
-          <span className="label">Poäng</span>
+          <span className="label">{t("score")}</span>
           {score}
         </p>
         <span className="run-end-points">
           <img className="icon" src={manifest["ui.trollsilver"]} alt="" />+
-          {formatSilver(silverEarned)} trollsilver
+          {t("trollsilverAmount", { s: formatSilver(silverEarned) })}
         </span>
         {newSagner.length > 0 && (
           <ul className="run-end-sagner">
             {newSagner.map((title) => (
               <li key={title}>
-                Ny sägen upptäckt: <em>{title}</em>
+                {t("newSagen")} <em>{title}</em>
               </li>
             ))}
           </ul>
@@ -67,10 +65,10 @@ export function RunEndOverlay({
         {won && leaderboard && <LeaderboardPanel score={score} board={leaderboard} />}
         <div className="run-end-actions">
           <button type="button" className="btn" onClick={onExit}>
-            Till kartorna
+            {t("toMaps")}
           </button>
           <button type="button" className="btn btn-primary" onClick={onRetry}>
-            Spela igen
+            {t("playAgain")}
           </button>
         </div>
       </div>
@@ -84,14 +82,15 @@ type SubmitPhase =
   | { kind: "done"; rank: number }
   | { kind: "error"; message: string };
 
-function submitErrorText(err: unknown): string {
+function submitErrorKey(err: unknown): StringKey {
   if (err instanceof LeaderboardError && err.code === "rate-limited") {
-    return "Lugn i stugan, vänta en stund.";
+    return "rateLimited";
   }
-  return "Topplistan svarar inte just nu.";
+  return "boardError";
 }
 
 function LeaderboardPanel({ score, board }: { score: number; board: RunEndLeaderboard }) {
+  const { t } = useT();
   const [name, setName] = useState(board.initialName);
   const [phase, setPhase] = useState<SubmitPhase>({ kind: "idle" });
 
@@ -101,10 +100,7 @@ function LeaderboardPanel({ score, board }: { score: number; board: RunEndLeader
     if (phase.kind === "sending" || phase.kind === "done") return;
     const trimmed = name.trim();
     if (!NAME_PATTERN.test(trimmed)) {
-      setPhase({
-        kind: "error",
-        message: "Namnet behöver 2–12 tecken: bokstäver, siffror, mellanslag, - eller _.",
-      });
+      setPhase({ kind: "error", message: t("nameError") });
       return;
     }
     setPhase({ kind: "sending" });
@@ -118,23 +114,23 @@ function LeaderboardPanel({ score, board }: { score: number; board: RunEndLeader
       board.onNameUsed(trimmed);
       setPhase({ kind: "done", rank: res.rank });
     } catch (err) {
-      setPhase({ kind: "error", message: submitErrorText(err) });
+      setPhase({ kind: "error", message: t(submitErrorKey(err)) });
     }
   }
 
   return (
     <div className="run-end-leaderboard">
-      <p className="run-end-vardtrad">Dina vårdträd: {board.vardtrad}</p>
+      <p className="run-end-vardtrad">{t("yourVardtrad", { n: board.vardtrad })}</p>
       {phase.kind === "done" ? (
-        <p className="lb-success">Du ligger på plats {phase.rank}!</p>
+        <p className="lb-success">{t("rankResult", { n: phase.rank })}</p>
       ) : (
         <form className="lb-form" onSubmit={handleSubmit}>
           <input
             type="text"
             value={name}
             maxLength={12}
-            placeholder="Ditt namn"
-            aria-label="Ditt namn"
+            placeholder={t("namePlaceholder")}
+            aria-label={t("namePlaceholder")}
             disabled={phase.kind === "sending"}
             onChange={(e) => setName(e.target.value)}
           />
@@ -143,7 +139,7 @@ function LeaderboardPanel({ score, board }: { score: number; board: RunEndLeader
             className="btn btn-primary"
             disabled={phase.kind === "sending"}
           >
-            {phase.kind === "sending" ? "Skickar…" : "Skicka till topplistan"}
+            {phase.kind === "sending" ? t("sending") : t("submitToBoard")}
           </button>
         </form>
       )}

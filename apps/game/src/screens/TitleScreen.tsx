@@ -8,11 +8,13 @@
 import { useState } from "react";
 import { manifest } from "@vakttornet/assets/manifest";
 import type { MetaModifiers } from "@vakttornet/sim";
-import { content } from "../content";
+import { useContent } from "../localized";
+import { useT } from "../i18n";
 import { assetUrl } from "../game/render";
 import { leaderboardEnabled } from "../leaderboard";
 import { nextUpgradeCost, type SaveData } from "../save";
 import { formatSilver } from "../towerInfo";
+import { LangToggle } from "./LangToggle";
 import { MuteButton } from "./MuteButton";
 import { ShopItemModal, upgradeIconUrl, type ShopItem } from "./ShopItemModal";
 
@@ -37,6 +39,8 @@ export function TitleScreen({
   onCodex,
   onTopplista,
 }: TitleScreenProps) {
+  const { t } = useT();
+  const content = useContent();
   const [shopItem, setShopItem] = useState<ShopItem | null>(null);
 
   // Recommended map: first unlocked level not yet won; once everything
@@ -52,30 +56,33 @@ export function TitleScreen({
 
   // Förrådet: towers that have to be bought (silverPrice > 0); the three
   // starter towers are always available and stay out of the shop.
-  const shopTowers = content.towers.filter((t) => t.silverPrice > 0);
+  const shopTowers = content.towers.filter((tower) => tower.silverPrice > 0);
+
+  const waveCount = (n: number) => t(n === 1 ? "waveCountOne" : "waveCountMany", { n });
 
   return (
     <div className="screen">
       <div className="screen-inner screen-inner-wide">
         <header className="title-header">
           <h1>Vakttornet</h1>
-          <p className="tagline">Mörka skogen vaknar. Håll stigen och försvara stugan.</p>
+          <p className="tagline">{t("tagline")}</p>
         </header>
 
         <div className="title-toolbar">
-          <span className="points-chip" title="Trollsilver att spendera">
-            <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+          <span className="points-chip" title={t("silverToSpend")}>
+            <img className="icon" src={manifest["ui.trollsilver"]} alt={t("trollsilver")} />
             {formatSilver(save.points)}
           </span>
           <span className="title-toolbar-actions">
             <button type="button" className="btn" onClick={onCodex}>
-              Sägner
+              {t("sagner")}
             </button>
             {leaderboardEnabled() && (
               <button type="button" className="btn" onClick={onTopplista}>
-                Topplista
+                {t("topplista")}
               </button>
             )}
+            <LangToggle />
             <MuteButton />
           </span>
         </div>
@@ -83,11 +90,11 @@ export function TitleScreen({
         <section className="hub-hero">
           {nextMap && (
             <article className="hero-card hero-play">
-              <span className="hero-kicker">Nästa försvar</span>
+              <span className="hero-kicker">{t("nextDefense")}</span>
               <h2 className="hero-level-name">{nextMap.name}</h2>
               <p className="hero-meta">
-                {nextMap.waves.length} {nextMap.waves.length === 1 ? "våg" : "vågor"}
-                {save.deeds.wonLevelIds.includes(nextMap.id) && " · redan vunnen"}
+                {waveCount(nextMap.waves.length)}
+                {save.deeds.wonLevelIds.includes(nextMap.id) && ` · ${t("alreadyWon")}`}
               </p>
               <div className="hero-actions">
                 <button
@@ -95,21 +102,18 @@ export function TitleScreen({
                   className="btn btn-primary hero-play-btn"
                   onClick={() => onPlay(nextMap.id)}
                 >
-                  Spela
+                  {t("play")}
                 </button>
               </div>
             </article>
           )}
 
           <article className="hero-card hero-unlock">
-            <span className="hero-kicker">Nästa upplåsning</span>
+            <span className="hero-kicker">{t("nextUnlock")}</span>
             {nextUnlock ? (
               <>
                 <h3 className="hero-unlock-name">{nextUnlock.name}</h3>
-                <p className="hero-meta">
-                  {nextUnlock.waves.length}{" "}
-                  {nextUnlock.waves.length === 1 ? "våg" : "vågor"}
-                </p>
+                <p className="hero-meta">{waveCount(nextUnlock.waves.length)}</p>
                 <div className="hero-unlock-progress">
                   <div className="progress">
                     <div
@@ -118,29 +122,33 @@ export function TitleScreen({
                     />
                   </div>
                   <p className="hero-unlock-remaining">
-                    <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
-                    {formatSilver(Math.max(0, nextUnlock.unlockPoints - save.totalEarned))} kvar
+                    <img
+                      className="icon"
+                      src={manifest["ui.trollsilver"]}
+                      alt={t("trollsilver")}
+                    />
+                    {t("silverRemaining", {
+                      s: formatSilver(Math.max(0, nextUnlock.unlockPoints - save.totalEarned)),
+                    })}
                   </p>
                 </div>
               </>
             ) : (
-              <p className="hero-all-unlocked">🏆 Alla kartor upplåsta!</p>
+              <p className="hero-all-unlocked">{t("allMapsUnlocked")}</p>
             )}
           </article>
         </section>
 
         <div className="hub-show-all">
           <button type="button" className="btn" onClick={onShowLevels}>
-            Visa alla kartor →
+            {t("showAllMaps")}
           </button>
         </div>
 
         <section className="forrad">
           <header className="forrad-head">
-            <h2 className="hub-section-title">Förrådet</h2>
-            <p className="forrad-sub">
-              Varaktiga förstärkningar och torn att köpa för trollsilver. Klicka för detaljer.
-            </p>
+            <h2 className="hub-section-title">{t("forradTitle")}</h2>
+            <p className="forrad-sub">{t("forradSub")}</p>
           </header>
           <div className="forrad-grid">
             {content.metaUpgrades.map((upgrade) => {
@@ -158,20 +166,20 @@ export function TitleScreen({
                   <span className="forrad-status">
                     <span
                       className="rank-pips rank-pips-small"
-                      title={`Rang ${rank} av ${upgrade.maxRank}`}
+                      title={t("rankOfTitle", { r: rank, m: upgrade.maxRank })}
                     >
                       {Array.from({ length: upgrade.maxRank }, (_, i) => (
                         <span key={i} className={i < rank ? "pip filled" : "pip"} />
                       ))}
                     </span>
                     {maxed ? (
-                      <span className="forrad-substatus maxed">Maxad</span>
+                      <span className="forrad-substatus maxed">{t("maxed")}</span>
                     ) : (
                       <span className="forrad-substatus cost">
                         <img
                           className="icon"
                           src={manifest["ui.trollsilver"]}
-                          alt="Trollsilver"
+                          alt={t("trollsilver")}
                         />
                         {formatSilver(nextUpgradeCost(upgrade, rank))}
                       </span>
@@ -197,13 +205,13 @@ export function TitleScreen({
                   <span className="forrad-name">{tower.name}</span>
                   <span className="forrad-status">
                     {owned ? (
-                      <span className="forrad-substatus unlocked">Upplåst ✓</span>
+                      <span className="forrad-substatus unlocked">{t("unlockedCheck")}</span>
                     ) : (
                       <span className="forrad-substatus cost">
                         <img
                           className="icon"
                           src={manifest["ui.trollsilver"]}
-                          alt="Trollsilver"
+                          alt={t("trollsilver")}
                         />
                         {formatSilver(tower.silverPrice)}
                       </span>
@@ -216,7 +224,7 @@ export function TitleScreen({
         </section>
 
         <p className="muted" style={{ textAlign: "center", fontSize: "0.8rem" }}>
-          Du tjänar trollsilver varje gång du spelar, vinst som förlust.
+          {t("earnSilverNote")}
         </p>
       </div>
 

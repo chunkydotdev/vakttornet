@@ -3,7 +3,8 @@
  * their full text in an old-tale serif style; locked ones show a "???"
  * silhouette plus a subtle hint derived from the unlock condition.
  */
-import { content } from "../content";
+import { useContent } from "../localized";
+import { useT } from "../i18n";
 import type { SaveData } from "../save";
 import { isSagenUnlocked, sagenHint } from "../sagner";
 
@@ -13,6 +14,8 @@ interface CodexScreenProps {
 }
 
 export function CodexScreen({ save, onBack }: CodexScreenProps) {
+  const { t } = useT();
+  const content = useContent();
   const unlockedCount = content.sagner.filter((s) =>
     isSagenUnlocked(s.condition, save.deeds),
   ).length;
@@ -22,16 +25,16 @@ export function CodexScreen({ save, onBack }: CodexScreenProps) {
       <div className="screen-inner">
         <div className="title-toolbar">
           <button type="button" className="btn btn-ghost" onClick={onBack}>
-            ← Tillbaka
+            ← {t("back")}
           </button>
-          <span className="points-chip" title="Upptäckta sägner">
-            {unlockedCount} av {content.sagner.length} sägner upptäckta
+          <span className="points-chip" title={t("codexDiscoveredTitle")}>
+            {t("codexCount", { n: unlockedCount, m: content.sagner.length })}
           </span>
         </div>
 
         <header className="title-header">
-          <h1 style={{ fontSize: "2.2rem" }}>Sägner</h1>
-          <p className="tagline">Skogens berättelser, samlade vid lyktans sken.</p>
+          <h1 style={{ fontSize: "2.2rem" }}>{t("sagner")}</h1>
+          <p className="tagline">{t("codexTagline")}</p>
         </header>
 
         <ul className="sagen-list">
@@ -53,7 +56,7 @@ export function CodexScreen({ save, onBack }: CodexScreenProps) {
 
         {content.sagner.length === 0 && (
           <p className="muted" style={{ textAlign: "center" }}>
-            Skogen har inga sägner att berätta än.
+            {t("codexEmpty")}
           </p>
         )}
       </div>

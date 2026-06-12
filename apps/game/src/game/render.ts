@@ -23,6 +23,7 @@ import type {
   TowerDef,
   TowerLevel,
 } from "@vakttornet/content";
+import { tr } from "../i18n";
 
 export const TILE_PX = 64;
 
@@ -262,19 +263,22 @@ export class Renderer {
           this.lastSlowFloatAt.delete(event.enemyId);
           const def = this.enemyDefs.get(event.typeId);
           if (def?.boss) {
-            this.addFloat(`${def.name} har fallit!`, `rgb(${ACCENT_RGB})`, this.boardCenter(), {
-              big: true,
-            });
+            this.addFloat(
+              tr("floatBossFallen", { name: def.name }),
+              `rgb(${ACCENT_RGB})`,
+              this.boardCenter(),
+              { big: true },
+            );
           }
           break;
         }
         case "enemyLeaked":
-          this.addFloat("-1 ♥", "#f87171", this.exitPos);
+          this.addFloat(tr("floatLifeLost"), "#f87171", this.exitPos);
           this.lastSlowFloatAt.delete(event.enemyId);
           break;
         case "waveCleared":
           if (event.bonus > 0) {
-            this.addFloat(`Våg klar +${event.bonus}`, "#a78bfa", {
+            this.addFloat(tr("floatWaveClear", { n: event.bonus }), "#a78bfa", {
               x: this.sim.state.grid.cols / 2,
               y: this.sim.state.grid.rows / 2,
             });
@@ -287,7 +291,7 @@ export class Renderer {
           const lastAt = this.lastSlowFloatAt.get(event.enemyId) ?? -Infinity;
           if (now - lastAt < SLOW_FLOAT_COOLDOWN_MS) break;
           this.lastSlowFloatAt.set(event.enemyId, now);
-          this.addFloat("förstenad!", PETRIFY_COLOR, enemy.pos, { italic: true });
+          this.addFloat(tr("floatPetrified"), PETRIFY_COLOR, enemy.pos, { italic: true });
           break;
         }
         case "towerPulsed": {

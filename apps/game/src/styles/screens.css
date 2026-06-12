@@ -59,6 +59,35 @@
   gap: 0.6rem;
 }
 
+/* SV | EN language switch — sits next to the mute button on the hub.
+   Mirrors the run HUD's speed toggle; the active language glows amber. */
+.lang-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.lang-toggle button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font: 700 0.8rem var(--font);
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.lang-toggle button:hover {
+  color: var(--text);
+}
+
+.lang-toggle button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 /* ---------- Level list ---------- */
 
 /* Responsive grid: with 9+ levels a single column becomes a giant scroll.

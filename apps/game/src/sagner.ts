@@ -4,9 +4,10 @@
  * Conditions live in content (SagenDef.condition); the lifetime counters live
  * in the save (DeedCounters). This module is the bridge: evaluate a condition
  * against counters, diff before/after a run for "ny sägen upptäckt" toasts,
- * and format a Swedish hint line for locked entries.
+ * and format a localized hint line for locked entries.
  */
 import type { ContentBundle, SagenCondition, SagenDef } from "@vakttornet/content";
+import { getLang, tr } from "./i18n";
 import type { DeedCounters } from "./save";
 
 export function isSagenUnlocked(condition: SagenCondition, deeds: DeedCounters): boolean {
@@ -33,7 +34,9 @@ export function newlyUnlockedSagner(
   );
 }
 
-/** Subtle Swedish hint line for a locked sägen, derived from its condition. */
+/** Subtle hint line for a locked sägen, derived from its condition. Pass the
+ * LOCALIZED bundle — enemy/level names come straight from it, and the
+ * article/plural heuristics follow the current language. */
 export function sagenHint(condition: SagenCondition, content: ContentBundle): string {
   switch (condition.kind) {
     case "kills": {
@@ -41,34 +44,38 @@ export function sagenHint(condition: SagenCondition, content: ContentBundle): st
         content.enemies.find((e) => e.id === condition.enemyTypeId)?.name ??
         condition.enemyTypeId;
       if (condition.count === 1) {
-        return `Fäll ${indefiniteArticle(name)} ${name.toLowerCase()}…`;
+        return tr("hintKillOne", { a: indefiniteArticle(name), name: name.toLowerCase() });
       }
-      return `Fäll ${condition.count} ${pluralize(name).toLowerCase()}…`;
+      return tr("hintKillMany", { n: condition.count, plural: pluralize(name).toLowerCase() });
     }
     case "petrified":
-      return `Förstena ${condition.count} väsen…`;
+      return tr("hintPetrify", { n: condition.count });
     case "winLevel": {
       const level = content.levels.find((l) => l.id === condition.levelId);
-      return `Vinn ${level?.name ?? condition.levelId}…`;
+      return tr("hintWinLevel", { name: level?.name ?? condition.levelId });
     }
     case "flawlessWin":
-      return "Vinn utan att förlora ett liv…";
+      return tr("hintFlawless");
   }
 }
 
-/** Best-effort Swedish indefinite article for creature names: nouns ending in
- * unstressed -e or -ing are typically en-words (en vätte, en myling); short
- * neuter nouns like troll take ett. Heuristic — good enough for a hint line
- * and degrades gracefully for future content. */
-function indefiniteArticle(name: string): "en" | "ett" {
+/** Best-effort indefinite article for creature names. Swedish: nouns ending
+ * in unstressed -e or -ing are typically en-words (en vätte, en myling);
+ * short neuter nouns like troll take ett. English: "an" before a vowel
+ * sound, else "a". Heuristics — good enough for a hint line and degrade
+ * gracefully for future content. */
+function indefiniteArticle(name: string): string {
   const lower = name.toLowerCase();
+  if (getLang() === "en") return /^[aeiou]/.test(lower) ? "an" : "a";
   return lower.endsWith("e") || lower.endsWith("ing") ? "en" : "ett";
 }
 
-/** Best-effort Swedish plural: -e → -ar (vätte → vättar), -ing → -ingar
- * (myling → mylingar), otherwise unchanged (troll → troll, väsen → väsen). */
+/** Best-effort plural. Swedish: -e → -ar (vätte → vättar), -ing → -ingar
+ * (myling → mylingar), otherwise unchanged (troll → troll, väsen → väsen).
+ * English: -s unless the name already ends in s. */
 function pluralize(name: string): string {
   const lower = name.toLowerCase();
+  if (getLang() === "en") return lower.endsWith("s") ? name : name + "s";
   if (lower.endsWith("e")) return name.slice(0, -1) + "ar";
   if (lower.endsWith("ing")) return name + "ar";
   return name;

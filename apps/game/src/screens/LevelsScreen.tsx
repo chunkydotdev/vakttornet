@@ -4,7 +4,8 @@
  */
 import { useEffect } from "react";
 import { manifest } from "@vakttornet/assets/manifest";
-import { content } from "../content";
+import { useContent } from "../localized";
+import { useT } from "../i18n";
 import type { SaveData } from "../save";
 import { formatSilver } from "../towerInfo";
 
@@ -15,6 +16,9 @@ interface LevelsScreenProps {
 }
 
 export function LevelsScreen({ save, onPlay, onBack }: LevelsScreenProps) {
+  const { t } = useT();
+  const content = useContent();
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.code === "Escape") onBack();
@@ -28,17 +32,17 @@ export function LevelsScreen({ save, onPlay, onBack }: LevelsScreenProps) {
       <div className="screen-inner screen-inner-wide">
         <div className="title-toolbar">
           <button type="button" className="btn btn-ghost" onClick={onBack}>
-            ← Tillbaka
+            ← {t("back")}
           </button>
-          <span className="points-chip" title="Trollsilver att spendera">
-            <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+          <span className="points-chip" title={t("silverToSpend")}>
+            <img className="icon" src={manifest["ui.trollsilver"]} alt={t("trollsilver")} />
             {formatSilver(save.points)}
           </span>
         </div>
 
         <header className="title-header">
-          <h1 style={{ fontSize: "2.2rem" }}>Alla kartor</h1>
-          <p className="tagline">Varje karta ger trollsilver, vinst som förlust.</p>
+          <h1 style={{ fontSize: "2.2rem" }}>{t("allMaps")}</h1>
+          <p className="tagline">{t("allMapsTagline")}</p>
         </header>
 
         <ul className="level-list">
@@ -49,10 +53,12 @@ export function LevelsScreen({ save, onPlay, onBack }: LevelsScreenProps) {
                 <div>
                   <h3>{level.name}</h3>
                   <p className="level-meta">
-                    {level.waves.length} {level.waves.length === 1 ? "våg" : "vågor"}
+                    {t(level.waves.length === 1 ? "waveCountOne" : "waveCountMany", {
+                      n: level.waves.length,
+                    })}
                     {locked && (
                       <span className="lock-note">
-                        · Låst — kräver {formatSilver(level.unlockPoints)} trollsilver
+                        · {t("lockedNeeds", { s: formatSilver(level.unlockPoints) })}
                       </span>
                     )}
                   </p>
@@ -63,7 +69,7 @@ export function LevelsScreen({ save, onPlay, onBack }: LevelsScreenProps) {
                   disabled={locked}
                   onClick={() => onPlay(level.id)}
                 >
-                  Spela
+                  {t("play")}
                 </button>
               </li>
             );

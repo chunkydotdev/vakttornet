@@ -16,6 +16,8 @@ import { sagner } from "./sagner";
 import { globals } from "./globals";
 
 export * from "./schema";
+export { en } from "./en";
+export type { ContentTranslation } from "./i18n-types";
 export { enemies } from "./enemies";
 export { towers } from "./towers";
 export { level01 } from "./levels/level01";

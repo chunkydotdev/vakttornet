@@ -6,7 +6,8 @@
  */
 import { useEffect, useState } from "react";
 import type { LeaderboardEntry } from "@vakttornet/leaderboard/api";
-import { content } from "../content";
+import { useContent } from "../localized";
+import { useT } from "../i18n";
 import { getScores } from "../leaderboard";
 
 interface TopplistaScreenProps {
@@ -19,6 +20,8 @@ type BoardState =
   | { kind: "ready"; entries: LeaderboardEntry[] };
 
 export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
+  const { t } = useT();
+  const content = useContent();
   const [levelId, setLevelId] = useState<string>(content.levels[0]?.id ?? "");
   const [board, setBoard] = useState<BoardState>({ kind: "loading" });
   const [fetchKey, setFetchKey] = useState(0);
@@ -53,16 +56,16 @@ export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
       <div className="screen-inner">
         <div className="title-toolbar">
           <button type="button" className="btn btn-ghost" onClick={onBack}>
-            ← Tillbaka
+            ← {t("back")}
           </button>
         </div>
 
         <header className="title-header">
-          <h1 style={{ fontSize: "2.2rem" }}>Topplista</h1>
-          <p className="tagline">Väktarna som höll stigen och deras vårdträd.</p>
+          <h1 style={{ fontSize: "2.2rem" }}>{t("topplista")}</h1>
+          <p className="tagline">{t("topplistaTagline")}</p>
         </header>
 
-        <div className="topplista-tabs" role="tablist" aria-label="Karta">
+        <div className="topplista-tabs" role="tablist" aria-label={t("mapAria")}>
           {content.levels.map((level) => (
             <button
               key={level.id}
@@ -79,33 +82,31 @@ export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
 
         <div className="topplista-board">
           {board.kind === "loading" && (
-            <div className="topplista-status loading">Hämtar topplistan…</div>
+            <div className="topplista-status loading">{t("fetchingBoard")}</div>
           )}
           {board.kind === "error" && (
             <div className="topplista-status">
-              <p>Topplistan svarar inte just nu.</p>
+              <p>{t("boardError")}</p>
               <button
                 type="button"
                 className="btn"
                 onClick={() => setFetchKey((k) => k + 1)}
               >
-                Försök igen
+                {t("tryAgain")}
               </button>
             </div>
           )}
           {board.kind === "ready" && board.entries.length === 0 && (
-            <div className="topplista-status">
-              Inga sägner har skrivits här ännu. Bli först!
-            </div>
+            <div className="topplista-status">{t("emptyBoard")}</div>
           )}
           {board.kind === "ready" && board.entries.length > 0 && (
             <table className="score-table">
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Namn</th>
-                  <th className="num">Vårdträd</th>
-                  <th className="num">Poäng</th>
+                  <th>{t("thName")}</th>
+                  <th className="num">{t("thVardtrad")}</th>
+                  <th className="num">{t("score")}</th>
                 </tr>
               </thead>
               <tbody>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { content } from "./content";
+import { useContent } from "./localized";
 import { music } from "./game/music";
 import {
   applyRunEnd,
@@ -26,10 +26,14 @@ type Screen =
 export function App() {
   const [save, setSave] = useState<SaveData>(loadSave);
   const [screen, setScreen] = useState<Screen>({ kind: "title" });
+  // Localized bundle: display strings follow the language toggle; ids and
+  // stats are identical to the canonical bundle, so lookups and the sim are
+  // safe to feed from it.
+  const content = useContent();
 
   const meta = useMemo(
     () => computeMetaModifiers(save.upgradeRanks, content.metaUpgrades),
-    [save],
+    [save, content],
   );
 
   // Screen changes drive the music: in-run plays the map track (the manager

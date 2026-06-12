@@ -10,12 +10,13 @@ import { manifest } from "@vakttornet/assets/manifest";
 import type { MetaUpgradeDef, TowerDef } from "@vakttornet/content";
 import type { MetaModifiers } from "@vakttornet/sim";
 import { assetUrl } from "../game/render";
+import { tr, useT } from "../i18n";
 import { nextUpgradeCost, type SaveData } from "../save";
 import {
   damageValue,
   dpsValue,
+  formatNum,
   formatSilver,
-  formatSv,
   isEconomy,
   mechanicLines,
   mutationTeaser,
@@ -37,17 +38,17 @@ interface ShopItemModalProps {
   onClose: () => void;
 }
 
-/** Per-rank effect copy, derived from the effect data (Swedish). */
+/** Per-rank effect copy, derived from the effect data (localized template). */
 export function upgradeEffectText(effect: MetaUpgradeDef["effect"]): string {
   switch (effect.kind) {
     case "damageMult":
-      return `+${Math.round(effect.value * 100)} % tornskada per rang`;
+      return tr("effDamagePerRank", { n: Math.round(effect.value * 100) });
     case "rangeMult":
-      return `+${Math.round(effect.value * 100)} % räckvidd per rang`;
+      return tr("effRangePerRank", { n: Math.round(effect.value * 100) });
     case "startGold":
-      return `+${effect.value} guld vid start per rang`;
+      return tr("effStartGoldPerRank", { n: effect.value });
     case "startLives":
-      return `+${effect.value} liv vid start per rang`;
+      return tr("effStartLivesPerRank", { n: effect.value });
   }
 }
 
@@ -65,6 +66,7 @@ export function ShopItemModal({
   onBuyTower,
   onClose,
 }: ShopItemModalProps) {
+  const { t } = useT();
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   // Esc closes; focus moves into the dialog so keyboard users land inside.
@@ -94,7 +96,12 @@ export function ShopItemModal({
         aria-label={title}
         tabIndex={-1}
       >
-        <button type="button" className="shop-modal-close" aria-label="Stäng" onClick={onClose}>
+        <button
+          type="button"
+          className="shop-modal-close"
+          aria-label={t("close")}
+          onClick={onClose}
+        >
           ✕
         </button>
         {item.kind === "upgrade" ? (
@@ -116,6 +123,7 @@ function UpgradeBody({
   save: SaveData;
   onBuy: (upgradeId: string) => void;
 }) {
+  const { t } = useT();
   const rank = save.upgradeRanks[upgrade.id] ?? 0;
   const maxed = rank >= upgrade.maxRank;
   const cost = nextUpgradeCost(upgrade, rank);
@@ -133,12 +141,12 @@ function UpgradeBody({
         <div>
           <h2>{upgrade.name}</h2>
           <p className="shop-modal-sub">
-            <span className="rank-pips" title={`Rang ${rank} av ${upgrade.maxRank}`}>
+            <span className="rank-pips" title={t("rankOfTitle", { r: rank, m: upgrade.maxRank })}>
               {Array.from({ length: upgrade.maxRank }, (_, i) => (
                 <span key={i} className={i < rank ? "pip filled" : "pip"} />
               ))}
             </span>
-            Rang {rank}/{upgrade.maxRank}
+            {t("rankOf", { r: rank, m: upgrade.maxRank })}
           </p>
         </div>
       </div>
@@ -148,26 +156,26 @@ function UpgradeBody({
 
       <div className="shop-modal-buy">
         {maxed ? (
-          <span className="upgrade-maxed">Maxad</span>
+          <span className="upgrade-maxed">{t("maxed")}</span>
         ) : (
           <button
             type="button"
             className="btn btn-primary"
             disabled={!affordable}
-            title={affordable ? undefined : "För lite trollsilver"}
+            title={affordable ? undefined : t("tooLittleSilver")}
             onClick={() => onBuy(upgrade.id)}
           >
-            Köp — <img className="icon" src={manifest["ui.trollsilver"]} alt="" />{" "}
+            {t("buy")} — <img className="icon" src={manifest["ui.trollsilver"]} alt="" />{" "}
             {formatSilver(cost)}
           </button>
         )}
-        <span className="points-chip points-chip-small" title="Trollsilver att spendera">
-          <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+        <span className="points-chip points-chip-small" title={t("silverToSpend")}>
+          <img className="icon" src={manifest["ui.trollsilver"]} alt={t("trollsilver")} />
           {formatSilver(save.points)}
         </span>
       </div>
 
-      <div className="cost-ladder" aria-label="Kostnad per rang">
+      <div className="cost-ladder" aria-label={t("costPerRankAria")}>
         {rankCosts.map((c, i) => (
           <span
             key={i}
@@ -196,6 +204,7 @@ function TowerBody({
   meta: MetaModifiers;
   onBuy: (towerId: string) => void;
 }) {
+  const { t } = useT();
   const l1 = tower.levels[0];
   if (!l1) return null;
   const economy = isEconomy(l1);
@@ -213,7 +222,7 @@ function TowerBody({
           <h2>
             {tower.name} <span className="role-badge">{roleBadge(tower)}</span>
           </h2>
-          <p className="shop-modal-sub">Kostar {l1.cost} guld att bygga</p>
+          <p className="shop-modal-sub">{t("costsGoldToBuild", { n: l1.cost })}</p>
         </div>
       </div>
 
@@ -222,7 +231,7 @@ function TowerBody({
       {!economy && (
         <div className="stat-table">
           <div className="stat-row">
-            <span className="stat-label">Skada</span>
+            <span className="stat-label">{t("statDamage")}</span>
             <span className="stat-value">{damageValue(tower, l1, meta.damageMult)}</span>
           </div>
           <div className="stat-row">
@@ -230,12 +239,14 @@ function TowerBody({
             <span className="stat-value">{rateValue(tower, l1)}</span>
           </div>
           <div className="stat-row">
-            <span className="stat-label">DPS</span>
+            <span className="stat-label">{t("statDps")}</span>
             <span className="stat-value">{dpsValue(tower, l1, meta.damageMult)}</span>
           </div>
           <div className="stat-row">
-            <span className="stat-label">Räckvidd</span>
-            <span className="stat-value">{formatSv(l1.range * meta.rangeMult)} rutor</span>
+            <span className="stat-label">{t("statRange")}</span>
+            <span className="stat-value">
+              {t("tilesUnit", { n: formatNum(l1.range * meta.rangeMult) })}
+            </span>
           </div>
         </div>
       )}
@@ -249,21 +260,21 @@ function TowerBody({
       {teaser && <p className="mutation-teaser">⟡ {teaser}</p>}
 
       {owned ? (
-        <p className="shop-modal-available">✓ Tillgänglig i försvaret</p>
+        <p className="shop-modal-available">{t("availableInDefense")}</p>
       ) : (
         <div className="shop-modal-buy">
           <button
             type="button"
             className="btn btn-primary"
             disabled={!affordable}
-            title={affordable ? undefined : "För lite trollsilver"}
+            title={affordable ? undefined : t("tooLittleSilver")}
             onClick={() => onBuy(tower.id)}
           >
-            Köp — <img className="icon" src={manifest["ui.trollsilver"]} alt="" />{" "}
+            {t("buy")} — <img className="icon" src={manifest["ui.trollsilver"]} alt="" />{" "}
             {formatSilver(tower.silverPrice)}
           </button>
-          <span className="points-chip points-chip-small" title="Trollsilver att spendera">
-            <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+          <span className="points-chip points-chip-small" title={t("silverToSpend")}>
+            <img className="icon" src={manifest["ui.trollsilver"]} alt={t("trollsilver")} />
             {formatSilver(save.points)}
           </span>
         </div>

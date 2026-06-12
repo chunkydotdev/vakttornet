@@ -5,8 +5,10 @@
  */
 import { useState } from "react";
 import { music } from "../game/music";
+import { useT } from "../i18n";
 
 export function MuteButton() {
+  const { t } = useT();
   const [muted, setMuted] = useState<boolean>(() => music.muted);
 
   function toggle() {
@@ -15,13 +17,15 @@ export function MuteButton() {
     setMuted(next);
   }
 
+  const label = muted ? t("soundOn") : t("soundOff");
+
   return (
     <button
       type="button"
       className="btn mute-btn"
       onClick={toggle}
-      aria-label={muted ? "Ljud på" : "Ljud av"}
-      title={muted ? "Ljud på" : "Ljud av"}
+      aria-label={label}
+      title={label}
       aria-pressed={muted}
     >
       {muted ? "🔇" : "🔊"}
