@@ -12,6 +12,7 @@
   "dependencies": {
     "@vakttornet/assets": "workspace:*",
     "@vakttornet/content": "workspace:*",
+    "@vakttornet/leaderboard": "workspace:*",
     "@vakttornet/sim": "workspace:*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

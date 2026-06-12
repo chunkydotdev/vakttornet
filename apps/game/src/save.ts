@@ -46,6 +46,9 @@ const saveSchemaV2 = z.object({
   totalEarned: z.number().nonnegative(),
   upgradeRanks: z.record(z.string(), z.number().int().nonnegative()),
   deeds: deedCountersSchema,
+  /** last name used on the leaderboard — optional, so pre-existing v2 saves
+   * keep parsing without a version bump */
+  playerName: z.string().optional(),
 });
 
 export type SaveData = z.infer<typeof saveSchemaV2>;
@@ -131,6 +134,13 @@ export function applyRunEnd(save: SaveData, score: number, run: RunDeeds): SaveD
     totalEarned: save.totalEarned + score,
     deeds: mergeDeeds(save.deeds, run),
   };
+  persistSave(next);
+  return next;
+}
+
+/** Remember the last-used leaderboard name so the win screen can prefill it. */
+export function setPlayerName(save: SaveData, playerName: string): SaveData {
+  const next: SaveData = { ...save, playerName };
   persistSave(next);
   return next;
 }

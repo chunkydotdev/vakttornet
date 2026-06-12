@@ -1,4 +1,5 @@
-/* Title / level select, upgrades screen, and the run-end overlay. */
+/* Title / level select, upgrades, sägner codex, topplista, and the
+   run-end overlay. */
 
 .screen {
   flex: 1;
@@ -369,4 +370,172 @@
   display: flex;
   gap: 0.75rem;
   margin-top: 0.75rem;
+}
+
+/* ---------- Run-end leaderboard submit (wins only) ---------- */
+
+.run-end-leaderboard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.run-end-vardtrad {
+  color: var(--success);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.lb-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lb-form input {
+  width: 11rem;
+  padding: 0.45rem 0.7rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+.lb-form input::placeholder {
+  color: var(--text-faint);
+}
+
+.lb-form input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.lb-success {
+  color: var(--accent);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.lb-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+/* ---------- Topplista ---------- */
+
+.topplista-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.topplista-tabs .tab {
+  padding: 0.4rem 0.95rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.topplista-tabs .tab:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.topplista-tabs .tab.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.topplista-board {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topplista-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1.5rem;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Spinner — same recipe as .board-loading (keyframes `spin` live in run.css,
+   loaded globally alongside this file). */
+.topplista-status.loading::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.score-table th {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--border);
+}
+
+.score-table td {
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.score-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.score-table th.num,
+.score-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-table .rank {
+  width: 2.5rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.score-table .name {
+  font-weight: 600;
 }

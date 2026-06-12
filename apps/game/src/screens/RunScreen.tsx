@@ -20,6 +20,7 @@ import { manifest } from "@vakttornet/assets/manifest";
 import { content } from "../content";
 import { mergeDeeds, type RunDeeds, type SaveData } from "../save";
 import { newlyUnlockedSagner } from "../sagner";
+import { leaderboardEnabled } from "../leaderboard";
 import { startGameLoop, type GameLoop, type SimSpeed } from "../game/loop";
 import { Renderer, TILE_PX, assetUrl, loadImages, type TilePos } from "../game/render";
 import { playEventSounds } from "../game/sfx";
@@ -30,6 +31,8 @@ interface RunScreenProps {
   meta: MetaModifiers;
   save: SaveData;
   onRunEnd: (score: number, deeds: RunDeeds) => void;
+  /** persist the leaderboard name after a successful submit */
+  onPlayerName: (name: string) => void;
   onExit: () => void;
   onRetry: () => void;
 }
@@ -77,7 +80,26 @@ const PLACE_ERROR_TEXT: Record<PlaceFailReason, string> = {
 
 const HUD_SYNC_INTERVAL_MS = 100;
 
-export function RunScreen({ level, meta, save, onRunEnd, onExit, onRetry }: RunScreenProps) {
+/** Vårdträd = economy towers: damage 0 at their CURRENT level means the
+ * tower never attacks (defs resolved from content via typeId). */
+function countVardtrad(towers: readonly TowerInstance[]): number {
+  let count = 0;
+  for (const tower of towers) {
+    const def = content.towers.find((d) => d.id === tower.typeId);
+    if (def?.levels[tower.level - 1]?.damage === 0) count += 1;
+  }
+  return count;
+}
+
+export function RunScreen({
+  level,
+  meta,
+  save,
+  onRunEnd,
+  onPlayerName,
+  onExit,
+  onRetry,
+}: RunScreenProps) {
   // Meta modifiers are locked in at mount — buying upgrades mid-run (not
   // possible via UI anyway) must not retroactively change a live sim.
   const metaRef = useRef(meta);
@@ -121,6 +143,8 @@ export function RunScreen({ level, meta, save, onRunEnd, onExit, onRetry }: RunS
   const [speed, setSpeed] = useState<SimSpeed>(1);
   const [toast, setToast] = useState<{ message: string; key: number } | null>(null);
   const [newSagner, setNewSagner] = useState<SagenDef[]>([]);
+  /** vårdträd standing captured at the moment of victory (0 until won) */
+  const [vardtrad, setVardtrad] = useState(0);
 
   const trackDeeds = useCallback((events: SimEvent[]) => {
     for (const event of events) {
@@ -202,6 +226,7 @@ export function RunScreen({ level, meta, save, onRunEnd, onExit, onRetry }: RunS
       setNewSagner(
         newlyUnlockedSagner(content.sagner, save.deeds, mergeDeeds(save.deeds, deeds)),
       );
+      if (won) setVardtrad(countVardtrad(sim.state.towers));
       onRunEnd(sim.state.score, deeds);
     }
   }, [runEnded, onRunEnd, sim, level.id, save.deeds]);
@@ -471,6 +496,16 @@ export function RunScreen({ level, meta, save, onRunEnd, onExit, onRetry }: RunS
           won={hud.status === "won"}
           score={sim.state.score}
           newSagner={newSagner.map((s) => s.title)}
+          leaderboard={
+            hud.status === "won" && leaderboardEnabled()
+              ? {
+                  levelId: level.id,
+                  vardtrad,
+                  initialName: save.playerName ?? "",
+                  onNameUsed: onPlayerName,
+                }
+              : null
+          }
           onRetry={onRetry}
           onExit={onExit}
         />

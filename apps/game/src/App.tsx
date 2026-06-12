@@ -1,15 +1,24 @@
 import { useMemo, useState } from "react";
 import { content } from "./content";
-import { applyRunEnd, buyUpgrade, computeMetaModifiers, loadSave, type SaveData } from "./save";
+import {
+  applyRunEnd,
+  buyUpgrade,
+  computeMetaModifiers,
+  loadSave,
+  setPlayerName,
+  type SaveData,
+} from "./save";
 import { TitleScreen } from "./screens/TitleScreen";
 import { UpgradesScreen } from "./screens/UpgradesScreen";
 import { CodexScreen } from "./screens/CodexScreen";
 import { RunScreen } from "./screens/RunScreen";
+import { TopplistaScreen } from "./screens/TopplistaScreen";
 
 type Screen =
   | { kind: "title" }
   | { kind: "upgrades" }
   | { kind: "codex" }
+  | { kind: "topplista" }
   | { kind: "run"; levelId: string; runKey: number };
 
 export function App() {
@@ -31,6 +40,7 @@ export function App() {
           meta={meta}
           save={save}
           onRunEnd={(score, deeds) => setSave((s) => applyRunEnd(s, score, deeds))}
+          onPlayerName={(name) => setSave((s) => setPlayerName(s, name))}
           onExit={() => setScreen({ kind: "title" })}
           onRetry={() =>
             setScreen({ kind: "run", levelId: screen.levelId, runKey: screen.runKey + 1 })
@@ -43,6 +53,10 @@ export function App() {
 
   if (screen.kind === "codex") {
     return <CodexScreen save={save} onBack={() => setScreen({ kind: "title" })} />;
+  }
+
+  if (screen.kind === "topplista") {
+    return <TopplistaScreen onBack={() => setScreen({ kind: "title" })} />;
   }
 
   if (screen.kind === "upgrades") {
@@ -66,6 +80,7 @@ export function App() {
       onPlay={(levelId) => setScreen({ kind: "run", levelId, runKey: 0 })}
       onUpgrades={() => setScreen({ kind: "upgrades" })}
       onCodex={() => setScreen({ kind: "codex" })}
+      onTopplista={() => setScreen({ kind: "topplista" })}
     />
   );
 }

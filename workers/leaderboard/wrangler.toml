@@ -1,0 +1,13 @@
+name = "vakttornet-leaderboard"
+main = "src/worker.ts"
+compatibility_date = "2025-05-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vakttornet-leaderboard"
+# database_id is filled in after `wrangler d1 create vakttornet-leaderboard`
+database_id = "TBD"
+
+[vars]
+# Comma-separated allowed CORS origins
+ALLOWED_ORIGINS = "https://chunkydotdev.github.io,http://localhost:5173"

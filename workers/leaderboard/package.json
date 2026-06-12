@@ -1,0 +1,27 @@
+{
+  "name": "@vakttornet/leaderboard",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/api.ts",
+  "types": "./src/api.ts",
+  "exports": {
+    ".": "./src/api.ts",
+    "./api": "./src/api.ts"
+  },
+  "scripts": {
+    "dev": "wrangler dev --local --port 8787",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vakttornet/content": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250507.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0",
+    "wrangler": "^4.16.0"
+  }
+}

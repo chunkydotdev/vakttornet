@@ -1,5 +1,6 @@
 import { manifest } from "@vakttornet/assets/manifest";
 import { content } from "../content";
+import { leaderboardEnabled } from "../leaderboard";
 import type { SaveData } from "../save";
 
 interface TitleScreenProps {
@@ -7,9 +8,10 @@ interface TitleScreenProps {
   onPlay: (levelId: string) => void;
   onUpgrades: () => void;
   onCodex: () => void;
+  onTopplista: () => void;
 }
 
-export function TitleScreen({ save, onPlay, onUpgrades, onCodex }: TitleScreenProps) {
+export function TitleScreen({ save, onPlay, onUpgrades, onCodex, onTopplista }: TitleScreenProps) {
   return (
     <div className="screen">
       <div className="screen-inner">
@@ -30,6 +32,11 @@ export function TitleScreen({ save, onPlay, onUpgrades, onCodex }: TitleScreenPr
             <button type="button" className="btn" onClick={onCodex}>
               Sägner
             </button>
+            {leaderboardEnabled() && (
+              <button type="button" className="btn" onClick={onTopplista}>
+                Topplista
+              </button>
+            )}
           </span>
         </div>
 
