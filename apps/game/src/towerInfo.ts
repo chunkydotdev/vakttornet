@@ -17,6 +17,14 @@ export function formatSv(value: number): string {
   return Number.isInteger(value) ? String(value) : formatSv1(value);
 }
 
+/** Whole trollsilver amounts with Swedish thousands grouping (non-breaking
+ * space): 1114 → "1 114". Used everywhere the meta currency is displayed. */
+export function formatSilver(value: number): string {
+  return Math.round(value)
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
+}
+
 export function shotsPerSecond(level: TowerLevel): number {
   return TICK_RATE / level.cooldownTicks;
 }

@@ -39,6 +39,7 @@ export const ASSET_IDS = [
   "upgrade.stugvarme",
   "ui.heart",
   "ui.coin",
+  "ui.trollsilver",
 ] as const;
 
 export type AssetId = (typeof ASSET_IDS)[number];

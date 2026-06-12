@@ -4,8 +4,8 @@ A tile-based, roguelike tower defense game built for the
 [OpenSverige "Bygg spel med AI" hackathon](https://www.opensverige.se/blogg/bygg-spel-med-ai)
 — vibecoded with Claude Code as co-builder.
 
-Defend the path, survive the waves, earn points — then spend them on
-permanent upgrades and unlock new maps. Lose a run, come back stronger.
+Defend the path and survive the waves; every run banks trollsilver you
+spend on permanent upgrades and new maps. Lose a run, come back stronger.
 
 **▶ Play:** https://chunkydotdev.github.io/vakttornet/ *(deployed from `main`)*
 

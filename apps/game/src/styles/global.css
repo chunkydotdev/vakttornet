@@ -150,6 +150,13 @@ img {
   flex: none;
 }
 
+/* In inline (non-flex) contexts like button labels, sit on the text line
+ * (the global img reset is display: block, which would force a wrap). */
+.btn .icon {
+  display: inline-block;
+  vertical-align: -0.2em;
+}
+
 .points-chip {
   display: inline-flex;
   align-items: center;

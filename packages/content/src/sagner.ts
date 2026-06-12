@@ -19,16 +19,16 @@ export const sagner: SagenDef[] = [
     id: "vattarnas-natt",
     title: "Vättarnas natt",
     text:
-      "Det sägs att vättarna räknar sina fallna i femtiotal, för längre än så når inte deras små fingrar. " +
-      "Femtio små gravar under trädens rötter, femtio små mössor som ingen längre bär. " +
-      "Ändå kommer de igen, natt efter natt — för en vätte glömmer allt utom vägen hem.",
+      "Femtio små gravar under trädens rötter, femtio små mössor som ingen längre bär: vättarna räknar sina fallna i femtiotal, för längre än så når inte deras små fingrar. " +
+      "Ändå kommer de igen, natt efter natt, för en vätte glömmer allt utom vägen hem.",
     condition: { kind: "kills", enemyTypeId: "vatte", count: 50 },
   },
   {
     id: "mylingarnas-vila",
     title: "Mylingarnas vila",
     text:
-      "Det sägs att en myling inte kan dö, bara somna om — och att den som stillar tjugofem av dem har sjungit en hel kyrkogård till ro. " +
+      "Kan en myling dö? " +
+      "Nej, säger de gamla, den kan bara somna om, och den som stillar tjugofem av dem har sjungit en hel kyrkogård till ro. " +
       "De ropar inte längre vid din dörr om nätterna. " +
       "Lyssnar du noga hör du dem ändå, som ett tack buret på vinden över myren.",
     condition: { kind: "kills", enemyTypeId: "myling", count: 25 },
@@ -37,18 +37,19 @@ export const sagner: SagenDef[] = [
     id: "sten-vid-grynings-rand",
     title: "Sten vid gryningens rand",
     text:
-      "Det sägs att solens fångna ljus biter hårdare än någon klinga, för det som förstenas hinner ångra sig innan det hårdnar. " +
-      "Trettio väsen står nu stilla längs stigarna, gråa och tysta, med mossan långsamt växande över axlarna. " +
-      "Vandrare lägger en slant på deras fötter — för säkerhets skull.",
+      "Skratta aldrig åt de gråa gestalterna längs stigarna, hur stilla de än står med mossan långsamt växande över axlarna. " +
+      "Solens fångna ljus biter hårdare än någon klinga, för det som förstenas hinner ångra sig innan det hårdnar. " +
+      "Trettio väsen står nu hejdade mitt i steget, och vandrare lägger en slant på deras fötter.",
     condition: { kind: "petrified", count: 30 },
   },
   {
     id: "glantans-vaktare",
     title: "Gläntans väktare",
     text:
-      "Det sägs att gläntan en gång var skogens mörkaste rum, där inget vågade slå rot. " +
+      "Gläntan var en gång skogens mörkaste rum, där inget vågade slå rot. " +
       "Nu står tornet där, och gräset växer grönt ända fram till stugbron. " +
-      "Den som höll gläntan en hel natt kallas väktare, och det namnet nöts aldrig bort.",
+      "Den som höll gläntan en hel natt kallas väktare. " +
+      "Det namnet nöts aldrig bort.",
     condition: { kind: "winLevel", levelId: "level01" },
   },
   {
@@ -64,7 +65,7 @@ export const sagner: SagenDef[] = [
     id: "obeflackad",
     title: "Obefläckad",
     text:
-      "Det sägs att det finns nätter då inte ett enda väsen når fram till stugans grind — då varje liv i den röda stugan är lika helt i gryningen som i skymningen. " +
+      "Det sägs att det finns nätter då inte ett enda väsen når fram till stugans grind, nätter då varje liv i den röda stugan är lika helt i gryningen som i skymningen. " +
       "Om sådana nätter sjunger man tyst, för de är för fina att slita på. " +
       "Näcken själv lär ha lagt ner fiolen och lyssnat.",
     condition: { kind: "flawlessWin" },
@@ -73,18 +74,17 @@ export const sagner: SagenDef[] = [
     id: "vattekungens-fall",
     title: "Vättekungens fall",
     text:
-      "Det sägs att vättarnas kung bar en krona av stulet guld, och att den var tyngre än hans lilla hjärta. " +
-      "När han föll vid tornet rullade kronan ner i mossan, och ingen vätte har vågat lyfta den sedan dess. " +
-      "Där den ligger växer nu gula blommor som inte finns någon annanstans i hela mörka skogen.",
+      "Tung var vättekungens krona av stulet guld, tyngre än hans lilla hjärta, och där den rullade ner i mossan när han föll ligger den kvar, för ingen vätte har vågat lyfta den, och runt omkring växer gula blommor som inte finns någon annanstans i hela mörka skogen.",
     condition: { kind: "kills", enemyTypeId: "vattekungen", count: 1 },
   },
   {
     id: "trollmoderns-sista-vagga",
     title: "Trollmoderns sista vagga",
     text:
-      "Det sägs att Trollmodern var äldre än berget hon sov under, och att björken på hennes rygg grott ur ett frö från tidernas första vår. " +
-      "När hon till sist lade sig ner vid stigen blev hon en kulle bland kullarna, och björken växer där än. " +
-      "Om våren vitnar den av blom, och då säger de gamla att hon vaggar ännu.",
+      "”Hon vaggar ännu”, säger de gamla om våren, när björken vitnar av blom. " +
+      "Trollmodern var äldre än berget hon sov under, och björken på hennes rygg hade grott ur ett frö från tidernas första vår. " +
+      "När hon till sist lade sig ner vid stigen blev hon en kulle bland kullarna. " +
+      "Björken växer där än.",
     condition: { kind: "kills", enemyTypeId: "trollmodern", count: 1 },
   },
   {
@@ -102,15 +102,16 @@ export const sagner: SagenDef[] = [
     text:
       "Det sägs att skattvättarna bär guld som aldrig varit deras, och att de springer som om säcken brann. " +
       "Tio säckar har nu stannat vid tornet, fast tio små vättar sprang vidare med bara mössan i behåll. " +
-      "Guldet rullar de in i mossan vid stuggrunden — men räkna det aldrig, för räknat guld slutar växa.",
+      "Guldet rullar de in i mossan vid stuggrunden. " +
+      "Räkna det aldrig, för räknat guld slutar växa.",
     condition: { kind: "kills", enemyTypeId: "skattvatte", count: 10 },
   },
   {
     id: "gruvkungens-sista-adra",
     title: "Gruvkungens sista ådra",
     text:
-      "Det sägs att Gruvkungen räknade varje åder i berget som sin, och att hans krona av hackor klingade i takt med hans steg. " +
-      "När han föll vid tornet slocknade gruvans alla ljus på en och samma gång — utom ett, som vandrade upp ur schaktet och stannade hos stugan. " +
+      "Samma natt som Gruvkungen föll vid tornet slocknade gruvans alla ljus på en och samma gång, alla utom ett, som vandrade upp ur schaktet och stannade hos stugan. " +
+      "Han hade räknat varje åder i berget som sin, och hans krona av hackor klingade i takt med stegen. " +
       "Malmletare lägger än i dag örat mot berget, men berget håller andan.",
     condition: { kind: "kills", enemyTypeId: "gruvkungen", count: 1 },
   },
@@ -118,18 +119,19 @@ export const sagner: SagenDef[] = [
     id: "isfurstens-tovader",
     title: "Isfurstens töväder",
     text:
-      "Det sägs att Isfursten bar vintern som en mantel, och att hans andedräkt lade sjö efter sjö i bojor. " +
-      "Vid tornet brast kronan av is, och för första gången på hundra år droppade det ur granarna mitt i mörkaste natten. " +
-      "De gamla kallar den natten det stora tövädret, och än kan man höra bäckarna skratta åt alltihop.",
+      "Det stora tövädret, så kallar de gamla natten då Isfurstens krona av is brast vid tornet och det för första gången på hundra år droppade ur granarna mitt i mörkaste vintern. " +
+      "Han hade burit vintern som en mantel och lagt sjö efter sjö i bojor med sin andedräkt, men än i dag hör man bäckarna skratta åt alltihop.",
     condition: { kind: "kills", enemyTypeId: "isfursten", count: 1 },
   },
   {
     id: "skogsraet-vander-sig-om",
     title: "Skogsrået vänder sig om",
     text:
-      "Det sägs att Skogsrået var skogens egen längtan — skön framifrån som en sommarkväll, men ihålig i ryggen som ett murket träd. " +
+      "Skön framifrån som en sommarkväll, ihålig i ryggen som ett murket träd. " +
+      "Skogsrået var skogens egen längtan. " +
       "Vid tornet vände hon sig om en sista gång, och den som höll i lyktan vågade inte se efter vart hon gick. " +
-      "Sedan dess står urskogen alldeles stilla, och rävsvansen skymtar bara för den som slutat leta.",
+      "Sedan dess står urskogen alldeles stilla. " +
+      "Rävsvansen skymtar bara för den som slutat leta.",
     condition: { kind: "kills", enemyTypeId: "skogsraet", count: 1 },
   },
 ];

@@ -27,7 +27,7 @@ export const towers: TowerDef[] = [
     name: "Tomten",
     assetId: "tower.tomte",
     description:
-      "Liten, snabb och lättretad — slungar het julgröt mot allt som hotar gården.",
+      "Liten är han, snabb och lättretad, och het julgröt slungar han mot allt som hotar gården.",
     unlockPoints: 0,
     attackKind: "projectile",
     levels: [
@@ -40,7 +40,7 @@ export const towers: TowerDef[] = [
         id: "tomtetvillingarna",
         name: "Tomtetvillingarna",
         description:
-          "Det visar sig att tomten alltid varit två — nu slungar bröderna gröt mot var sitt väsen.",
+          "Det visar sig att tomten alltid varit två, och nu slungar bröderna gröt mot var sitt väsen.",
         cost: 90,
         effect: { multishot: 2 },
       },
@@ -48,7 +48,7 @@ export const towers: TowerDef[] = [
         id: "argbigga",
         name: "Argbigga",
         description:
-          "Ingen har sett tomten så förgrymmad — grötsleven viner snabbare än ögat hinner följa.",
+          "Ingen har sett tomten så förgrymmad som nu, när grötsleven viner snabbare än ögat hinner följa.",
         cost: 90,
         effect: { cooldownMult: 0.55 },
       },
@@ -59,7 +59,7 @@ export const towers: TowerDef[] = [
     name: "Runstenen",
     assetId: "tower.runsten",
     description:
-      "Forntida runor glöder till liv — blixtar slår ur stenen och bränner allt väsen som vågar sig nära.",
+      "När de forntida runorna glöder till liv slår blixtar ur stenen och bränner allt väsen som vågar sig nära.",
     unlockPoints: 0,
     attackKind: "pulse",
     // projectileSpeed is schema-required but ignored for pulse towers.
@@ -73,7 +73,7 @@ export const towers: TowerDef[] = [
         id: "askstenen",
         name: "Åskstenen",
         description:
-          "Stenen minns åskgudens hand — varje blixt slår tyngre, men runorna behöver längre tid att glöda.",
+          "Stenen minns åskgudens hand: varje blixt slår tyngre, men runorna behöver längre tid att glöda.",
         cost: 115,
         effect: { damageMult: 1.6, cooldownMult: 1.25 },
       },
@@ -81,7 +81,7 @@ export const towers: TowerDef[] = [
         id: "offerstenen",
         name: "Offerstenen",
         description:
-          "Gamla seder kräver sitt — varje väsen som faller vid stenen lämnar rikare gåvor i guld.",
+          "Gamla seder kräver sitt, så varje väsen som faller vid stenen lämnar rikare gåvor i guld.",
         cost: 110,
         effect: { bountyMult: 1.5 },
       },
@@ -92,7 +92,7 @@ export const towers: TowerDef[] = [
     name: "Sollyktan",
     assetId: "tower.sollykta",
     description:
-      "Lyktan bär infångat solljus långt över skogen — väsen som träffas stelnar till sten mitt i steget.",
+      "Lyktan bär infångat solljus långt över skogen, där väsen som träffas stelnar till sten mitt i steget.",
     unlockPoints: 0,
     attackKind: "projectile",
     levels: [
@@ -126,7 +126,7 @@ export const towers: TowerDef[] = [
         id: "midnattssol",
         name: "Midnattssol",
         description:
-          "Lyktan slocknar aldrig mer — ett stilla midnattsljus vilar över skogen och tynger varje steg därunder.",
+          "Aldrig mer slocknar lyktan, och ett stilla midnattsljus vilar över skogen och tynger varje steg därunder.",
         cost: 100,
         effect: { auraSlow: { factor: 0.65 } },
       },
@@ -134,7 +134,7 @@ export const towers: TowerDef[] = [
         id: "brannglas",
         name: "Brännglas",
         description:
-          "En slipad lins samlar solens hetta i en enda punkt — den som träffas bär elden med sig genom skogen.",
+          "En slipad lins samlar solens hetta i en enda punkt, så att den som träffas bär elden med sig genom skogen.",
         cost: 100,
         effect: { burn: { dps: 4, durationTicks: 75 } },
       },
@@ -184,7 +184,7 @@ export const towers: TowerDef[] = [
         id: "dubbelton",
         name: "Dubbelton",
         description:
-          "Näcken spelar nu med båda händerna — två väsen lockas av var sin slinga ur strömmen.",
+          "Näcken spelar nu med båda händerna, och två väsen lockas av var sin slinga ur strömmen.",
         cost: 120,
         effect: { multishot: 2 },
       },
@@ -195,7 +195,7 @@ export const towers: TowerDef[] = [
     name: "Vårdträdet",
     assetId: "tower.vardtradet",
     description:
-      "Det gamla trädet vid stugknuten strider aldrig — men den som vårdar det får gåvor i guld efter varje stillad våg.",
+      "Det gamla trädet vid stugknuten strider aldrig, men den som vårdar det får gåvor i guld efter varje stillad våg.",
     unlockPoints: 800,
     // never attacks (damage 0) — attackKind is a required-field formality
     attackKind: "projectile",
@@ -230,7 +230,7 @@ export const towers: TowerDef[] = [
         id: "gyllene-lov",
         name: "Gyllene löv",
         description:
-          "Om hösten faller löven av rent guld — den som vårdat trädet väl skördar rikare än någon annan.",
+          "Den som vårdat trädet väl skördar rikare än någon annan när löven om hösten faller av rent guld.",
         cost: 95,
         effect: { incomeMult: 1.75 },
       },

@@ -13,6 +13,7 @@ import { nextUpgradeCost, type SaveData } from "../save";
 import {
   damageValue,
   dpsValue,
+  formatSilver,
   formatSv,
   isEconomy,
   mechanicLines,
@@ -144,15 +145,16 @@ function UpgradeBody({
             type="button"
             className="btn btn-primary"
             disabled={!affordable}
-            title={affordable ? undefined : "För få poäng"}
+            title={affordable ? undefined : "För lite trollsilver"}
             onClick={() => onBuy(upgrade.id)}
           >
-            Köp — {cost} p
+            Köp — <img className="icon" src={manifest["ui.trollsilver"]} alt="" />{" "}
+            {formatSilver(cost)}
           </button>
         )}
-        <span className="points-chip points-chip-small" title="Poäng att spendera">
-          <img className="icon" src={manifest["ui.coin"]} alt="" />
-          {save.points} p
+        <span className="points-chip points-chip-small" title="Trollsilver att spendera">
+          <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+          {formatSilver(save.points)}
         </span>
       </div>
 
@@ -165,7 +167,8 @@ function UpgradeBody({
             }
           >
             {i < rank ? "✓ " : ""}
-            {c} p
+            <img className="icon" src={manifest["ui.trollsilver"]} alt="" />
+            {formatSilver(c)}
           </span>
         ))}
       </div>
@@ -237,14 +240,15 @@ function TowerBody({
       {locked ? (
         <div className="shop-modal-unlock">
           <p className="unlock-label">
-            🔒 Låses upp vid {tower.unlockPoints} poäng
+            🔒 Låses upp vid {formatSilver(tower.unlockPoints)} trollsilver
           </p>
           <div className="progress">
             <div className="progress-fill" style={{ width: `${progress * 100}%` }} />
           </div>
           <p className="unlock-remaining">
-            {save.totalEarned}/{tower.unlockPoints} p — {tower.unlockPoints - save.totalEarned} p
-            kvar
+            <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+            {formatSilver(save.totalEarned)}/{formatSilver(tower.unlockPoints)} ·{" "}
+            {formatSilver(tower.unlockPoints - save.totalEarned)} kvar
           </p>
         </div>
       ) : (

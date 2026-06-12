@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { manifest } from "@vakttornet/assets/manifest";
 import { content } from "../content";
 import type { SaveData } from "../save";
+import { formatSilver } from "../towerInfo";
 
 interface LevelsScreenProps {
   save: SaveData;
@@ -29,15 +30,15 @@ export function LevelsScreen({ save, onPlay, onBack }: LevelsScreenProps) {
           <button type="button" className="btn btn-ghost" onClick={onBack}>
             ← Tillbaka
           </button>
-          <span className="points-chip" title="Poäng att spendera">
-            <img className="icon" src={manifest["ui.coin"]} alt="" />
-            {save.points} poäng
+          <span className="points-chip" title="Trollsilver att spendera">
+            <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+            {formatSilver(save.points)}
           </span>
         </div>
 
         <header className="title-header">
           <h1 style={{ fontSize: "2.2rem" }}>Alla kartor</h1>
-          <p className="tagline">Varje karta ger poäng — vinst som förlust.</p>
+          <p className="tagline">Varje karta ger trollsilver, vinst som förlust.</p>
         </header>
 
         <ul className="level-list">
@@ -51,7 +52,7 @@ export function LevelsScreen({ save, onPlay, onBack }: LevelsScreenProps) {
                     {level.waves.length} {level.waves.length === 1 ? "våg" : "vågor"}
                     {locked && (
                       <span className="lock-note">
-                        · Låst — kräver {level.unlockPoints} poäng
+                        · Låst — kräver {formatSilver(level.unlockPoints)} trollsilver
                       </span>
                     )}
                   </p>

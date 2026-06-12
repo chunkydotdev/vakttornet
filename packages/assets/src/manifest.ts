@@ -40,6 +40,7 @@ import upgradeSkattkista from "../svg/upgrade-skattkista.svg?url";
 import upgradeStugvarme from "../svg/upgrade-stugvarme.svg?url";
 import uiHeart from "../svg/ui-heart.svg?url";
 import uiCoin from "../svg/ui-coin.svg?url";
+import uiTrollsilver from "../svg/ui-trollsilver.svg?url";
 
 export const manifest: Record<AssetId, string> = {
   "tile.grass": tileGrass,
@@ -78,4 +79,5 @@ export const manifest: Record<AssetId, string> = {
   "upgrade.stugvarme": upgradeStugvarme,
   "ui.heart": uiHeart,
   "ui.coin": uiCoin,
+  "ui.trollsilver": uiTrollsilver,
 };

@@ -18,7 +18,7 @@ export const metaUpgrades: MetaUpgradeDef[] = [
   {
     id: "bjornstyrka",
     name: "Björnstyrka",
-    description: "Varje torn slår 10 % hårdare. Med björnens kraft i timret.",
+    description: "Med björnens kraft i timret slår varje torn 10 % hårdare.",
     assetId: "upgrade.bjornstyrka",
     cost: 100,
     costGrowth: 1.7,
@@ -28,7 +28,7 @@ export const metaUpgrades: MetaUpgradeDef[] = [
   {
     id: "ugglesyn",
     name: "Ugglesyn",
-    description: "Varje torn ser 10 % längre. Ugglan i granen missar ingenting.",
+    description: "Varje torn ser 10 % längre, för ugglan i granen missar ingenting.",
     assetId: "upgrade.ugglesyn",
     cost: 120,
     costGrowth: 1.7,
@@ -38,7 +38,7 @@ export const metaUpgrades: MetaUpgradeDef[] = [
   {
     id: "skattkista",
     name: "Skattkista",
-    description: "Börja varje försvar med +40 guld. Gammalt trollsilver, nyputsat.",
+    description: "Gammalt trollsilver, nyputsat: börja varje försvar med +40 guld.",
     assetId: "upgrade.skattkista",
     cost: 80,
     costGrowth: 1.6,
@@ -48,7 +48,7 @@ export const metaUpgrades: MetaUpgradeDef[] = [
   {
     id: "stugvarme",
     name: "Stugvärme",
-    description: "Börja varje försvar med +2 liv. Brasan brinner, modet håller.",
+    description: "Brasan brinner och modet håller, så varje försvar börjar med +2 liv.",
     assetId: "upgrade.stugvarme",
     cost: 140,
     costGrowth: 1.8,

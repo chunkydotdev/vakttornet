@@ -59,7 +59,7 @@ export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
 
         <header className="title-header">
           <h1 style={{ fontSize: "2.2rem" }}>Topplista</h1>
-          <p className="tagline">Väktarna som höll stigen — och deras vårdträd.</p>
+          <p className="tagline">Väktarna som höll stigen och deras vårdträd.</p>
         </header>
 
         <div className="topplista-tabs" role="tablist" aria-label="Karta">
@@ -95,7 +95,7 @@ export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
           )}
           {board.kind === "ready" && board.entries.length === 0 && (
             <div className="topplista-status">
-              Inga sägner har skrivits här ännu — bli först!
+              Inga sägner har skrivits här ännu. Bli först!
             </div>
           )}
           {board.kind === "ready" && board.entries.length > 0 && (

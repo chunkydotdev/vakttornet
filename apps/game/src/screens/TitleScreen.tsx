@@ -12,6 +12,7 @@ import { content } from "../content";
 import { assetUrl } from "../game/render";
 import { leaderboardEnabled } from "../leaderboard";
 import { nextUpgradeCost, type SaveData } from "../save";
+import { formatSilver } from "../towerInfo";
 import { ShopItemModal, upgradeIconUrl, type ShopItem } from "./ShopItemModal";
 
 interface TitleScreenProps {
@@ -55,13 +56,13 @@ export function TitleScreen({
       <div className="screen-inner screen-inner-wide">
         <header className="title-header">
           <h1>Vakttornet</h1>
-          <p className="tagline">Mörka skogen vaknar. Håll stigen — försvara stugan.</p>
+          <p className="tagline">Mörka skogen vaknar. Håll stigen och försvara stugan.</p>
         </header>
 
         <div className="title-toolbar">
-          <span className="points-chip" title="Poäng att spendera">
-            <img className="icon" src={manifest["ui.coin"]} alt="" />
-            {save.points} poäng
+          <span className="points-chip" title="Trollsilver att spendera">
+            <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+            {formatSilver(save.points)}
           </span>
           <span className="title-toolbar-actions">
             <button type="button" className="btn" onClick={onCodex}>
@@ -113,7 +114,8 @@ export function TitleScreen({
                     />
                   </div>
                   <p className="hero-unlock-remaining">
-                    {Math.max(0, nextUnlock.unlockPoints - save.totalEarned)} p kvar
+                    <img className="icon" src={manifest["ui.trollsilver"]} alt="Trollsilver" />
+                    {formatSilver(Math.max(0, nextUnlock.unlockPoints - save.totalEarned))} kvar
                   </p>
                 </div>
               </>
@@ -133,7 +135,7 @@ export function TitleScreen({
           <header className="forrad-head">
             <h2 className="hub-section-title">Förrådet</h2>
             <p className="forrad-sub">
-              Varaktiga förstärkningar och torn att låsa upp — klicka för detaljer.
+              Varaktiga förstärkningar och torn att låsa upp. Klicka för detaljer.
             </p>
           </header>
           <div className="forrad-grid">
@@ -162,7 +164,12 @@ export function TitleScreen({
                       <span className="forrad-substatus maxed">Maxad</span>
                     ) : (
                       <span className="forrad-substatus cost">
-                        {nextUpgradeCost(upgrade, rank)} p
+                        <img
+                          className="icon"
+                          src={manifest["ui.trollsilver"]}
+                          alt="Trollsilver"
+                        />
+                        {formatSilver(nextUpgradeCost(upgrade, rank))}
                       </span>
                     )}
                   </span>
@@ -198,7 +205,12 @@ export function TitleScreen({
                           />
                         </span>
                         <span className="forrad-substatus cost">
-                          {save.totalEarned}/{tower.unlockPoints} p
+                          <img
+                            className="icon"
+                            src={manifest["ui.trollsilver"]}
+                            alt="Trollsilver"
+                          />
+                          {formatSilver(save.totalEarned)}/{formatSilver(tower.unlockPoints)}
                         </span>
                       </>
                     ) : (
@@ -212,7 +224,7 @@ export function TitleScreen({
         </section>
 
         <p className="muted" style={{ textAlign: "center", fontSize: "0.8rem" }}>
-          Du samlar poäng varje gång du spelar — vinst som förlust.
+          Du tjänar trollsilver varje gång du spelar, vinst som förlust.
         </p>
       </div>
 

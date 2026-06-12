@@ -15,6 +15,13 @@ The watchtower guards a röd stuga at the edge of mörka skogen. Towers:
 (fast ghost), `vatte` (tiny swarm), `troll` (tank). Stay on-theme for any
 new content, names, and art; lantern-amber is the UI accent color.
 
+Economy language: a run scores **poäng** (end screen + leaderboard only);
+the banked/spendable meta currency is **trollsilver** (`ui.trollsilver`
+icon), earned 1:1 from score. In-run **guld** is a separate economy.
+Copy style: sagoton, and avoid the AI em-dash tic — at most a handful of
+em dashes across all player-facing prose; vary sentence shapes (see the
+sägner for the house voice).
+
 ## Architecture
 
 Turborepo + pnpm. Packages export raw TypeScript (`main: ./src/index.ts`) —

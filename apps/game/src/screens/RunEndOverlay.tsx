@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { NAME_PATTERN } from "@vakttornet/leaderboard/api";
+import { manifest } from "@vakttornet/assets/manifest";
 import { LeaderboardError, submitScore } from "../leaderboard";
+import { formatSilver } from "../towerInfo";
 
 /** Present only on a WON run with the leaderboard configured — losses and
  * unconfigured builds never show any leaderboard UI. */
@@ -38,14 +40,17 @@ export function RunEndOverlay({
         <h2 className={won ? "won" : "lost"}>{won ? "Seger!" : "Nederlag"}</h2>
         <p className="run-end-sub">
           {won
-            ? "Stugan står kvar — mörkret drar sig tillbaka i skogen."
+            ? "Stugan står kvar. Mörkret drar sig tillbaka i skogen."
             : "Mörkret nådde fram till stugan…"}
         </p>
         <p className="run-end-score">
           <span className="label">Poäng</span>
           {score}
         </p>
-        <span className="run-end-points">+{score} poäng</span>
+        <span className="run-end-points">
+          <img className="icon" src={manifest["ui.trollsilver"]} alt="" />+
+          {formatSilver(score)} trollsilver
+        </span>
         {newSagner.length > 0 && (
           <ul className="run-end-sagner">
             {newSagner.map((title) => (
@@ -77,7 +82,7 @@ type SubmitPhase =
 
 function submitErrorText(err: unknown): string {
   if (err instanceof LeaderboardError && err.code === "rate-limited") {
-    return "Lugn i stugan — vänta en stund.";
+    return "Lugn i stugan, vänta en stund.";
   }
   return "Topplistan svarar inte just nu.";
 }
