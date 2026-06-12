@@ -34,6 +34,10 @@ import enemySjoraet from "../svg/enemy-sjoraet.svg?url";
 import enemyGruvkungen from "../svg/enemy-gruvkungen.svg?url";
 import enemyIsfursten from "../svg/enemy-isfursten.svg?url";
 import enemySkogsraet from "../svg/enemy-skogsraet.svg?url";
+import upgradeBjornstyrka from "../svg/upgrade-bjornstyrka.svg?url";
+import upgradeUgglesyn from "../svg/upgrade-ugglesyn.svg?url";
+import upgradeSkattkista from "../svg/upgrade-skattkista.svg?url";
+import upgradeStugvarme from "../svg/upgrade-stugvarme.svg?url";
 import uiHeart from "../svg/ui-heart.svg?url";
 import uiCoin from "../svg/ui-coin.svg?url";
 
@@ -68,6 +72,10 @@ export const manifest: Record<AssetId, string> = {
   "enemy.gruvkungen": enemyGruvkungen,
   "enemy.isfursten": enemyIsfursten,
   "enemy.skogsraet": enemySkogsraet,
+  "upgrade.bjornstyrka": upgradeBjornstyrka,
+  "upgrade.ugglesyn": upgradeUgglesyn,
+  "upgrade.skattkista": upgradeSkattkista,
+  "upgrade.stugvarme": upgradeStugvarme,
   "ui.heart": uiHeart,
   "ui.coin": uiCoin,
 };

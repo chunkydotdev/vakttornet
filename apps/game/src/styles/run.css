@@ -181,8 +181,9 @@
 /* ---------- Tower shop ---------- */
 
 /* Every card shares one rigid grid — [44px sprite | content] with two
-   content rows (name / meta) — and a fixed height, so the five cards line
-   up in identical rhythm whatever their name length or locked state. */
+   content rows (name / meta) — and a fixed height, so the cards line
+   up in identical rhythm whatever their name length. Only unlocked towers
+   are rendered here; locked ones live in the hub's Förrådet. */
 .tower-card {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
@@ -208,7 +209,7 @@
     transform 0.1s ease;
 }
 
-.tower-card:hover:not(.locked) {
+.tower-card:hover {
   border-color: var(--border-strong);
   background: var(--bg-hover);
   transform: translateY(-1px);
@@ -236,8 +237,8 @@
   text-overflow: ellipsis;
 }
 
-/* Meta row: role badge left, cost (or unlock requirement) pinned right so
-   all costs land in one straight vertical line down the column. */
+/* Meta row: role badge left, cost pinned right so all costs land in one
+   straight vertical line down the column. */
 .tower-card .tower-meta {
   display: flex;
   align-items: center;
@@ -271,33 +272,6 @@
   height: 0.95em;
 }
 
-/* Locked (unlockPoints not yet earned): greyed sprite + dim amber unlock
-   cost, but kept readable so the player sees what to aim for. The full
-   "Låst — kräver N poäng" explanation lives in the hover inspector. */
-.tower-card.locked {
-  cursor: not-allowed;
-  opacity: 0.85;
-}
-
-.tower-card.locked img {
-  filter: grayscale(1) brightness(0.65);
-  opacity: 0.55;
-}
-
-.tower-card.locked .tower-name {
-  color: var(--text-faint);
-}
-
-.tower-card.locked .tower-cost {
-  color: var(--accent);
-  opacity: 0.6;
-}
-
-.tower-card .lock-glyph {
-  font-size: 0.85em;
-  filter: grayscale(1) brightness(1.2);
-}
-
 .shop-hint {
   color: var(--text-faint);
   font-size: 0.75rem;
@@ -307,8 +281,7 @@
 
 /* ---------- Role badge (shop cards + inspector) ---------- */
 
-/* One-word mechanic chip in lantern-amber; derived from tower data. Kept
-   visible on locked cards so players see what they're grinding toward. */
+/* One-word mechanic chip in lantern-amber; derived from tower data. */
 .role-badge {
   display: inline-block;
   vertical-align: 0.1em;
@@ -322,11 +295,6 @@
   text-transform: uppercase;
   padding: 0.1rem 0.4rem;
   white-space: nowrap;
-}
-
-.tower-card.locked .role-badge {
-  filter: none;
-  opacity: 1;
 }
 
 /* ---------- Inspector ---------- */
@@ -397,14 +365,6 @@
 .inspector-tower-head .tower-level {
   color: var(--text-dim);
   font-size: 0.78rem;
-}
-
-/* Locked tower hovered in the shop: the inspector carries the unlock
-   requirement (the shop card only shows the compact "🔒 N p"). */
-.inspector-tower-head .tower-locked-line {
-  color: var(--accent);
-  font-weight: 600;
-  opacity: 0.85;
 }
 
 .stat-table {

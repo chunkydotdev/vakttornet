@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- björnstyrka: bear paw print, claws raked — every tower hits harder (~54u) -->
+  <!-- claw streaks above the toes -->
+  <g stroke="#e8e4d2" stroke-width="3.4" stroke-linecap="round">
+    <path d="M11.5 21 L8.5 12"/>
+    <path d="M23 14 L21.5 5.5"/>
+    <path d="M41 14 L42.5 5.5"/>
+    <path d="M52.5 21 L55.5 12"/>
+  </g>
+  <!-- four toe pads -->
+  <ellipse cx="12.5" cy="29" rx="5" ry="6" fill="#9c7144" transform="rotate(-18 12.5 29)"/>
+  <ellipse cx="24" cy="22" rx="5.4" ry="6.6" fill="#9c7144" transform="rotate(-7 24 22)"/>
+  <ellipse cx="40" cy="22" rx="5.4" ry="6.6" fill="#9c7144" transform="rotate(7 40 22)"/>
+  <ellipse cx="51.5" cy="29" rx="5" ry="6" fill="#9c7144" transform="rotate(18 51.5 29)"/>
+  <!-- main pad -->
+  <path d="M32 31 Q45 31 47 43 Q48 54 39 58 Q32 60 25 58 Q16 54 17 43 Q19 31 32 31 Z" fill="#9c7144"/>
+  <ellipse cx="32" cy="46" rx="8.5" ry="6" fill="#b98a57"/>
+</svg>

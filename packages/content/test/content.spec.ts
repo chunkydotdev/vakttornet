@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { ASSET_IDS } from "@vakttornet/assets";
 import {
   assertContentIntegrity,
   buildContent,
@@ -128,6 +129,33 @@ describe("integrity cross-checks", () => {
       /Content integrity check failed \(5 violations\)/,
     );
     expect(() => assertContentIntegrity(broken)).toThrowError(/ghost/);
+  });
+
+  it("every metaUpgrade has an assetId that exists in ASSET_IDS", () => {
+    const bundle = buildContent();
+    const validAssetIds = new Set<string>(ASSET_IDS);
+    for (const upgrade of bundle.metaUpgrades) {
+      expect(
+        validAssetIds.has(upgrade.assetId),
+        `metaUpgrade "${upgrade.id}": assetId "${upgrade.assetId}" must be in ASSET_IDS`,
+      ).toBe(true);
+    }
+    // the four shop icons, one per upgrade
+    expect(bundle.metaUpgrades.map((u) => u.assetId)).toEqual([
+      "upgrade.bjornstyrka",
+      "upgrade.ugglesyn",
+      "upgrade.skattkista",
+      "upgrade.stugvarme",
+    ]);
+  });
+
+  it("flags metaUpgrade assetIds missing from ASSET_IDS", () => {
+    const broken: ContentBundle = structuredClone(buildContent());
+    broken.metaUpgrades[0]!.assetId = "upgrade.bogus-icon";
+    const violations = collectIntegrityViolations(broken);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]).toContain('metaUpgrade "bjornstyrka"');
+    expect(violations[0]).toContain('"upgrade.bogus-icon"');
   });
 
   it("assertContentIntegrity passes a healthy bundle through silently", () => {

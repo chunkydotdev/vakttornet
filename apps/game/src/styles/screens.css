@@ -121,54 +121,251 @@
   color: var(--gold);
 }
 
-/* ---------- Upgrades ---------- */
+/* ---------- Hub hero (nästa försvar / nästa upplåsning) ---------- */
 
-.upgrade-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
+.hub-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 0.75rem;
+  align-items: stretch;
 }
 
-.upgrade-card {
+@media (max-width: 720px) {
+  .hub-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.hero-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.45rem;
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  transition: border-color 0.15s ease;
+  padding: 1.2rem 1.4rem;
 }
 
-.upgrade-card:hover {
-  border-color: var(--border-strong);
+/* The play card carries a faint lantern glow — it's THE call to action. */
+.hero-play {
+  border-color: rgba(240, 180, 80, 0.4);
+  background:
+    radial-gradient(420px 220px at 0% 0%, rgba(240, 180, 80, 0.1), transparent 70%),
+    var(--bg-raised);
 }
 
-.upgrade-card h3 {
-  font-size: 1rem;
+.hero-kicker {
+  font-size: 0.68rem;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap; /* five rank pips + a long name wrap instead of clipping */
-  gap: 0.3rem 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 
-.upgrade-card .upgrade-desc {
+.hero-play .hero-kicker {
+  color: var(--accent);
+}
+
+.hero-level-name {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.hero-unlock-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.hero-meta {
   color: var(--text-dim);
   font-size: 0.85rem;
-  margin-top: 0.15rem;
 }
 
-.upgrade-card .upgrade-effect {
-  color: var(--success);
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-top: 0.2rem;
+.hero-actions {
+  margin-top: auto;
+  padding-top: 0.4rem;
 }
+
+.hero-play-btn {
+  font-size: 1rem;
+  padding: 0.65rem 2.4rem;
+}
+
+.hero-unlock-progress {
+  margin-top: auto;
+  padding-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.hero-unlock-remaining {
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-all-unlocked {
+  margin: auto 0;
+  color: var(--success);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.hub-show-all {
+  display: flex;
+  justify-content: center;
+  margin-top: -0.4rem;
+}
+
+/* ---------- Progress bars (amber fill) ---------- */
+
+.progress {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-strong), var(--accent));
+  transition: width 0.3s ease;
+}
+
+.progress-mini {
+  height: 5px;
+  width: 100%;
+  border: none;
+  background: var(--border);
+}
+
+/* ---------- Förrådet (hub shop) ---------- */
+
+.hub-section-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.forrad {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.forrad-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.forrad-sub {
+  color: var(--text-faint);
+  font-size: 0.78rem;
+}
+
+.forrad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 0.6rem;
+}
+
+/* Square-ish compact tile: icon / name / status. Fixed min-height keeps the
+   row rhythm steady whatever the status line holds. */
+.forrad-tile {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 122px;
+  padding: 0.8rem 0.55rem 0.7rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+}
+
+.forrad-tile:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(8, 7, 26, 0.4);
+}
+
+.forrad-tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.forrad-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.forrad-tile.locked .forrad-icon {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.6;
+}
+
+.forrad-tile.locked .forrad-name {
+  color: var(--text-dim);
+}
+
+.forrad-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+}
+
+/* Status zone pinned to the bottom so icons + names align across tiles. */
+.forrad-status {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.forrad-substatus {
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+}
+
+.forrad-substatus.cost {
+  color: var(--gold);
+}
+
+.forrad-substatus.maxed,
+.forrad-substatus.unlocked {
+  color: var(--success);
+}
+
+/* ---------- Rank pips (förråd tiles + shop modal) ---------- */
 
 .rank-pips {
   display: inline-flex;
@@ -186,21 +383,9 @@
   background: var(--gold);
 }
 
-.upgrade-buy {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-  flex: none;
-}
-
-.upgrade-cost {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--gold);
+.rank-pips-small .pip {
+  width: 7px;
+  height: 7px;
 }
 
 .upgrade-maxed {
@@ -209,6 +394,185 @@
   color: var(--success);
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+/* ---------- Shop item modal ---------- */
+
+.shop-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(9, 11, 18, 0.66);
+  backdrop-filter: blur(6px);
+  animation: overlay-in 0.18s ease-out;
+}
+
+.shop-modal {
+  position: relative;
+  width: min(430px, 100%);
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  background: var(--bg-raised);
+  border: 1px solid rgba(240, 180, 80, 0.45);
+  border-radius: var(--radius);
+  box-shadow:
+    0 18px 50px rgba(5, 8, 6, 0.7),
+    0 0 40px rgba(240, 180, 80, 0.06);
+  padding: 1.5rem 1.6rem 1.5rem;
+  animation: card-pop 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+  outline: none;
+}
+
+.shop-modal-close {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  appearance: none;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-faint);
+  font: 700 0.9rem var(--font);
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.shop-modal-close:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+  border-color: var(--border);
+}
+
+.shop-modal-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.shop-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding-right: 2rem; /* keep clear of the ✕ button */
+}
+
+.shop-modal-head h2 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.shop-modal-icon {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  border: 1px solid rgba(240, 180, 80, 0.3);
+  border-radius: var(--radius);
+}
+
+.shop-modal-icon img {
+  width: 46px;
+  height: 46px;
+}
+
+.shop-modal-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  margin-top: 0.25rem;
+}
+
+.shop-modal-buy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.15rem;
+}
+
+.points-chip-small {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.75rem;
+}
+
+/* All ranks' costs in one quiet line — bought ✓-dimmed, next in amber. */
+.cost-ladder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.ladder-step {
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  white-space: nowrap;
+}
+
+.ladder-step.owned {
+  color: var(--text-faint);
+  border-style: dashed;
+  text-decoration: line-through;
+  text-decoration-color: rgba(102, 119, 106, 0.6);
+}
+
+.ladder-step.next {
+  color: var(--accent);
+  border-color: rgba(240, 180, 80, 0.45);
+  background: var(--accent-soft);
+}
+
+.shop-modal-unlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.7rem 0.8rem;
+}
+
+.shop-modal-unlock .unlock-label {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.shop-modal-unlock .unlock-remaining {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.shop-modal-available {
+  color: var(--success);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 /* ---------- Sägner codex ---------- */

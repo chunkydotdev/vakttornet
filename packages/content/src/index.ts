@@ -65,6 +65,13 @@ export function collectIntegrityViolations(bundle: ContentBundle): string[] {
       );
     }
   }
+  for (const upgrade of bundle.metaUpgrades) {
+    if (!validAssetIds.has(upgrade.assetId)) {
+      violations.push(
+        `metaUpgrade "${upgrade.id}": assetId "${upgrade.assetId}" is not in ASSET_IDS`,
+      );
+    }
+  }
 
   const enemyIds = new Set(bundle.enemies.map((e) => e.id));
   for (const enemy of bundle.enemies) {

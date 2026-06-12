@@ -33,6 +33,10 @@ export const ASSET_IDS = [
   "enemy.gruvkungen",
   "enemy.isfursten",
   "enemy.skogsraet",
+  "upgrade.bjornstyrka",
+  "upgrade.ugglesyn",
+  "upgrade.skattkista",
+  "upgrade.stugvarme",
   "ui.heart",
   "ui.coin",
 ] as const;

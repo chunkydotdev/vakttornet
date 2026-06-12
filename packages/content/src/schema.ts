@@ -165,6 +165,8 @@ export const metaUpgradeSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
+  /** icon in @vakttornet/assets — upgrades need memorable illustrations */
+  assetId: z.string(),
   /** meta-point cost of rank 1; rank r costs round(cost × costGrowth^(r−1)) */
   cost: z.number().positive(),
   /** per-rank cost escalation factor (1 = flat) */

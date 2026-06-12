@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- ugglesyn: owl face with huge amber eyes — the woods hide nothing (~54u) -->
+  <!-- ear tufts -->
+  <path d="M11 20 Q7 6 21 11 L27 17 Z" fill="#4a4136"/>
+  <path d="M53 20 Q57 6 43 11 L37 17 Z" fill="#4a4136"/>
+  <!-- head -->
+  <path d="M32 8 Q53 8 56 28 Q58 47 44 54 Q32 58 20 54 Q6 47 8 28 Q11 8 32 8 Z" fill="#5d5446"/>
+  <!-- facial disc, heart-split down the middle -->
+  <path d="M31.5 13 Q15 13 14 31 Q13.5 45 27 50 Q31 44 31.5 32 Z" fill="#8a7d68"/>
+  <path d="M32.5 13 Q49 13 50 31 Q50.5 45 37 50 Q33 44 32.5 32 Z" fill="#8a7d68"/>
+  <!-- the amber eyes -->
+  <circle cx="22" cy="31" r="9.5" fill="#2a2118"/>
+  <circle cx="42" cy="31" r="9.5" fill="#2a2118"/>
+  <circle cx="22" cy="31" r="7.5" fill="#f2c14e"/>
+  <circle cx="42" cy="31" r="7.5" fill="#f2c14e"/>
+  <circle cx="22" cy="31" r="3.2" fill="#1f1a12"/>
+  <circle cx="42" cy="31" r="3.2" fill="#1f1a12"/>
+  <circle cx="24.5" cy="28.5" r="1.5" fill="#fff1bd"/>
+  <circle cx="44.5" cy="28.5" r="1.5" fill="#fff1bd"/>
+  <!-- beak -->
+  <path d="M32 36 L27 41 L32 49 L37 41 Z" fill="#c98a3b"/>
+  <!-- breast feather chevrons -->
+  <path d="M26 52 q3 -2.5 6 0 q3 -2.5 6 0" fill="none" stroke="#8a7d68" stroke-width="2" stroke-linecap="round"/>
+</svg>

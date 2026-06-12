@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- stugvärme: the hearth of the röda stugan, fire up — courage and lives (~54u) -->
+  <!-- mantel shelf -->
+  <rect x="5" y="7" width="54" height="7" rx="2" fill="#5b4632"/>
+  <rect x="5" y="7" width="54" height="3" rx="1.5" fill="#73583f"/>
+  <!-- stone surround -->
+  <path d="M9 56 L9 14 L55 14 L55 56 L46 56 L46 30 Q46 24 40 24 L24 24 Q18 24 18 30 L18 56 Z" fill="#6e675c"/>
+  <g stroke="#57514a" stroke-width="1.8" stroke-linecap="round">
+    <line x1="9" y1="22" x2="18" y2="22"/>
+    <line x1="46" y1="22" x2="55" y2="22"/>
+    <line x1="13.5" y1="22" x2="13.5" y2="30"/>
+    <line x1="50.5" y1="22" x2="50.5" y2="30"/>
+    <line x1="9" y1="30" x2="18" y2="30"/>
+    <line x1="46" y1="30" x2="55" y2="30"/>
+    <line x1="9" y1="38" x2="18" y2="38"/>
+    <line x1="46" y1="38" x2="55" y2="38"/>
+    <line x1="13.5" y1="38" x2="13.5" y2="46"/>
+    <line x1="50.5" y1="38" x2="50.5" y2="46"/>
+    <line x1="9" y1="46" x2="18" y2="46"/>
+    <line x1="46" y1="46" x2="55" y2="46"/>
+  </g>
+  <!-- firebox -->
+  <path d="M18 56 L18 30 Q18 24 24 24 L40 24 Q46 24 46 30 L46 56 Z" fill="#241d15"/>
+  <circle cx="32" cy="40" r="13" fill="#f2a33c" opacity="0.15"/>
+  <!-- logs -->
+  <rect x="20" y="49.5" width="24" height="4.5" rx="2.2" fill="#4a3526" transform="rotate(-4 32 51.5)"/>
+  <rect x="21" y="51.5" width="22" height="4.5" rx="2.2" fill="#5b4632"/>
+  <!-- the fire -->
+  <path d="M32 27 Q37 33 35 37 Q41 34 41.5 42 Q42 50 32 51 Q22 50 22.5 42 Q23 34 29 37 Q27 33 32 27 Z" fill="#e07b39"/>
+  <path d="M32 34 Q36 39 35.5 43 Q35 48 32 48.5 Q29 48 28.5 43 Q28 39 32 34 Z" fill="#f2c14e"/>
+  <ellipse cx="32" cy="45.5" rx="2.6" ry="3.2" fill="#ffe49a"/>
+  <!-- sparks -->
+  <circle cx="26" cy="29" r="1.1" fill="#ffd96b"/>
+  <circle cx="39" cy="27" r="1.1" fill="#ffd96b"/>
+</svg>

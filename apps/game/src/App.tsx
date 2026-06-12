@@ -9,14 +9,14 @@ import {
   type SaveData,
 } from "./save";
 import { TitleScreen } from "./screens/TitleScreen";
-import { UpgradesScreen } from "./screens/UpgradesScreen";
+import { LevelsScreen } from "./screens/LevelsScreen";
 import { CodexScreen } from "./screens/CodexScreen";
 import { RunScreen } from "./screens/RunScreen";
 import { TopplistaScreen } from "./screens/TopplistaScreen";
 
 type Screen =
   | { kind: "title" }
-  | { kind: "upgrades" }
+  | { kind: "levels" }
   | { kind: "codex" }
   | { kind: "topplista" }
   | { kind: "run"; levelId: string; runKey: number };
@@ -59,16 +59,11 @@ export function App() {
     return <TopplistaScreen onBack={() => setScreen({ kind: "title" })} />;
   }
 
-  if (screen.kind === "upgrades") {
+  if (screen.kind === "levels") {
     return (
-      <UpgradesScreen
+      <LevelsScreen
         save={save}
-        onBuy={(upgradeId) => {
-          const upgrade = content.metaUpgrades.find((u) => u.id === upgradeId);
-          if (!upgrade) return;
-          const next = buyUpgrade(save, upgrade);
-          if (next) setSave(next);
-        }}
+        onPlay={(levelId) => setScreen({ kind: "run", levelId, runKey: 0 })}
         onBack={() => setScreen({ kind: "title" })}
       />
     );
@@ -77,8 +72,15 @@ export function App() {
   return (
     <TitleScreen
       save={save}
+      meta={meta}
       onPlay={(levelId) => setScreen({ kind: "run", levelId, runKey: 0 })}
-      onUpgrades={() => setScreen({ kind: "upgrades" })}
+      onShowLevels={() => setScreen({ kind: "levels" })}
+      onBuyUpgrade={(upgradeId) => {
+        const upgrade = content.metaUpgrades.find((u) => u.id === upgradeId);
+        if (!upgrade) return;
+        const next = buyUpgrade(save, upgrade);
+        if (next) setSave(next);
+      }}
       onCodex={() => setScreen({ kind: "codex" })}
       onTopplista={() => setScreen({ kind: "topplista" })}
     />
