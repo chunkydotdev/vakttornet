@@ -69,4 +69,31 @@ export const sagner: SagenDef[] = [
       "Näcken själv lär ha lagt ner fiolen och lyssnat.",
     condition: { kind: "flawlessWin" },
   },
+  {
+    id: "vattekungens-fall",
+    title: "Vättekungens fall",
+    text:
+      "Det sägs att vättarnas kung bar en krona av stulet guld, och att den var tyngre än hans lilla hjärta. " +
+      "När han föll vid tornet rullade kronan ner i mossan, och ingen vätte har vågat lyfta den sedan dess. " +
+      "Där den ligger växer nu gula blommor som inte finns någon annanstans i hela mörka skogen.",
+    condition: { kind: "kills", enemyTypeId: "vattekungen", count: 1 },
+  },
+  {
+    id: "trollmoderns-sista-vagga",
+    title: "Trollmoderns sista vagga",
+    text:
+      "Det sägs att Trollmodern var äldre än berget hon sov under, och att björken på hennes rygg grott ur ett frö från tidernas första vår. " +
+      "När hon till sist lade sig ner vid stigen blev hon en kulle bland kullarna, och björken växer där än. " +
+      "Om våren vitnar den av blom, och då säger de gamla att hon vaggar ännu.",
+    condition: { kind: "kills", enemyTypeId: "trollmodern", count: 1 },
+  },
+  {
+    id: "sjoraet-stiger",
+    title: "Sjörået stiger",
+    text:
+      "Det sägs att tjärnen är bottenlös, och att Sjörået steg ur den en natt för att bära ljuset i tornet hem till mörkret. " +
+      "Men ljus låter sig inte bäras under vatten, och i gryningen var hon bara dimma över vassen. " +
+      "Den som ror över tjärnen håller ändå handen om sin lykta — för säkerhets skull.",
+    condition: { kind: "kills", enemyTypeId: "sjoraet", count: 1 },
+  },
 ];

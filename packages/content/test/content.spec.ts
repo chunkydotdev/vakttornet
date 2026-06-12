@@ -18,8 +18,11 @@ describe("buildContent", () => {
     const bundle = buildContent();
     expect(bundle.enemies.map((e) => e.id).sort()).toEqual([
       "myling",
+      "sjoraet",
       "troll",
+      "trollmodern",
       "vatte",
+      "vattekungen",
     ]);
     expect(bundle.towers.map((t) => t.id).sort()).toEqual([
       "nacken",
@@ -34,7 +37,7 @@ describe("buildContent", () => {
       "level03",
     ]);
     expect(bundle.metaUpgrades).toHaveLength(4);
-    expect(bundle.sagner).toHaveLength(7);
+    expect(bundle.sagner).toHaveLength(10);
   });
 
   it("level01 is unlocked from the start, level02 is not", () => {
@@ -188,6 +191,85 @@ describe("level maps", () => {
     checkLevel(level03); // exactly one S/E, full connectivity, no water walked
     // the tarn must actually be there — plenty of water tiles
     expect(countChar(level03.map, "~")).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe("boss waves", () => {
+  const expectedBossByLevel: Record<string, string> = {
+    level01: "vattekungen",
+    level02: "trollmodern",
+    level03: "sjoraet",
+  };
+
+  it("each boss def is flagged boss:true and drawn larger than a tile", () => {
+    const bundle = buildContent();
+    for (const bossId of Object.values(expectedBossByLevel)) {
+      const def = bundle.enemies.find((e) => e.id === bossId);
+      expect(def, `boss def "${bossId}" must exist`).toBeDefined();
+      expect(def!.boss).toBe(true);
+      expect(def!.scale).toBeGreaterThan(1);
+    }
+  });
+
+  it("the rank-and-file enemies are not bosses", () => {
+    const bundle = buildContent();
+    for (const id of ["myling", "vatte", "troll"]) {
+      const def = bundle.enemies.find((e) => e.id === id)!;
+      expect(def.boss, `${id} must not be a boss`).toBe(false);
+      expect(def.scale).toBe(1);
+    }
+  });
+
+  it("every level's FINAL wave has exactly one boss entry (count 1), earlier waves none", () => {
+    const bundle = buildContent();
+    const bossIds = new Set(
+      bundle.enemies.filter((e) => e.boss).map((e) => e.id),
+    );
+    for (const level of bundle.levels) {
+      level.waves.forEach((wave, waveIdx) => {
+        const bossEntries = wave.entries.filter((e) =>
+          bossIds.has(e.enemyTypeId),
+        );
+        if (waveIdx === level.waves.length - 1) {
+          expect(
+            bossEntries,
+            `${level.id} final wave must have exactly one boss entry`,
+          ).toHaveLength(1);
+          expect(bossEntries[0]!.count).toBe(1);
+          expect(bossEntries[0]!.enemyTypeId).toBe(
+            expectedBossByLevel[level.id],
+          );
+          // the boss closes the wave after a dramatic pause
+          expect(wave.entries[wave.entries.length - 1]).toBe(bossEntries[0]);
+          expect(bossEntries[0]!.delayTicks).toBeGreaterThanOrEqual(60);
+        } else {
+          expect(
+            bossEntries,
+            `${level.id} wave ${waveIdx + 1} must not contain a boss`,
+          ).toHaveLength(0);
+        }
+      });
+    }
+  });
+
+  it("each boss has a first-kill sägen referencing its real enemy id", () => {
+    const bundle = buildContent();
+    const conditions = bundle.sagner.map((s) => s.condition);
+    for (const bossId of Object.values(expectedBossByLevel)) {
+      expect(conditions).toContainEqual({
+        kind: "kills",
+        enemyTypeId: bossId,
+        count: 1,
+      });
+    }
+    const titles = bundle.sagner.map((s) => s.title);
+    expect(titles).toContain("Vättekungens fall");
+    expect(titles).toContain("Trollmoderns sista vagga");
+    expect(titles).toContain("Sjörået stiger");
+  });
+
+  it("the bundle with bosses still passes the full integrity check", () => {
+    expect(collectIntegrityViolations(buildContent())).toEqual([]);
   });
 });
 

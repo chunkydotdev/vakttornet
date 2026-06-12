@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- sjörået: pale green-blue lake spirit risen from the tarn — long
+       flowing hair, gown trailing into mist, the tell-tale hollow back.
+       Boss: renders up to 2x tile, fills ~58u -->
+  <ellipse cx="32" cy="60" rx="15" ry="3" fill="rgba(0,0,0,0.14)"/>
+  <!-- ripples where she meets the water -->
+  <g fill="none" stroke="#6fa3a0" stroke-width="2" stroke-linecap="round" opacity="0.7">
+    <path d="M14 58 Q20 56 26 58"/>
+    <path d="M38 59 Q44 57 50 59"/>
+  </g>
+  <!-- long flowing hair, streaming behind her -->
+  <g fill="none" stroke="#7fae9b" stroke-width="4" stroke-linecap="round">
+    <path d="M22 10 Q12 18 14 34 Q15 44 11 52"/>
+    <path d="M42 10 Q52 18 50 34 Q49 44 54 52"/>
+    <path d="M19 14 Q15 26 18 40"/>
+    <path d="M45 14 Q49 26 46 40"/>
+  </g>
+  <!-- gown tapering to wisps of water -->
+  <path d="M22 24 Q20 14 32 12 Q44 14 42 24 L44 42 Q46 52 41 50 Q39 58 32 53 Q25 58 23 50 Q18 52 20 42 Z" fill="#a8cfc2"/>
+  <path d="M25 28 Q24 17 32 15" fill="none" stroke="#c9e4da" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- the hollow back: dark hint at her side -->
+  <path d="M22 30 Q19 36 21 44 Q24 40 24 34 Z" fill="#2f4a44"/>
+  <!-- arms -->
+  <path d="M24 28 Q16 32 14 40 M40 28 Q48 32 50 40" fill="none" stroke="#a8cfc2" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- head -->
+  <ellipse cx="32" cy="13" rx="8.5" ry="7.5" fill="#bcd9cd"/>
+  <path d="M23 11 Q26 4 32 4.5 Q38 4 41 11 Q36 8 32 8.5 Q28 8 23 11 Z" fill="#7fae9b"/>
+  <!-- deep, still eyes -->
+  <circle cx="28.5" cy="13" r="2.9" fill="#ffffff"/>
+  <circle cx="35.5" cy="13" r="2.9" fill="#ffffff"/>
+  <circle cx="28.8" cy="13.6" r="1.5" fill="#1e3833"/>
+  <circle cx="35.2" cy="13.6" r="1.5" fill="#1e3833"/>
+  <path d="M29.5 18.5 Q32 20 34.5 18.5" fill="none" stroke="#6fa3a0" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- näckros in her hair -->
+  <circle cx="24.5" cy="8" r="2" fill="#e8e4d2"/>
+  <circle cx="24.5" cy="8" r="0.9" fill="#d9a441"/>
+  <!-- falling droplets -->
+  <circle cx="18" cy="48" r="1.2" fill="#a8cfc2" opacity="0.8"/>
+  <circle cx="47" cy="46" r="1.2" fill="#a8cfc2" opacity="0.8"/>
+</svg>

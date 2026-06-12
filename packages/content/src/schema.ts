@@ -14,6 +14,10 @@ export const enemyDefSchema = z.object({
   speed: z.number().positive(),
   /** gold awarded on kill; also added to run score */
   bounty: z.number().nonnegative(),
+  /** render-size multiplier (1 = one tile); bosses are drawn bigger */
+  scale: z.number().min(0.5).max(2).default(1),
+  /** boss treatment in the UI: hp banner while alive, spawn fanfare */
+  boss: z.boolean().default(false),
 });
 export type EnemyDef = z.infer<typeof enemyDefSchema>;
 

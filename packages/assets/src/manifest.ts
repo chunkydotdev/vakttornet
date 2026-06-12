@@ -22,6 +22,9 @@ import projectileNacken from "../svg/projectile-nacken.svg?url";
 import enemyMyling from "../svg/enemy-myling.svg?url";
 import enemyVatte from "../svg/enemy-vatte.svg?url";
 import enemyTroll from "../svg/enemy-troll.svg?url";
+import enemyVattekungen from "../svg/enemy-vattekungen.svg?url";
+import enemyTrollmodern from "../svg/enemy-trollmodern.svg?url";
+import enemySjoraet from "../svg/enemy-sjoraet.svg?url";
 import uiHeart from "../svg/ui-heart.svg?url";
 import uiCoin from "../svg/ui-coin.svg?url";
 
@@ -44,6 +47,9 @@ export const manifest: Record<AssetId, string> = {
   "enemy.myling": enemyMyling,
   "enemy.vatte": enemyVatte,
   "enemy.troll": enemyTroll,
+  "enemy.vattekungen": enemyVattekungen,
+  "enemy.trollmodern": enemyTrollmodern,
+  "enemy.sjoraet": enemySjoraet,
   "ui.heart": uiHeart,
   "ui.coin": uiCoin,
 };

@@ -16,7 +16,7 @@ import type {
   TowerInstance,
   Vec,
 } from "@vakttornet/sim";
-import type { ContentBundle, TowerDef, TowerLevel } from "@vakttornet/content";
+import type { ContentBundle, EnemyDef, TowerDef, TowerLevel } from "@vakttornet/content";
 
 export const TILE_PX = 64;
 
@@ -112,10 +112,14 @@ interface FloatingText {
   bornAt: number;
   /** Petrify callouts render smaller + italic to stand apart from gold text. */
   italic?: boolean;
+  /** Boss callouts: bigger type, slower rise, longer dramatic fade. */
+  big?: boolean;
 }
 
 const FLOAT_LIFE_MS = 1100;
 const FLOAT_RISE_PX = 30;
+const BOSS_FLOAT_LIFE_MS = 2000;
+const BOSS_FLOAT_RISE_PX = 18;
 
 /** Brief expanding ring drawn where a splash projectile lands. */
 interface SplashRing {
@@ -130,6 +134,11 @@ const SPLASH_LIFE_MS = 250;
 
 /** Min ms between "förstenad!" floats per enemy — re-applied slows don't spam. */
 const SLOW_FLOAT_COOLDOWN_MS = 700;
+
+/** Enemy sprite edge at scale 1; EnemyDef.scale multiplies this. */
+const ENEMY_SPRITE_PX = 48;
+/** Enemy hp-bar width at scale 1; follows the sprite's scale. */
+const HP_BAR_PX = 36;
 
 /** Dusk-amber accent for canvas overlays (mirrors --accent in global.css). */
 const ACCENT_RGB = "240, 180, 80";
@@ -148,6 +157,7 @@ export class Renderer {
   private readonly cssWidth: number;
   private readonly cssHeight: number;
   private readonly towerDefs: Map<string, TowerDef>;
+  private readonly enemyDefs: Map<string, EnemyDef>;
   private readonly exitPos: Vec;
   private floats: FloatingText[] = [];
   private splashes: SplashRing[] = [];
@@ -174,6 +184,7 @@ export class Renderer {
     this.ctx = ctx;
 
     this.towerDefs = new Map(content.towers.map((t) => [t.id, t]));
+    this.enemyDefs = new Map(content.enemies.map((e) => [e.id, e]));
     const lastWaypoint = sim.state.path[sim.state.path.length - 1];
     this.exitPos = lastWaypoint ?? { x: cols / 2, y: rows / 2 };
   }
@@ -182,10 +193,25 @@ export class Renderer {
   handleEvents(events: SimEvent[]): void {
     for (const event of events) {
       switch (event.type) {
-        case "enemyDied":
+        case "enemySpawned": {
+          // Boss spawn fanfare — big centered name callout with a slow fade.
+          const def = this.enemyDefs.get(event.typeId);
+          if (def?.boss) {
+            this.addFloat(def.name, `rgb(${ACCENT_RGB})`, this.boardCenter(), { big: true });
+          }
+          break;
+        }
+        case "enemyDied": {
           this.addFloat(`+${event.bounty}`, "#fbbf24", event.at);
           this.lastSlowFloatAt.delete(event.enemyId);
+          const def = this.enemyDefs.get(event.typeId);
+          if (def?.boss) {
+            this.addFloat(`${def.name} har fallit!`, `rgb(${ACCENT_RGB})`, this.boardCenter(), {
+              big: true,
+            });
+          }
           break;
+        }
         case "enemyLeaked":
           this.addFloat("-1 ♥", "#f87171", this.exitPos);
           this.lastSlowFloatAt.delete(event.enemyId);
@@ -231,11 +257,15 @@ export class Renderer {
     }
   }
 
+  private boardCenter(): Vec {
+    return { x: this.sim.state.grid.cols / 2, y: this.sim.state.grid.rows / 2 };
+  }
+
   private addFloat(
     text: string,
     color: string,
     at: Vec,
-    opts: { italic?: boolean } = {},
+    opts: { italic?: boolean; big?: boolean } = {},
   ): void {
     this.floats.push({
       text,
@@ -244,6 +274,7 @@ export class Renderer {
       y: at.y * TILE_PX - 10,
       bornAt: performance.now(),
       italic: opts.italic,
+      big: opts.big,
     });
   }
 
@@ -260,6 +291,7 @@ export class Renderer {
     this.drawSplashes();
     this.drawPlacementPreview();
     this.drawFloats();
+    this.drawBossBanners();
 
     // Subtle board frame so the edge tiles don't bleed into the page.
     ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
@@ -369,13 +401,15 @@ export class Renderer {
 
   private drawEnemies(alpha: number): void {
     const { ctx } = this;
-    const enemyDefs = this.content.enemies;
     for (const enemy of this.sim.state.enemies) {
       const x = lerp(enemy.prevPos.x, enemy.pos.x, alpha) * TILE_PX;
       const y = lerp(enemy.prevPos.y, enemy.pos.y, alpha) * TILE_PX;
-      const def = enemyDefs.find((e) => e.id === enemy.typeId);
+      const def = this.enemyDefs.get(enemy.typeId);
       const img = this.image(def?.assetId ?? `enemy.${enemy.typeId}`);
-      const size = 48;
+      // def.scale (1 = normal, bosses 1.5+) scales the sprite, fallback
+      // blob, hp bar width, and petrify ring alike.
+      const scale = def?.scale ?? 1;
+      const size = ENEMY_SPRITE_PX * scale;
       const petrified = enemy.slowTicksLeft > 0;
 
       if (petrified) this.drawPetrifyRing(x, y, size);
@@ -388,12 +422,12 @@ export class Renderer {
       } else {
         ctx.fillStyle = "#f87171";
         ctx.beginPath();
-        ctx.arc(x, y, 14, 0, Math.PI * 2);
+        ctx.arc(x, y, 14 * scale, 0, Math.PI * 2);
         ctx.fill();
       }
       if (petrified) ctx.filter = "none";
 
-      this.drawHpBar(x, y - size / 2 - 7, enemy.hp / enemy.maxHp);
+      this.drawHpBar(x, y - size / 2 - 7, enemy.hp / enemy.maxHp, HP_BAR_PX * scale);
     }
   }
 
@@ -413,11 +447,9 @@ export class Renderer {
     ctx.restore();
   }
 
-  private drawHpBar(cx: number, cy: number, ratio: number): void {
+  private drawHpBar(cx: number, cy: number, ratio: number, width = HP_BAR_PX, height = 5): void {
     const { ctx } = this;
     const clamped = Math.max(0, Math.min(1, ratio));
-    const width = 36;
-    const height = 5;
     const x = cx - width / 2;
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
     ctx.fillRect(x - 1, cy - 1, width + 2, height + 2);
@@ -499,21 +531,66 @@ export class Renderer {
     const now = performance.now();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    this.floats = this.floats.filter((f) => now - f.bornAt < FLOAT_LIFE_MS);
+    this.floats = this.floats.filter(
+      (f) => now - f.bornAt < (f.big ? BOSS_FLOAT_LIFE_MS : FLOAT_LIFE_MS),
+    );
     for (const float of this.floats) {
-      ctx.font = float.italic
-        ? "italic 700 12px system-ui, sans-serif"
-        : "700 14px system-ui, sans-serif";
-      const t = (now - float.bornAt) / FLOAT_LIFE_MS;
-      const y = float.y - t * FLOAT_RISE_PX;
+      ctx.font = float.big
+        ? "800 26px system-ui, sans-serif"
+        : float.italic
+          ? "italic 700 12px system-ui, sans-serif"
+          : "700 14px system-ui, sans-serif";
+      const t = (now - float.bornAt) / (float.big ? BOSS_FLOAT_LIFE_MS : FLOAT_LIFE_MS);
+      const y = float.y - t * (float.big ? BOSS_FLOAT_RISE_PX : FLOAT_RISE_PX);
       ctx.globalAlpha = 1 - t * t;
       ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
-      ctx.lineWidth = 3;
+      ctx.lineWidth = float.big ? 5 : 3;
       ctx.strokeText(float.text, float.x, y);
       ctx.fillStyle = float.color;
       ctx.fillText(float.text, float.x, y);
     }
     ctx.globalAlpha = 1;
+  }
+
+  /** Top-center hp banner for every living boss (def.boss). Multiple bosses
+   * stack downward; the panel mirrors the app's dark-card + amber-border UI. */
+  private drawBossBanners(): void {
+    const bosses = this.sim.state.enemies.filter((e) => this.enemyDefs.get(e.typeId)?.boss);
+    if (bosses.length === 0) return;
+
+    const { ctx } = this;
+    const panelWidth = Math.min(380, this.cssWidth - 32);
+    const panelHeight = 44;
+    const gap = 8;
+    const x = (this.cssWidth - panelWidth) / 2;
+    let y = 10;
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const boss of bosses) {
+      const def = this.enemyDefs.get(boss.typeId);
+      if (!def) continue;
+
+      // Panel: dark card with the lantern-amber border used across the UI.
+      ctx.beginPath();
+      ctx.roundRect(x, y, panelWidth, panelHeight, 8);
+      ctx.fillStyle = "rgba(12, 15, 21, 0.88)";
+      ctx.fill();
+      ctx.strokeStyle = `rgba(${ACCENT_RGB}, 0.65)`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Boss name.
+      ctx.font = "700 13px system-ui, sans-serif";
+      ctx.fillStyle = `rgb(${ACCENT_RGB})`;
+      ctx.fillText(def.name, this.cssWidth / 2, y + 14);
+
+      // Wide hp bar from the live instance.
+      const barWidth = panelWidth - 28;
+      this.drawHpBar(this.cssWidth / 2, y + 26, boss.hp / boss.maxHp, barWidth, 7);
+
+      y += panelHeight + gap;
+    }
   }
 }
 

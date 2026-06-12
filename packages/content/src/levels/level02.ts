@@ -7,6 +7,9 @@ import type { LevelDef } from "../schema";
  * Path length: 39 tiles (S + 37 P + E).
  *
  * Wave HP budget (first pass): 240 / 264 / 580 / 612 / 844 / 1080 / 1100 / 1800.
+ * Boss pass: wave 8 closes with Trollmodern (1600 hp). Escort trimmed
+ * 1800 → 630 so the finale lands at 2230 total (+23.9% over the old 1800)
+ * — she IS the wall the old troll column only pretended to be.
  * Fewer lives (8) and heavier waves; meta upgrades expected (unlocks at 400).
  * Waves 6 and 8 are deliberately troll-heavy — Sollyktans petrify is the
  * intended answer to the lumbering columns.
@@ -71,10 +74,13 @@ export const level02: LevelDef = {
       ],
     },
     {
+      // Finale: 630 hp escort + Trollmodern 1600 = 2230 (was 1800, +23.9%)
       entries: [
-        { enemyTypeId: "troll", count: 9, spacingTicks: 40, delayTicks: 0 },
-        { enemyTypeId: "vatte", count: 20, spacingTicks: 7, delayTicks: 45 },
-        { enemyTypeId: "myling", count: 10, spacingTicks: 12, delayTicks: 45 },
+        { enemyTypeId: "troll", count: 3, spacingTicks: 40, delayTicks: 0 },
+        { enemyTypeId: "vatte", count: 10, spacingTicks: 7, delayTicks: 45 },
+        { enemyTypeId: "myling", count: 3, spacingTicks: 12, delayTicks: 45 },
+        // the forest goes quiet, then the mother of trolls
+        { enemyTypeId: "trollmodern", count: 1, spacingTicks: 30, delayTicks: 90 },
       ],
     },
   ],

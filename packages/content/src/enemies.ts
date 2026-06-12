@@ -8,6 +8,8 @@ export const enemies: EnemyDef[] = [
     hp: 30,
     speed: 1.6,
     bounty: 5,
+    scale: 1,
+    boss: false,
   },
   {
     id: "vatte",
@@ -16,6 +18,8 @@ export const enemies: EnemyDef[] = [
     hp: 12,
     speed: 2.3,
     bounty: 2,
+    scale: 1,
+    boss: false,
   },
   {
     id: "troll",
@@ -24,5 +28,39 @@ export const enemies: EnemyDef[] = [
     hp: 140,
     speed: 0.7,
     bounty: 14,
+    scale: 1,
+    boss: false,
+  },
+  // ── Bosses ── one per level, closing the final wave. Drawn bigger
+  // (scale) and given the boss UI treatment (hp banner, spawn fanfare).
+  {
+    id: "vattekungen",
+    name: "Vättekungen",
+    assetId: "enemy.vattekungen",
+    hp: 700,
+    speed: 0.55,
+    bounty: 60,
+    scale: 1.5,
+    boss: true,
+  },
+  {
+    id: "trollmodern",
+    name: "Trollmodern",
+    assetId: "enemy.trollmodern",
+    hp: 1600,
+    speed: 0.5,
+    bounty: 120,
+    scale: 1.8,
+    boss: true,
+  },
+  {
+    id: "sjoraet",
+    name: "Sjörået",
+    assetId: "enemy.sjoraet",
+    hp: 2600,
+    speed: 0.55,
+    bounty: 180,
+    scale: 1.8,
+    boss: true,
   },
 ];

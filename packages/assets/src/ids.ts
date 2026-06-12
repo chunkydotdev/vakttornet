@@ -21,6 +21,9 @@ export const ASSET_IDS = [
   "enemy.myling",
   "enemy.vatte",
   "enemy.troll",
+  "enemy.vattekungen",
+  "enemy.trollmodern",
+  "enemy.sjoraet",
   "ui.heart",
   "ui.coin",
 ] as const;

@@ -4,11 +4,20 @@
  * The run screen feeds every tick's event batch through `playEventSounds`.
  */
 import type { SimEvent } from "@vakttornet/sim";
+import { content } from "../content";
+
+/** Enemy type ids flagged `boss: true` in content — boss sfx are derived
+ * from spawn/death events, not separate sim event types. */
+const bossTypeIds: ReadonlySet<string> = new Set(
+  content.enemies.filter((e) => e.boss).map((e) => e.id),
+);
 
 export function sfxWaveStarted(): void {}
 export function sfxWaveCleared(): void {}
 export function sfxEnemySpawned(): void {}
 export function sfxEnemyDied(): void {}
+export function sfxBossSpawned(): void {}
+export function sfxBossDied(): void {}
 export function sfxEnemyLeaked(): void {}
 export function sfxTowerFired(): void {}
 export function sfxProjectileHit(): void {}
@@ -30,10 +39,12 @@ export function playEventSounds(events: SimEvent[]): void {
         sfxWaveCleared();
         break;
       case "enemySpawned":
-        sfxEnemySpawned();
+        if (bossTypeIds.has(event.typeId)) sfxBossSpawned();
+        else sfxEnemySpawned();
         break;
       case "enemyDied":
-        sfxEnemyDied();
+        if (bossTypeIds.has(event.typeId)) sfxBossDied();
+        else sfxEnemyDied();
         break;
       case "enemyLeaked":
         sfxEnemyLeaked();

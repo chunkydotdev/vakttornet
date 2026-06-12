@@ -10,7 +10,10 @@ import type { LevelDef } from "../schema";
  * Path length: 44 tiles (S + 42 P + E).
  *
  * Wave HP budget (first pass): 300 / 396 / 604 / 760 / 980 / 1300 / 1500 /
- * 1928 / 2640 — well past level02's finale (1800). Waves 1-2 fall to the
+ * 1928 / 2640 — well past level02's finale (1800). Boss pass: wave 9
+ * closes with Sjörået (2600 hp) risen from the tarn. Escort trimmed
+ * 2640 → 696 so the finale lands at 3296 total (+24.8% over the old 2640).
+ * Waves 1-2 fall to the
  * 2-3 tomtar that 140 start gold plus early bounties buy; the vätte floods
  * (waves 6-9) want Näckens splash and the troll walls (8-9) want the gold
  * that only a tended Vårdträd provides. Mylingar come in tight rushes
@@ -85,10 +88,13 @@ export const level03: LevelDef = {
       ],
     },
     {
+      // Finale: 696 hp escort + Sjörået 2600 = 3296 (was 2640, +24.8%)
       entries: [
-        { enemyTypeId: "troll", count: 12, spacingTicks: 36, delayTicks: 0 },
-        { enemyTypeId: "myling", count: 20, spacingTicks: 8, delayTicks: 45 },
-        { enemyTypeId: "vatte", count: 30, spacingTicks: 6, delayTicks: 60 },
+        { enemyTypeId: "troll", count: 3, spacingTicks: 36, delayTicks: 0 },
+        { enemyTypeId: "myling", count: 6, spacingTicks: 8, delayTicks: 45 },
+        { enemyTypeId: "vatte", count: 8, spacingTicks: 6, delayTicks: 60 },
+        // the tarn stills, then Sjörået rises
+        { enemyTypeId: "sjoraet", count: 1, spacingTicks: 30, delayTicks: 90 },
       ],
     },
   ],
