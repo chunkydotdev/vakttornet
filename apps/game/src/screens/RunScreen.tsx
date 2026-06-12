@@ -36,6 +36,7 @@ import {
   roleBadge,
   upgradeLine,
 } from "../towerInfo";
+import { MuteButton } from "./MuteButton";
 import { RunEndOverlay } from "./RunEndOverlay";
 
 interface RunScreenProps {
@@ -405,6 +406,7 @@ export function RunScreen({
             2×
           </button>
         </span>
+        <MuteButton />
         <button
           type="button"
           className="btn btn-primary start-wave-btn"

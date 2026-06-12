@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { content } from "./content";
+import { music } from "./game/music";
 import {
   applyRunEnd,
   buyUpgrade,
@@ -29,6 +30,15 @@ export function App() {
     () => computeMetaModifiers(save.upgradeRanks, content.metaUpgrades),
     [save],
   );
+
+  // Screen changes drive the music: in-run plays the map track (the manager
+  // falls back to battle.mp3, then silence), everything else plays hub.
+  // Same-track requests are no-ops, so retries and the run-end overlay keep
+  // the current track running.
+  const musicTrack = screen.kind === "run" ? screen.levelId : "hub";
+  useEffect(() => {
+    music.playTrack(musicTrack);
+  }, [musicTrack]);
 
   if (screen.kind === "run") {
     const level = content.levels.find((l) => l.id === screen.levelId);

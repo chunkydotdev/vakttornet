@@ -13,6 +13,7 @@ import { assetUrl } from "../game/render";
 import { leaderboardEnabled } from "../leaderboard";
 import { nextUpgradeCost, type SaveData } from "../save";
 import { formatSilver } from "../towerInfo";
+import { MuteButton } from "./MuteButton";
 import { ShopItemModal, upgradeIconUrl, type ShopItem } from "./ShopItemModal";
 
 interface TitleScreenProps {
@@ -73,6 +74,7 @@ export function TitleScreen({
                 Topplista
               </button>
             )}
+            <MuteButton />
           </span>
         </div>
 

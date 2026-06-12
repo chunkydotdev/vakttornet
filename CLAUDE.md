@@ -22,6 +22,13 @@ Copy style: sagoton, and avoid the AI em-dash tic — at most a handful of
 em dashes across all player-facing prose; vary sentence shapes (see the
 sägner for the house voice).
 
+## Music
+
+Background tracks are pure file-drops in `apps/game/public/audio/` (contract
+in its README: `hub.mp3`, `battle.mp3`, `level01`–`09`, mp3/ogg; missing files
+fall back battle → silence). `apps/game/src/game/music.ts` owns playback —
+probing, crossfade, autoplay arming, persisted mute.
+
 ## Architecture
 
 Turborepo + pnpm. Packages export raw TypeScript (`main: ./src/index.ts`) —
