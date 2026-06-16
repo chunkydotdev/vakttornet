@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { NO_META } from "@vakttornet/sim";
 import { useContent } from "./localized";
 import { music } from "./game/music";
 import {
@@ -10,6 +11,7 @@ import {
   setPlayerName,
   type SaveData,
 } from "./save";
+import { buildEndlessBundle, ENDLESS_SEED } from "./endless";
 import { TitleScreen } from "./screens/TitleScreen";
 import { LevelsScreen } from "./screens/LevelsScreen";
 import { CodexScreen } from "./screens/CodexScreen";
@@ -23,7 +25,8 @@ type Screen =
   | { kind: "codex" }
   | { kind: "dagbok" }
   | { kind: "topplista" }
-  | { kind: "run"; levelId: string; runKey: number };
+  | { kind: "run"; levelId: string; runKey: number }
+  | { kind: "endless"; runKey: number };
 
 export function App() {
   const [save, setSave] = useState<SaveData>(loadSave);
@@ -38,11 +41,16 @@ export function App() {
     [save, content],
   );
 
+  // The endless gauntlet: generated scaled enemies + the single endless level,
+  // built from the localized bundle so enemy names follow the language.
+  const endless = useMemo(() => buildEndlessBundle(content), [content]);
+
   // Screen changes drive the music: in-run plays the map track (the manager
   // falls back to battle.mp3, then silence), everything else plays hub.
   // Same-track requests are no-ops, so retries and the run-end overlay keep
   // the current track running.
-  const musicTrack = screen.kind === "run" ? screen.levelId : "hub";
+  const musicTrack =
+    screen.kind === "run" ? screen.levelId : screen.kind === "endless" ? "endless" : "hub";
   useEffect(() => {
     music.playTrack(musicTrack);
   }, [musicTrack]);
@@ -66,6 +74,24 @@ export function App() {
       );
     }
     // Unknown level id — fall through to the title screen.
+  }
+
+  if (screen.kind === "endless") {
+    return (
+      <RunScreen
+        key={`endless:${screen.runKey}`}
+        level={endless.level}
+        contentBundle={endless.bundle}
+        meta={NO_META}
+        seed={ENDLESS_SEED}
+        endless
+        save={save}
+        onRunEnd={() => {}}
+        onPlayerName={() => {}}
+        onExit={() => setScreen({ kind: "title" })}
+        onRetry={() => setScreen({ kind: "endless", runKey: screen.runKey + 1 })}
+      />
+    );
   }
 
   if (screen.kind === "codex") {
@@ -111,6 +137,7 @@ export function App() {
       onCodex={() => setScreen({ kind: "codex" })}
       onTopplista={() => setScreen({ kind: "topplista" })}
       onDagbok={() => setScreen({ kind: "dagbok" })}
+      onEndless={() => setScreen({ kind: "endless", runKey: 0 })}
     />
   );
 }

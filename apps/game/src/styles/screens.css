@@ -251,7 +251,21 @@
 .hub-show-all {
   display: flex;
   justify-content: center;
+  gap: 0.6rem;
   margin-top: -0.4rem;
+}
+
+/* Endless ("Evig vakt"): lantern-amber outline so the marquee mode stands out. */
+.endless-btn {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.endless-btn:hover:not(:disabled) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* ---------- Progress bars (amber fill) ---------- */
@@ -869,6 +883,20 @@
   color: var(--success);
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+/* Endless end-screen vårdträd pill (the survival tiebreak flavor). */
+.endless-vardtrad {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--success);
+  font-weight: 700;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.9rem;
 }
 
 .lb-form {

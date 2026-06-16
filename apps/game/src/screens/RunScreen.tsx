@@ -43,6 +43,7 @@ import {
   upgradeLine,
 } from "../towerInfo";
 import { RunEndOverlay } from "./RunEndOverlay";
+import { EndlessEndOverlay } from "./EndlessEndOverlay";
 
 interface RunScreenProps {
   level: LevelDef;
@@ -54,6 +55,12 @@ interface RunScreenProps {
   onPlayerName: (name: string) => void;
   onExit: () => void;
   onRetry: () => void;
+  /** Endless mode: use this exact bundle instead of the global content (its
+   * waves reference generated scaled enemies), a fixed seed, all towers
+   * available, and a survival end-screen — no silver/sägner. */
+  contentBundle?: ContentBundle;
+  seed?: number;
+  endless?: boolean;
 }
 
 interface HudState {
@@ -118,12 +125,16 @@ export function RunScreen({
   onPlayerName,
   onExit,
   onRetry,
+  contentBundle,
+  seed,
+  endless = false,
 }: RunScreenProps) {
   const { t } = useT();
   // Localized bundle, locked in at mount like the meta modifiers — the
-  // language toggle lives on the hub, so it cannot change mid-run.
+  // language toggle lives on the hub, so it cannot change mid-run. Endless
+  // passes its own (generated) bundle.
   const localized = useContent();
-  const bundleRef = useRef<ContentBundle>(localized);
+  const bundleRef = useRef<ContentBundle>(contentBundle ?? localized);
   const bundle = bundleRef.current;
 
   // Meta modifiers are locked in at mount — buying upgrades mid-run (not
@@ -133,7 +144,8 @@ export function RunScreen({
   const simRef = useRef<Sim | null>(null);
   if (simRef.current === null) {
     simRef.current = createSim(level, bundle, {
-      seed: Math.floor(Math.random() * 0x7fffffff),
+      // Endless uses a fixed seed so the gauntlet is identical for everyone.
+      seed: seed ?? Math.floor(Math.random() * 0x7fffffff),
       meta: metaRef.current,
     });
   }
@@ -152,13 +164,16 @@ export function RunScreen({
   const runKillsRef = useRef<Record<string, number>>({});
   const runPetrifiedRef = useRef(0);
   const startLivesRef = useRef(sim.state.lives);
+  // Endless survival metric: waves fully cleared (ground truth from events).
+  const runWavesClearedRef = useRef(0);
 
   // The shop holds ONLY available towers (starters + bought in Förrådet),
   // computed ONCE at run start — locked towers never appear in a run (they
   // live in the hub's Förrådet), and silver banked when this run ends must
   // not pop new towers in mid-run.
   const [shopTowers] = useState<readonly TowerDef[]>(() =>
-    bundle.towers.filter((tower) => towerAvailable(save, tower)),
+    // Endless is a fair board: everyone gets the full toolkit, no Förrådet gating.
+    endless ? bundle.towers : bundle.towers.filter((tower) => towerAvailable(save, tower)),
   );
 
   const [loading, setLoading] = useState(true);
@@ -185,6 +200,8 @@ export function RunScreen({
         runKillsRef.current[event.typeId] = (runKillsRef.current[event.typeId] ?? 0) + 1;
       } else if (event.type === "enemySlowed") {
         runPetrifiedRef.current += 1;
+      } else if (event.type === "waveCleared") {
+        runWavesClearedRef.current += 1;
       }
     }
   }, []);
@@ -262,6 +279,12 @@ export function RunScreen({
   useEffect(() => {
     if (runEnded && !endedNotifiedRef.current) {
       endedNotifiedRef.current = true;
+      // Endless is its own competitive mode: bank no silver, unlock no sägner.
+      // Just capture the vårdträd standing for the survival overlay's tiebreak.
+      if (endless) {
+        setVardtrad(countVardtrad(sim.state.towers));
+        return;
+      }
       const won = sim.state.status === "won";
       const deeds: RunDeeds = {
         kills: runKillsRef.current,
@@ -275,7 +298,7 @@ export function RunScreen({
       if (won) setVardtrad(countVardtrad(sim.state.towers));
       onRunEnd(silverFromScore(sim.state.score, content.globals.silverPerScore), deeds);
     }
-  }, [runEnded, onRunEnd, sim, level.id, save.deeds]);
+  }, [runEnded, onRunEnd, sim, level.id, save.deeds, endless]);
 
   const startWave = useCallback(() => {
     if (sim.startWave()) {
@@ -411,7 +434,7 @@ export function RunScreen({
         <button type="button" className="btn btn-ghost btn-small" onClick={onExit}>
           ← {t("leave")}
         </button>
-        <span className="hud-title">{level.name}</span>
+        <span className="hud-title">{endless ? t("endlessMode") : level.name}</span>
         <span className="hud-divider" />
         <span className="hud-stat" title={t("lives")}>
           <img className="icon" src={manifest["ui.heart"]} alt={t("lives")} />
@@ -427,7 +450,7 @@ export function RunScreen({
         </span>
         <span className="hud-stat" title={t("wave")}>
           <span className="hud-label">{t("wave")}</span>
-          {displayWave}/{hud.totalWaves}
+          {endless ? displayWave : `${displayWave}/${hud.totalWaves}`}
         </span>
         <span className="hud-divider" />
         <span className="speed-toggle" role="group" aria-label={t("gameSpeedAria")}>
@@ -540,26 +563,34 @@ export function RunScreen({
         </aside>
       </div>
 
-      {runEnded && (
-        <RunEndOverlay
-          won={hud.status === "won"}
-          score={sim.state.score}
-          silverEarned={silverEarned}
-          newSagner={newSagner.map((s) => s.title)}
-          leaderboard={
-            hud.status === "won" && leaderboardEnabled()
-              ? {
-                  levelId: level.id,
-                  vardtrad,
-                  initialName: save.playerName ?? "",
-                  onNameUsed: onPlayerName,
-                }
-              : null
-          }
-          onRetry={onRetry}
-          onExit={onExit}
-        />
-      )}
+      {runEnded &&
+        (endless ? (
+          <EndlessEndOverlay
+            wavesSurvived={runWavesClearedRef.current}
+            vardtrad={vardtrad}
+            onRetry={onRetry}
+            onExit={onExit}
+          />
+        ) : (
+          <RunEndOverlay
+            won={hud.status === "won"}
+            score={sim.state.score}
+            silverEarned={silverEarned}
+            newSagner={newSagner.map((s) => s.title)}
+            leaderboard={
+              hud.status === "won" && leaderboardEnabled()
+                ? {
+                    levelId: level.id,
+                    vardtrad,
+                    initialName: save.playerName ?? "",
+                    onNameUsed: onPlayerName,
+                  }
+                : null
+            }
+            onRetry={onRetry}
+            onExit={onExit}
+          />
+        ))}
     </div>
   );
 }

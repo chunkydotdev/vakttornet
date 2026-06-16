@@ -32,6 +32,7 @@ export { level09 } from "./levels/level09";
 export { metaUpgrades } from "./metaUpgrades";
 export { sagner } from "./sagner";
 export { globals } from "./globals";
+export { ENDLESS_CONFIG, generateEndless } from "./endless";
 
 export const levels = [
   level01,

@@ -28,6 +28,7 @@ interface TitleScreenProps {
   onCodex: () => void;
   onTopplista: () => void;
   onDagbok: () => void;
+  onEndless: () => void;
 }
 
 export function TitleScreen({
@@ -40,6 +41,7 @@ export function TitleScreen({
   onCodex,
   onTopplista,
   onDagbok,
+  onEndless,
 }: TitleScreenProps) {
   const { t } = useT();
   const content = useContent();
@@ -156,6 +158,14 @@ export function TitleScreen({
         <div className="hub-show-all">
           <button type="button" className="btn" onClick={onShowLevels}>
             {t("showAllMaps")}
+          </button>
+          <button
+            type="button"
+            className="btn endless-btn"
+            onClick={onEndless}
+            title={t("endlessTagline")}
+          >
+            ♾ {t("endlessMode")}
           </button>
         </div>
 
