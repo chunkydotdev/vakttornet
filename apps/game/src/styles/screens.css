@@ -255,17 +255,64 @@
   margin-top: -0.4rem;
 }
 
-/* Endless ("Evig vakt"): lantern-amber outline so the marquee mode stands out. */
-.endless-btn {
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 700;
+/* ---------- Alternativa berättelser (game modes beyond the maps) ---------- */
+
+.alt-tales {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.endless-btn:hover:not(:disabled) {
-  background: var(--accent-soft);
-  border-color: var(--accent);
+/* A mode reads better as one wide panel than a half-width grid cell. */
+.alt-tales .level-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mode-card .mode-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mode-card h3 {
   color: var(--accent);
+}
+
+.mode-card-desc {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  max-width: 48ch;
+}
+
+.mode-card-diffs {
+  list-style: none;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mode-card-diffs li {
+  position: relative;
+  padding-left: 1.15rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.mode-card-diffs li::before {
+  content: "✦";
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  color: var(--accent);
+  font-size: 0.72rem;
+}
+
+.mode-card .btn {
+  align-self: center;
+  flex: none;
 }
 
 /* ---------- Progress bars (amber fill) ---------- */
@@ -968,6 +1015,12 @@
   color: var(--accent);
   background: var(--accent-soft);
   border-color: var(--accent);
+}
+
+/* The endless board stands apart from the map tabs with a standing amber outline. */
+.topplista-tabs .endless-tab {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .topplista-board {

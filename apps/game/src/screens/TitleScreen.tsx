@@ -159,15 +159,31 @@ export function TitleScreen({
           <button type="button" className="btn" onClick={onShowLevels}>
             {t("showAllMaps")}
           </button>
-          <button
-            type="button"
-            className="btn endless-btn"
-            onClick={onEndless}
-            title={t("endlessTagline")}
-          >
-            ♾ {t("endlessMode")}
-          </button>
         </div>
+
+        <section className="alt-tales">
+          <header className="forrad-head">
+            <h2 className="hub-section-title">{t("altTalesTitle")}</h2>
+            <p className="forrad-sub">{t("altTalesSub")}</p>
+          </header>
+          <ul className="level-list">
+            <li className="level-card mode-card">
+              <div className="mode-card-body">
+                <h3>♾ {t("endlessMode")}</h3>
+                <p className="mode-card-desc">{t("endlessCardDesc")}</p>
+                <ul className="mode-card-diffs">
+                  <li>{t("endlessDiffFair")}</li>
+                  <li>{t("endlessDiffTowers")}</li>
+                  <li>{t("endlessDiffEscalate")}</li>
+                  <li>{t("endlessDiffBoard")}</li>
+                </ul>
+              </div>
+              <button type="button" className="btn btn-primary" onClick={onEndless}>
+                {t("play")}
+              </button>
+            </li>
+          </ul>
+        </section>
 
         <section className="forrad">
           <header className="forrad-head">

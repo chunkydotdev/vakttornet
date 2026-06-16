@@ -12,6 +12,7 @@ import {
 } from "./api";
 import {
   buildContentDerived,
+  ENDLESS_BOARD_ID,
   matchOrigin,
   validateSubmit,
 } from "./validation";
@@ -98,10 +99,17 @@ async function getScores(
     limit = Math.min(n, MAX_LIMIT);
   }
 
+  // Endless ranks by waves (score) first, trees (vardtrad) as the tiebreak —
+  // the mirror of the campaign ordering. Both clauses are fixed literals.
+  const orderBy =
+    level === ENDLESS_BOARD_ID
+      ? "score DESC, vardtrad DESC, created_at ASC, id ASC"
+      : "vardtrad DESC, score DESC, created_at ASC, id ASC";
+
   const { results } = await env.DB.prepare(
     `SELECT name, vardtrad, score, created_at FROM scores
      WHERE level_id = ?1
-     ORDER BY vardtrad DESC, score DESC, created_at ASC, id ASC
+     ORDER BY ${orderBy}
      LIMIT ?2`,
   )
     .bind(level, limit)
@@ -169,15 +177,15 @@ async function postScore(
     .bind(ipHash, minute)
     .run();
 
-  // 1-based rank = rows strictly better under the contract ordering, plus 1.
+  // 1-based rank = rows strictly better under the board's ordering, plus 1.
+  // Endless mirrors campaign: waves (score) first, then trees (vardtrad).
+  const betterThan =
+    levelId === ENDLESS_BOARD_ID
+      ? "score > ?3 OR (score = ?3 AND vardtrad > ?2) OR (score = ?3 AND vardtrad = ?2 AND created_at < ?4)"
+      : "vardtrad > ?2 OR (vardtrad = ?2 AND score > ?3) OR (vardtrad = ?2 AND score = ?3 AND created_at < ?4)";
   const better = await env.DB.prepare(
     `SELECT COUNT(*) AS n FROM scores
-     WHERE level_id = ?1
-       AND (
-         vardtrad > ?2
-         OR (vardtrad = ?2 AND score > ?3)
-         OR (vardtrad = ?2 AND score = ?3 AND created_at < ?4)
-       )`,
+     WHERE level_id = ?1 AND (${betterThan})`,
   )
     .bind(levelId, vardtrad, score, inserted.created_at)
     .first<{ n: number }>();

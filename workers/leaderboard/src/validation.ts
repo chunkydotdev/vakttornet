@@ -6,11 +6,16 @@
  * reject submissions that are impossible given the actual game content
  * (more vårdträd than buildable tiles, scores beyond any winnable run).
  */
-import { buildContent } from "@vakttornet/content";
+import { buildContent, ENDLESS_CONFIG } from "@vakttornet/content";
 import { NAME_PATTERN, type SubmitScoreRequest } from "./api";
 
 /** Margin multiplier on the theoretical max score — generous on purpose. */
 const SCORE_CEILING_MARGIN = 3;
+
+/** The endless board reuses the score/vardtrad fields with different meaning:
+ * `score` = waves survived (the rank metric), `vardtrad` = trees still standing
+ * (the tiebreak). Its ranking is the mirror of the campaign boards. */
+export const ENDLESS_BOARD_ID = ENDLESS_CONFIG.levelId;
 
 export interface LevelCaps {
   /** number of buildable "." tiles on the level map */
@@ -65,6 +70,15 @@ export function buildContentDerived(): ContentDerived {
       ),
     });
   }
+
+  // The endless board isn't a content level — register it explicitly. Here the
+  // "score" is waves survived, hard-capped at the generated wave count; the
+  // vardtrad cap is the buildable-tile count of the endless map.
+  derived.set(ENDLESS_BOARD_ID, {
+    vardtradCap: countBuildableTiles(ENDLESS_CONFIG.map),
+    scoreCeiling: ENDLESS_CONFIG.totalWaves,
+  });
+
   return derived;
 }
 
@@ -163,6 +177,20 @@ export interface RankableEntry {
 export function compareEntries(a: RankableEntry, b: RankableEntry): number {
   if (a.vardtrad !== b.vardtrad) return b.vardtrad - a.vardtrad;
   if (a.score !== b.score) return b.score - a.score;
+  if (a.createdAt < b.createdAt) return -1;
+  if (a.createdAt > b.createdAt) return 1;
+  return 0;
+}
+
+/**
+ * Endless ordering: score (waves survived) DESC, then vardtrad (trees still
+ * standing) DESC as the tiebreak, then createdAt ASC. The mirror of the
+ * campaign comparator — the worker's SQL ORDER BY for the endless board must
+ * match this exactly.
+ */
+export function compareEndlessEntries(a: RankableEntry, b: RankableEntry): number {
+  if (a.score !== b.score) return b.score - a.score;
+  if (a.vardtrad !== b.vardtrad) return b.vardtrad - a.vardtrad;
   if (a.createdAt < b.createdAt) return -1;
   if (a.createdAt > b.createdAt) return 1;
   return 0;

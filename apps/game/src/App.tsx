@@ -87,7 +87,7 @@ export function App() {
         endless
         save={save}
         onRunEnd={() => {}}
-        onPlayerName={() => {}}
+        onPlayerName={(name) => setSave((s) => setPlayerName(s, name))}
         onExit={() => setScreen({ kind: "title" })}
         onRetry={() => setScreen({ kind: "endless", runKey: screen.runKey + 1 })}
       />

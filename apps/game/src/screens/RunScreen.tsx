@@ -568,6 +568,11 @@ export function RunScreen({
           <EndlessEndOverlay
             wavesSurvived={runWavesClearedRef.current}
             vardtrad={vardtrad}
+            leaderboard={
+              leaderboardEnabled()
+                ? { initialName: save.playerName ?? "", onNameUsed: onPlayerName }
+                : null
+            }
             onRetry={onRetry}
             onExit={onExit}
           />

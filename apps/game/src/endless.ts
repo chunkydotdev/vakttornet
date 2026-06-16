@@ -9,11 +9,20 @@
  * enemies it's handed, so passing the localised base bundle yields localised
  * scaled enemies — no per-id overlay needed for the hundreds of variants.
  */
-import { generateEndless, type ContentBundle, type LevelDef } from "@vakttornet/content";
+import {
+  ENDLESS_CONFIG,
+  generateEndless,
+  type ContentBundle,
+  type LevelDef,
+} from "@vakttornet/content";
 
 /** Fixed seed: the gauntlet is identical for everyone, so the run seed is a
  * constant (the sim's RNG is unused by current mechanics anyway). */
 export const ENDLESS_SEED = 1;
+
+/** The leaderboard board id for endless (matches the worker's ENDLESS_BOARD_ID).
+ * On this board `score` carries waves survived and `vardtrad` the tiebreak. */
+export const ENDLESS_LEVEL_ID = ENDLESS_CONFIG.levelId;
 
 export function buildEndlessBundle(base: ContentBundle): {
   bundle: ContentBundle;

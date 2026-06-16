@@ -53,6 +53,15 @@ const sv = {
   dagbokNew: "nytt sedan sist",
   endlessMode: "Evig vakt",
   endlessTagline: "En enda natt som aldrig vill ta slut. Hur länge står du pall?",
+  altTalesTitle: "Alternativa berättelser",
+  altTalesSub: "Sätt att spela bortom de vanliga kartorna.",
+  endlessCardDesc:
+    "En enda natt utan gryning. Vågorna växer sig allt vildare tills mörkret " +
+    "till slut tar dig. Frågan är bara hur länge du håller stigen.",
+  endlessDiffFair: "Inga förstärkningar ur Förrådet — alla står lika.",
+  endlessDiffTowers: "Alla torn till hands från första stund.",
+  endlessDiffEscalate: "Fienderna blir omänskligt tåliga, våg efter våg.",
+  endlessDiffBoard: "Topplista efter hur många vågor du höll.",
   endlessOverTitle: "Natten tog dig",
   endlessOverSub: "Mörkret vann till slut, så som det alltid gör.",
   endlessWavesLabel: "Vågor du höll",
@@ -97,6 +106,7 @@ const sv = {
   emptyBoard: "Inga sägner har skrivits här ännu. Bli först!",
   thName: "Namn",
   thVardtrad: "Vårdträd",
+  thWaves: "Vågor",
 
   // ---- Run HUD ----
   leave: "Lämna",
@@ -243,6 +253,15 @@ const en: Record<StringKey, string> = {
   dagbokNew: "new since last time",
   endlessMode: "Endless Watch",
   endlessTagline: "One night that never wants to end. How long can you hold?",
+  altTalesTitle: "Alternative Tales",
+  altTalesSub: "Ways to play beyond the ordinary maps.",
+  endlessCardDesc:
+    "A single night with no dawn. The waves grow ever wilder until the dark " +
+    "takes you in the end. The only question is how long you hold the path.",
+  endlessDiffFair: "No Förrådet upgrades — everyone stands equal.",
+  endlessDiffTowers: "Every tower to hand from the very first moment.",
+  endlessDiffEscalate: "Enemies grow inhumanly tough, wave after wave.",
+  endlessDiffBoard: "Ranked by how many waves you held.",
   endlessOverTitle: "The night took you",
   endlessOverSub: "The dark won in the end, the way it always does.",
   endlessWavesLabel: "Waves held",
@@ -287,6 +306,7 @@ const en: Record<StringKey, string> = {
   emptyBoard: "No tales have been written here yet. Be the first!",
   thName: "Name",
   thVardtrad: "Warden trees",
+  thWaves: "Waves",
 
   // ---- Run HUD ----
   leave: "Leave",

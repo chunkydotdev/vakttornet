@@ -9,6 +9,7 @@ import type { LeaderboardEntry } from "@vakttornet/leaderboard/api";
 import { useContent } from "../localized";
 import { useT } from "../i18n";
 import { getScores } from "../leaderboard";
+import { ENDLESS_LEVEL_ID } from "../endless";
 
 interface TopplistaScreenProps {
   onBack: () => void;
@@ -78,6 +79,16 @@ export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
               {level.name}
             </button>
           ))}
+          <button
+            key={ENDLESS_LEVEL_ID}
+            type="button"
+            role="tab"
+            aria-selected={levelId === ENDLESS_LEVEL_ID}
+            className={levelId === ENDLESS_LEVEL_ID ? "tab active endless-tab" : "tab endless-tab"}
+            onClick={() => setLevelId(ENDLESS_LEVEL_ID)}
+          >
+            ♾ {t("endlessMode")}
+          </button>
         </div>
 
         <div className="topplista-board">
@@ -105,8 +116,19 @@ export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
                 <tr>
                   <th>#</th>
                   <th>{t("thName")}</th>
-                  <th className="num">{t("thVardtrad")}</th>
-                  <th className="num">{t("score")}</th>
+                  {/* Endless ranks by waves first (trees are the tiebreak); campaign
+                      boards rank by vårdträd first, then score. */}
+                  {levelId === ENDLESS_LEVEL_ID ? (
+                    <>
+                      <th className="num">{t("thWaves")}</th>
+                      <th className="num">{t("thVardtrad")}</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="num">{t("thVardtrad")}</th>
+                      <th className="num">{t("score")}</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -114,8 +136,17 @@ export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
                   <tr key={`${entry.createdAt}:${entry.name}:${index}`}>
                     <td className="rank">{index + 1}</td>
                     <td className="name">{entry.name}</td>
-                    <td className="num">{entry.vardtrad}</td>
-                    <td className="num">{entry.score}</td>
+                    {levelId === ENDLESS_LEVEL_ID ? (
+                      <>
+                        <td className="num">{entry.score}</td>
+                        <td className="num">{entry.vardtrad}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="num">{entry.vardtrad}</td>
+                        <td className="num">{entry.score}</td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

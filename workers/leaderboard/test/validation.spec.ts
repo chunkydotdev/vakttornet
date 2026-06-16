@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildContent, level01 } from "@vakttornet/content";
+import { buildContent, ENDLESS_CONFIG, level01 } from "@vakttornet/content";
 import { NAME_PATTERN } from "../src/api";
 import {
   buildContentDerived,
+  compareEndlessEntries,
   compareEntries,
   countBuildableTiles,
+  ENDLESS_BOARD_ID,
   matchOrigin,
   validateSubmit,
   type ContentDerived,
@@ -36,7 +38,8 @@ describe("buildContentDerived", () => {
       expect(Number.isInteger(caps!.scoreCeiling)).toBe(true);
       expect(caps!.scoreCeiling).toBeGreaterThan(0);
     }
-    expect(derived.size).toBe(content.levels.length);
+    // Every content level, plus the one non-content board: endless.
+    expect(derived.size).toBe(content.levels.length + 1);
   });
 
   it("level01 vardtrad cap equals the buildable-tile count of the actual map", () => {
@@ -237,6 +240,58 @@ describe("compareEntries (ranking comparator)", () => {
       entry(5, 300, "2026-06-12T11:00:00Z"),
       entry(5, 100, "2026-06-12T10:00:00Z"),
       entry(3, 900, "2026-06-12T08:00:00Z"),
+    ]);
+  });
+});
+
+describe("endless board", () => {
+  const endlessCaps = derived.get(ENDLESS_BOARD_ID)!;
+
+  it("registers caps for the endless board (not a content level)", () => {
+    expect(ENDLESS_BOARD_ID).toBe("endless");
+    expect(endlessCaps).toBeDefined();
+    expect(endlessCaps.vardtradCap).toBe(countBuildableTiles(ENDLESS_CONFIG.map));
+    // score == waves survived, hard-capped at the generated wave count.
+    expect(endlessCaps.scoreCeiling).toBe(ENDLESS_CONFIG.totalWaves);
+  });
+
+  it("accepts an endless submission within caps", () => {
+    const body = { levelId: "endless", name: "Saga", vardtrad: 2, score: 40 };
+    expect(validateSubmit(body, derived)).toEqual({ ok: true, value: body });
+    // at the wave ceiling, and zero trees, both fine
+    expect(
+      validateSubmit({ ...body, score: endlessCaps.scoreCeiling, vardtrad: 0 }, derived).ok,
+    ).toBe(true);
+  });
+
+  it("rejects waves (score) beyond the wave count", () => {
+    expect(
+      validateSubmit(
+        { levelId: "endless", name: "Saga", vardtrad: 0, score: endlessCaps.scoreCeiling + 1 },
+        derived,
+      ),
+    ).toEqual({ ok: false, error: "out-of-bounds" });
+  });
+
+  it("compareEndlessEntries ranks waves first, trees as tiebreak, earliest wins", () => {
+    const e = (score: number, vardtrad: number, createdAt: string) => ({
+      vardtrad,
+      score,
+      createdAt,
+    });
+    // more waves beats more trees
+    expect(compareEndlessEntries(e(20, 0, "t1"), e(19, 99, "t0"))).toBeLessThan(0);
+    // equal waves: more trees wins
+    expect(compareEndlessEntries(e(20, 5, "t1"), e(20, 3, "t0"))).toBeLessThan(0);
+    // full tie: earlier submission wins
+    expect(compareEndlessEntries(e(20, 5, "a"), e(20, 5, "b"))).toBeLessThan(0);
+
+    const board = [e(18, 9, "t0"), e(25, 0, "t1"), e(25, 4, "t2"), e(25, 4, "t1")];
+    expect([...board].sort(compareEndlessEntries)).toEqual([
+      e(25, 4, "t1"),
+      e(25, 4, "t2"),
+      e(25, 0, "t1"),
+      e(18, 9, "t0"),
     ]);
   });
 });
