@@ -2,7 +2,9 @@
  * Tornets dagbok — the watchtower-keeper's diary. A player-facing, in-world
  * changelog: each real change to the game retold as a cozy note from the
  * keeper, newest first. Deliberately non-technical (no version numbers, no
- * jargon) and on-theme (sagoton). Adding an entry = prepend to BOTH arrays.
+ * jargon) and on-theme (sagoton). Adding an entry = prepend to BOTH arrays
+ * with a NEW, matching `id` — that id is how the "unseen" blue dot knows
+ * something fresh has arrived (see hasUnseenDagbok).
  *
  * This is pure presentation copy, not game data — it never touches the sim or
  * content schema, so it lives in the app and is swapped by language like the
@@ -11,6 +13,9 @@
 import type { Lang } from "./i18n";
 
 export interface DagbokEntry {
+  /** stable, language-independent id — MUST match across the sv/en arrays at
+   * the same position. The newest entry's id is the "seen" marker. */
+  id: string;
   /** soft, non-technical time label ("Just nu", "Nyligen", …) */
   when: string;
   title: string;
@@ -19,6 +24,7 @@ export interface DagbokEntry {
 
 const sv: DagbokEntry[] = [
   {
+    id: "auto-and-bosses",
     when: "Just nu",
     title: "Vågor på rad, och bjässar att akta sig för",
     body:
@@ -27,6 +33,7 @@ const sv: DagbokEntry[] = [
       "fram till stugan. Då är natten slut på direkten, hur många liv du än har kvar.",
   },
   {
+    id: "english",
     when: "Nyligen",
     title: "Sägnerna på främmande tunga",
     body:
@@ -34,6 +41,7 @@ const sv: DagbokEntry[] = [
       "Samma skog, samma troll, andra ord.",
   },
   {
+    id: "forradet",
     when: "Nyligen",
     title: "Förrådet slår upp portarna",
     body:
@@ -41,6 +49,7 @@ const sv: DagbokEntry[] = [
       "köper du nya torn och varaktiga förstärkningar som följer med dig natt efter natt.",
   },
   {
+    id: "hub-redesign",
     when: "Tidigare",
     title: "Boet fick en ansiktslyftning",
     body:
@@ -48,6 +57,7 @@ const sv: DagbokEntry[] = [
       "ligger och hela Förrådet samlat på ett och samma ställe.",
   },
   {
+    id: "tales-and-leaderboard",
     when: "Tidigare",
     title: "Sägner att samla, ära att jaga",
     body:
@@ -55,6 +65,7 @@ const sv: DagbokEntry[] = [
       "resultat ställas mot andras på topplistan.",
   },
   {
+    id: "beginning",
     when: "Från början",
     title: "Vakttornet reser sig",
     body:
@@ -66,6 +77,7 @@ const sv: DagbokEntry[] = [
 
 const en: DagbokEntry[] = [
   {
+    id: "auto-and-bosses",
     when: "Right now",
     title: "Waves on a roll, and bosses to beware",
     body:
@@ -74,6 +86,7 @@ const en: DagbokEntry[] = [
       "cottage. That ends the night at once, however many lives you have left.",
   },
   {
+    id: "english",
     when: "Recently",
     title: "The tales in a foreign tongue",
     body:
@@ -81,6 +94,7 @@ const en: DagbokEntry[] = [
       "the corner. Same forest, same trolls, different words.",
   },
   {
+    id: "forradet",
     when: "Recently",
     title: "The Storeroom opens its doors",
     body:
@@ -88,6 +102,7 @@ const en: DagbokEntry[] = [
       "spend it on new towers and lasting upgrades that follow you night after night.",
   },
   {
+    id: "hub-redesign",
     when: "Earlier",
     title: "The home den, made over",
     body:
@@ -95,6 +110,7 @@ const en: DagbokEntry[] = [
       "is, and the whole Storeroom gathered in one place.",
   },
   {
+    id: "tales-and-leaderboard",
     when: "Earlier",
     title: "Tales to gather, glory to chase",
     body:
@@ -102,6 +118,7 @@ const en: DagbokEntry[] = [
       "against others on the leaderboard.",
   },
   {
+    id: "beginning",
     when: "From the start",
     title: "The watchtower rises",
     body:
@@ -113,4 +130,31 @@ const en: DagbokEntry[] = [
 
 export function dagbokEntries(lang: Lang): DagbokEntry[] {
   return lang === "en" ? en : sv;
+}
+
+/** localStorage marker holding the id of the newest entry the player has seen.
+ * Ids are language-independent, so the sv array is the canonical source. */
+const SEEN_KEY = "vakttornet.dagbok.seen.v1";
+
+function latestDagbokId(): string {
+  return sv[0]?.id ?? "";
+}
+
+/** True when the newest entry hasn't been seen yet (incl. a first-ever visit,
+ * where nothing is stored) — drives the attention dot on the hub icon. */
+export function hasUnseenDagbok(): boolean {
+  try {
+    return localStorage.getItem(SEEN_KEY) !== latestDagbokId();
+  } catch {
+    return false; // no storage (private mode) → never nag
+  }
+}
+
+/** Record that the player has now seen up to the newest entry. */
+export function markDagbokSeen(): void {
+  try {
+    localStorage.setItem(SEEN_KEY, latestDagbokId());
+  } catch {
+    // ignore — storage unavailable
+  }
 }

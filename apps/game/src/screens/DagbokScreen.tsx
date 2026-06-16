@@ -3,8 +3,9 @@
  * look so it feels native; entries come from the localized dagbok data (newest
  * first), with the most recent one given a subtle "latest" flourish.
  */
+import { useEffect } from "react";
 import { useT } from "../i18n";
-import { dagbokEntries } from "../dagbok";
+import { dagbokEntries, markDagbokSeen } from "../dagbok";
 
 interface DagbokScreenProps {
   onBack: () => void;
@@ -13,6 +14,12 @@ interface DagbokScreenProps {
 export function DagbokScreen({ onBack }: DagbokScreenProps) {
   const { t, lang } = useT();
   const entries = dagbokEntries(lang);
+
+  // Opening the diary counts as seeing it: clear the attention dot for next
+  // time the hub renders (the hub remounts on return and re-reads storage).
+  useEffect(() => {
+    markDagbokSeen();
+  }, []);
 
   return (
     <div className="screen">
@@ -31,7 +38,7 @@ export function DagbokScreen({ onBack }: DagbokScreenProps) {
         <ul className="dagbok-list">
           {entries.map((entry, i) => (
             <li
-              key={entry.title}
+              key={entry.id}
               className={i === 0 ? "dagbok-card latest" : "dagbok-card"}
             >
               <span className="dagbok-when">{entry.when}</span>

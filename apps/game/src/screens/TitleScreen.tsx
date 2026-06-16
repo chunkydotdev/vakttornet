@@ -16,6 +16,7 @@ import { nextUpgradeCost, type SaveData } from "../save";
 import { formatSilver } from "../towerInfo";
 import { LangToggle } from "./LangToggle";
 import { ShopItemModal, upgradeIconUrl, type ShopItem } from "./ShopItemModal";
+import { hasUnseenDagbok } from "../dagbok";
 
 interface TitleScreenProps {
   save: SaveData;
@@ -43,6 +44,9 @@ export function TitleScreen({
   const { t } = useT();
   const content = useContent();
   const [shopItem, setShopItem] = useState<ShopItem | null>(null);
+  // Read once per mount: the hub remounts when you return from the diary, so a
+  // freshly-marked-seen state clears the dot without extra wiring.
+  const dagbokUnseen = hasUnseenDagbok();
 
   // Recommended map: first unlocked level not yet won; once everything
   // unlocked is beaten, point at the hardest unlocked map for replays.
@@ -87,10 +91,11 @@ export function TitleScreen({
               type="button"
               className="btn icon-btn"
               onClick={onDagbok}
-              aria-label={t("dagbok")}
-              title={t("dagbok")}
+              aria-label={dagbokUnseen ? `${t("dagbok")} — ${t("dagbokNew")}` : t("dagbok")}
+              title={dagbokUnseen ? `${t("dagbok")} — ${t("dagbokNew")}` : t("dagbok")}
             >
               <img className="icon" src={manifest["ui.dagbok"]} alt="" />
+              {dagbokUnseen && <span className="notif-dot" aria-hidden="true" />}
             </button>
             <LangToggle />
           </span>

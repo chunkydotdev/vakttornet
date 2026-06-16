@@ -144,6 +144,7 @@ img {
 
 /* Square icon-only button (hub toolbar): sizes to its sprite, not text. */
 .icon-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -153,6 +154,40 @@ img {
 .icon-btn .icon {
   width: 1.3em;
   height: 1.3em;
+}
+
+/* "Unseen" attention dot: a cool moonlight blue that stands out against the
+   warm lantern-amber UI, with a soft glow and a gentle pulse. */
+.notif-dot {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.3rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #6db3f2;
+  box-shadow:
+    0 0 0 2px var(--bg-panel),
+    0 0 7px rgba(109, 179, 242, 0.9);
+  animation: notif-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes notif-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notif-dot {
+    animation: none;
+  }
 }
 
 /* ---------- Shared bits ---------- */
