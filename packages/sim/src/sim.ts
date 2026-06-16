@@ -323,9 +323,12 @@ export const createSim: CreateSim = (level, content, opts) => {
         survivors.push(enemy);
         continue;
       }
-      state.lives -= 1;
+      // A leaked boss ends the run outright — letting the final boss reach the
+      // stuga loses the game, it never costs just a single life.
+      const isBoss = enemyDefs.get(enemy.typeId)!.boss;
+      if (!isBoss) state.lives -= 1;
       events.push({ type: "enemyLeaked", enemyId: enemy.id, livesLeft: state.lives });
-      if (state.lives <= 0) {
+      if (isBoss || state.lives <= 0) {
         state.status = "lost";
         events.push({ type: "runLost", score: state.score });
         // Freeze the rest of the world as-is: keep unprocessed enemies.

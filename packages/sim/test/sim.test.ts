@@ -239,6 +239,47 @@ describe("movement and leaking", () => {
     expect(sim.sellTower(1)).toBe(false);
     expect(sim.startWave()).toBe(false);
   });
+
+  it("loses the run outright when a boss leaks, without spending a life", () => {
+    const { sim } = setup(
+      {
+        startLives: 3,
+        waves: [{ entries: [{ enemyTypeId: "bosstroll", count: 1, spacingTicks: 1 }] }],
+      },
+      {
+        extraEnemies: [
+          {
+            id: "bosstroll",
+            name: "Boss Troll",
+            assetId: "enemy-bosstroll",
+            hp: 1000,
+            speed: 7.5, // 0.25 tiles/tick → leaks at tick 24, same as runt
+            bounty: 50,
+            boss: true,
+          },
+        ],
+      },
+    );
+    sim.startWave();
+    let events: SimEvent[] = [];
+    for (let t = 1; t <= 23; t++) {
+      events = sim.tick();
+      expect(eventsOfType(events, "enemyLeaked")).toHaveLength(0);
+    }
+    events = sim.tick(); // tick 24: the boss reaches the stuga
+    expect(sim.state.tick).toBe(24);
+    // The leak fires but no life is spent — a leaked boss loses the run outright.
+    const leaks = eventsOfType(events, "enemyLeaked");
+    expect(leaks).toHaveLength(1);
+    expect(leaks[0]!.livesLeft).toBe(3);
+    expect(eventsOfType(events, "runLost")).toEqual([{ type: "runLost", score: 0 }]);
+    expect(sim.state.status).toBe("lost");
+    expect(sim.state.lives).toBe(3);
+
+    // Frozen afterward, exactly like a lives-depleted loss.
+    expect(sim.tick()).toEqual([]);
+    expect(sim.state.tick).toBe(24);
+  });
 });
 
 describe("targeting", () => {
