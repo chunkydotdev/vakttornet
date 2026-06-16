@@ -13,6 +13,7 @@ import {
 import { TitleScreen } from "./screens/TitleScreen";
 import { LevelsScreen } from "./screens/LevelsScreen";
 import { CodexScreen } from "./screens/CodexScreen";
+import { DagbokScreen } from "./screens/DagbokScreen";
 import { RunScreen } from "./screens/RunScreen";
 import { TopplistaScreen } from "./screens/TopplistaScreen";
 
@@ -20,6 +21,7 @@ type Screen =
   | { kind: "title" }
   | { kind: "levels" }
   | { kind: "codex" }
+  | { kind: "dagbok" }
   | { kind: "topplista" }
   | { kind: "run"; levelId: string; runKey: number };
 
@@ -70,6 +72,10 @@ export function App() {
     return <CodexScreen save={save} onBack={() => setScreen({ kind: "title" })} />;
   }
 
+  if (screen.kind === "dagbok") {
+    return <DagbokScreen onBack={() => setScreen({ kind: "title" })} />;
+  }
+
   if (screen.kind === "topplista") {
     return <TopplistaScreen onBack={() => setScreen({ kind: "title" })} />;
   }
@@ -104,6 +110,7 @@ export function App() {
       }}
       onCodex={() => setScreen({ kind: "codex" })}
       onTopplista={() => setScreen({ kind: "topplista" })}
+      onDagbok={() => setScreen({ kind: "dagbok" })}
     />
   );
 }

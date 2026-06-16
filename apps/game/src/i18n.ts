@@ -48,6 +48,8 @@ const sv = {
   // ---- Hub (TitleScreen) ----
   sagner: "Sägner",
   topplista: "Topplista",
+  dagbok: "Tornets dagbok",
+  dagbokTagline: "Väktarens anteckningar om allt som rört sig i skogen på sistone.",
   nextDefense: "Nästa försvar",
   nextUnlock: "Nästa upplåsning",
   alreadyWon: "redan vunnen",
@@ -229,6 +231,8 @@ const en: Record<StringKey, string> = {
   // ---- Hub (TitleScreen) ----
   sagner: "Tales",
   topplista: "Leaderboard",
+  dagbok: "The Tower's Diary",
+  dagbokTagline: "The keeper's notes on all that has stirred in the forest of late.",
   nextDefense: "Next defense",
   nextUnlock: "Next unlock",
   alreadyWon: "already won",

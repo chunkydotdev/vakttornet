@@ -40,6 +40,7 @@ export const ASSET_IDS = [
   "ui.heart",
   "ui.coin",
   "ui.trollsilver",
+  "ui.dagbok",
 ] as const;
 
 export type AssetId = (typeof ASSET_IDS)[number];

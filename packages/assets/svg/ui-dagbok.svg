@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Tornets dagbok: a bound leather diary with a lantern-amber bookmark -->
+  <!-- page edges peeking past the cover on the right -->
+  <rect x="40" y="12" width="12" height="41" rx="2" fill="#efe2bf"/>
+  <path d="M47 16 V49" fill="none" stroke="#d6c08e" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- leather cover -->
+  <rect x="12" y="9" width="34" height="46" rx="4" fill="#6b4a2b"/>
+  <!-- darker bound spine -->
+  <rect x="12" y="9" width="9" height="46" rx="4" fill="#523821"/>
+  <rect x="20" y="9" width="2" height="46" fill="#5e4026"/>
+  <!-- tooled border on the cover face -->
+  <rect x="25" y="14" width="17" height="36" rx="2" fill="none" stroke="#8a6238" stroke-width="2"/>
+  <!-- lantern-amber bookmark ribbon -->
+  <path d="M31 9 V46 l3 -4 l3 4 V9 z" fill="#e8b04b"/>
+</svg>

@@ -673,6 +673,61 @@
   color: var(--text-faint);
 }
 
+/* ---------- Tornets dagbok (in-world changelog) ---------- */
+
+.dagbok-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dagbok-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.35rem;
+}
+
+/* The newest note gets a lantern-amber outline so "what's new" reads at a glance. */
+.dagbok-card.latest {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-soft);
+}
+
+.dagbok-when {
+  display: inline-block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--text-faint);
+  margin-bottom: 0.35rem;
+}
+
+.dagbok-card.latest .dagbok-when {
+  color: var(--accent);
+}
+
+/* Same old-tale serif flourish as the sägner cards. */
+.dagbok-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1.12rem;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+
+.dagbok-body {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+}
+
 /* ---------- Run-end overlay ---------- */
 
 .run-end-overlay {

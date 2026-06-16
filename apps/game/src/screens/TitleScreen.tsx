@@ -26,6 +26,7 @@ interface TitleScreenProps {
   onBuyTower: (towerId: string) => void;
   onCodex: () => void;
   onTopplista: () => void;
+  onDagbok: () => void;
 }
 
 export function TitleScreen({
@@ -37,6 +38,7 @@ export function TitleScreen({
   onBuyTower,
   onCodex,
   onTopplista,
+  onDagbok,
 }: TitleScreenProps) {
   const { t } = useT();
   const content = useContent();
@@ -81,6 +83,15 @@ export function TitleScreen({
                 {t("topplista")}
               </button>
             )}
+            <button
+              type="button"
+              className="btn icon-btn"
+              onClick={onDagbok}
+              aria-label={t("dagbok")}
+              title={t("dagbok")}
+            >
+              <img className="icon" src={manifest["ui.dagbok"]} alt="" />
+            </button>
             <LangToggle />
           </span>
         </div>
