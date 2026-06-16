@@ -67,8 +67,6 @@ const sv = {
   langEnglish: "Engelska",
 
   // ---- Mute button ----
-  soundOn: "Ljud på",
-  soundOff: "Ljud av",
 
   // ---- Levels screen ----
   allMaps: "Alla kartor",
@@ -250,8 +248,6 @@ const en: Record<StringKey, string> = {
   langEnglish: "English",
 
   // ---- Mute button ----
-  soundOn: "Sound on",
-  soundOff: "Sound off",
 
   // ---- Levels screen ----
   allMaps: "All maps",

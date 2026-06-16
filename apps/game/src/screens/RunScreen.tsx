@@ -42,7 +42,6 @@ import {
   roleBadge,
   upgradeLine,
 } from "../towerInfo";
-import { MuteButton } from "./MuteButton";
 import { RunEndOverlay } from "./RunEndOverlay";
 
 interface RunScreenProps {
@@ -447,7 +446,6 @@ export function RunScreen({
             2×
           </button>
         </span>
-        <MuteButton />
         <button
           type="button"
           className={autoWave ? "auto-wave-toggle active" : "auto-wave-toggle"}

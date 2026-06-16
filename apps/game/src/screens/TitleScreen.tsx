@@ -15,7 +15,6 @@ import { leaderboardEnabled } from "../leaderboard";
 import { nextUpgradeCost, type SaveData } from "../save";
 import { formatSilver } from "../towerInfo";
 import { LangToggle } from "./LangToggle";
-import { MuteButton } from "./MuteButton";
 import { ShopItemModal, upgradeIconUrl, type ShopItem } from "./ShopItemModal";
 
 interface TitleScreenProps {
@@ -83,7 +82,6 @@ export function TitleScreen({
               </button>
             )}
             <LangToggle />
-            <MuteButton />
           </span>
         </div>
 

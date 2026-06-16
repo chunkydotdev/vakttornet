@@ -142,13 +142,6 @@ img {
   font-size: 0.8rem;
 }
 
-/* Square mute toggle — identical on the hub toolbar and the run HUD. */
-.mute-btn {
-  padding: 0.4rem 0.55rem;
-  font-size: 1rem;
-  line-height: 1;
-}
-
 /* ---------- Shared bits ---------- */
 
 .icon {
