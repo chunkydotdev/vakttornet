@@ -86,6 +86,29 @@
   color: var(--accent);
 }
 
+/* Standalone toggle (auto-wave): off = quiet ghost button, on = lantern-amber. */
+.auto-wave-toggle {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  font: 700 0.8rem var(--font);
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.auto-wave-toggle:hover {
+  color: var(--text);
+}
+
+.auto-wave-toggle.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Fixed width so the label swap (Skicka våg / Våg pågår…) never shifts the HUD. */
 .start-wave-btn {
   min-width: 9.5rem;

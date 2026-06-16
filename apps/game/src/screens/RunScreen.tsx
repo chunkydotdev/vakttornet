@@ -170,6 +170,11 @@ export function RunScreen({
   const [hoveredShopId, setHoveredShopId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [speed, setSpeed] = useState<SimSpeed>(1);
+  /** When on, the loop auto-issues startWave() the moment the board clears,
+   * so the player never has to click between waves. Mirrored into a ref so
+   * the (mount-time) game loop reads the live value without re-binding. */
+  const [autoWave, setAutoWave] = useState(false);
+  const autoWaveRef = useRef(false);
   const [toast, setToast] = useState<{ message: string; key: number } | null>(null);
   const [newSagner, setNewSagner] = useState<SagenDef[]>([]);
   /** vårdträd standing captured at the moment of victory (0 until won) */
@@ -207,6 +212,16 @@ export function RunScreen({
         },
         onTicked: () => {
           const now = performance.now();
+          // Auto-wave: chain straight into the next wave as soon as the board
+          // clears (status falls back to "building"). Renderer-side only — it
+          // issues the very same startWave command the button does.
+          if (
+            autoWaveRef.current &&
+            sim.state.status === "building" &&
+            sim.state.waveIndex < sim.state.totalWaves
+          ) {
+            sim.startWave();
+          }
           const status = sim.state.status;
           const terminal = status === "won" || status === "lost";
           if (terminal || now - lastHudSyncRef.current >= HUD_SYNC_INTERVAL_MS) {
@@ -347,6 +362,14 @@ export function RunScreen({
     loopRef.current?.setSpeed(next);
   }
 
+  function toggleAutoWave() {
+    setAutoWave((on) => {
+      const next = !on;
+      autoWaveRef.current = next;
+      return next;
+    });
+  }
+
   // ---- Derived state for panels. ----
   const selectedTower =
     selectedId === null ? null : (sim.state.towers.find((tw) => tw.id === selectedId) ?? null);
@@ -425,6 +448,16 @@ export function RunScreen({
           </button>
         </span>
         <MuteButton />
+        <button
+          type="button"
+          className={autoWave ? "auto-wave-toggle active" : "auto-wave-toggle"}
+          onClick={toggleAutoWave}
+          aria-pressed={autoWave}
+          aria-label={t("autoWaveAria")}
+          title={t("autoWaveTitle")}
+        >
+          ⟳ {t("autoWave")}
+        </button>
         <button
           type="button"
           className="btn btn-primary start-wave-btn"
