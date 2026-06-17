@@ -8,7 +8,7 @@
  * feeds the sim, the renderer, and every lookup here. The language can only
  * change on the hub, so it is fixed for the lifetime of a run.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState, type ReactNode } from "react";
 import {
   createSim,
   type MetaModifiers,
@@ -16,6 +16,7 @@ import {
   type RunStatus,
   type Sim,
   type SimEvent,
+  type TargetingMode,
   type TowerInstance,
 } from "@vakttornet/sim";
 import type { ContentBundle, LevelDef, SagenDef, TowerDef } from "@vakttornet/content";
@@ -34,6 +35,7 @@ import {
   dpsValue,
   formatNum,
   isEconomy,
+  isPulse,
   mechanicLines,
   mutationEffectLines,
   mutationTeaser,
@@ -184,6 +186,9 @@ export function RunScreen({
 
   const [loading, setLoading] = useState(true);
   const [hud, setHud] = useState<HudState>(() => snapshotHud(sim));
+  // Force a re-render for tower-state changes that don't move the HUD snapshot
+  // (targeting mode) — syncHud is equality-gated on lives/gold/etc.
+  const [, forceRender] = useReducer((n: number) => n + 1, 0);
   const [armed, setArmed] = useState<string | null>(null);
   /** shop card under the mouse — drives the inspector's tower-type preview;
    * mouse-leave reverts to the armed tower (or the idle hint) */
@@ -346,11 +351,19 @@ export function RunScreen({
         // The sim rejects the mutation if the tower isn't eligible — no extra guard.
         const mutation = def?.mutations?.[e.code === "Digit1" ? 0 : 1];
         if (mutation && sim.mutateTower(id, mutation.id)) syncHud();
+      } else if (e.code === "KeyT") {
+        // Cycle targeting — only for projectile towers that actually attack.
+        const tw = sim.state.towers.find((t) => t.id === id);
+        if (!tw || !def || def.attackKind === "pulse") return;
+        if ((def.levels[tw.level - 1]?.damage ?? 0) === 0) return;
+        const order: TargetingMode[] = ["first", "last", "strongest", "weakest"];
+        const nextMode = order[(order.indexOf(tw.targeting) + 1) % order.length]!;
+        if (sim.setTowerTargeting(id, nextMode)) forceRender();
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [startWave, sim, syncHud]);
+  }, [startWave, sim, syncHud, forceRender]);
 
   // ---- Toast auto-dismiss. ----
   useEffect(() => {
@@ -457,6 +470,10 @@ export function RunScreen({
       setSelectedId(null);
       syncHud();
     }
+  }
+
+  function setTargeting(mode: TargetingMode) {
+    if (selectedTower && sim.setTowerTargeting(selectedTower.id, mode)) forceRender();
   }
 
   return (
@@ -581,6 +598,7 @@ export function RunScreen({
               onUpgrade={upgradeSelected}
               onMutate={mutateSelected}
               onSell={sellSelected}
+              onSetTargeting={setTargeting}
             />
           ) : previewDef ? (
             <TowerTypePanel
@@ -715,6 +733,47 @@ function TowerTypePanel({ def, meta, armed, onCancel }: TowerTypePanelProps) {
   );
 }
 
+/** Inline targeting icons (hand-drawn to match the project's SVG style, no
+ * icon-library dependency): → first, ← last, filled heart strongest, outline
+ * heart weakest. `currentColor` lets them pick up the active amber. */
+function ArrowIcon({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg className="ticon" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d={dir === "right" ? "M4 12h15M13 6l6 6-6 6" : "M20 12H5M11 6l-6 6 6 6"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function HeartIcon({ filled }: { filled: boolean }) {
+  const d =
+    "M12 20.5C12 20.5 3.75 14.5 3.75 8.75C3.75 5.95 5.95 3.9 8.5 3.9C10.15 3.9 11.4 4.85 12 5.95C12.6 4.85 13.85 3.9 15.5 3.9C18.05 3.9 20.25 5.95 20.25 8.75C20.25 14.5 12 20.5 12 20.5Z";
+  return (
+    <svg className="ticon" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d={d}
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth={filled ? 1 : 2}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const TARGETING_OPTIONS: { mode: TargetingMode; key: StringKey; icon: ReactNode }[] = [
+  { mode: "first", key: "targetFirst", icon: <ArrowIcon dir="right" /> },
+  { mode: "last", key: "targetLast", icon: <ArrowIcon dir="left" /> },
+  { mode: "strongest", key: "targetStrongest", icon: <HeartIcon filled /> },
+  { mode: "weakest", key: "targetWeakest", icon: <HeartIcon filled={false} /> },
+];
+
 interface SelectedTowerPanelProps {
   tower: TowerInstance;
   def: TowerDef;
@@ -725,6 +784,7 @@ interface SelectedTowerPanelProps {
   onUpgrade: () => void;
   onMutate: (mutationId: string) => void;
   onSell: () => void;
+  onSetTargeting: (mode: TargetingMode) => void;
 }
 
 function SelectedTowerPanel({
@@ -736,6 +796,7 @@ function SelectedTowerPanel({
   onUpgrade,
   onMutate,
   onSell,
+  onSetTargeting,
 }: SelectedTowerPanelProps) {
   const { t } = useT();
   const current = def.levels[tower.level - 1];
@@ -818,6 +879,30 @@ function SelectedTowerPanel({
           </>
         )}
       </div>
+
+      {/* Targeting: only meaningful for projectile towers that actually fire. */}
+      {!economy && !isPulse(def) && (
+        <div className="targeting" role="group" aria-label={t("targetAria")}>
+          <span className="targeting-label">
+            {t("targetLabel")} <kbd className="kbd">T</kbd>
+          </span>
+          <div className="targeting-toggle">
+            {TARGETING_OPTIONS.map((opt) => (
+              <button
+                key={opt.mode}
+                type="button"
+                className={tower.targeting === opt.mode ? "active" : undefined}
+                title={t(opt.key)}
+                aria-label={t(opt.key)}
+                aria-pressed={tower.targeting === opt.mode}
+                onClick={() => onSetTargeting(opt.mode)}
+              >
+                {opt.icon}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {chosenMutation &&
         mutationEffectLines(chosenMutation.effect).map((line) => (

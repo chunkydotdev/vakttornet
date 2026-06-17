@@ -66,6 +66,13 @@ export interface EnemyInstance {
   burnDps: number;
 }
 
+/** Which in-range enemy a projectile tower shoots:
+ * - first: furthest along the path (closest to the stuga) — the default
+ * - last: least far along (most recently spawned)
+ * - strongest / weakest: highest / lowest CURRENT hp
+ * Pulse and damage-0 towers ignore this (they hit all / never fire). */
+export type TargetingMode = "first" | "last" | "strongest" | "weakest";
+
 export interface TowerInstance {
   id: number;
   typeId: string;
@@ -77,6 +84,8 @@ export interface TowerInstance {
   /** chosen mutation (MutationDef.id) — null until the player picks one at
    * max level */
   mutationId: string | null;
+  /** which in-range enemy to shoot; defaults to "first" on placement */
+  targeting: TargetingMode;
 }
 
 export interface ProjectileInstance {
@@ -169,6 +178,8 @@ export interface Sim {
   mutateTower(towerId: number, mutationId: string): boolean;
   /** Refund = sellRefundRatio × total gold spent on the tower. */
   sellTower(towerId: number): boolean;
+  /** Set a tower's targeting mode. False for an unknown tower id. */
+  setTowerTargeting(towerId: number, mode: TargetingMode): boolean;
   /** Start the next wave. False unless status is "building" and waves remain. */
   startWave(): boolean;
   /** Read-only query: the product of nearby towers' active damage auras

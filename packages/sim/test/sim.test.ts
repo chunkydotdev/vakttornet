@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NO_META, type SimEvent } from "../src/index";
+import { NO_META, type SimEvent, type TargetingMode } from "../src/index";
 import { setup } from "./fixtures";
 
 /** Run one tick and return events of a given type. */
@@ -332,6 +332,70 @@ describe("targeting", () => {
     // Projectile is still in flight this tick — inspect its target.
     const projectile = sim.state.projectiles.find((p) => p.id === fired[0]!.projectileId)!;
     expect(projectile.targetEnemyId).toBe(Math.min(...spawned));
+  });
+});
+
+describe("targeting modes", () => {
+  // Four enemies, one tick apart, same speed: A is furthest along, D rear-most;
+  // B has the most hp, C the least. So each mode picks a DISTINCT enemy.
+  const ENEMIES = [
+    { id: "t-a", name: "A", assetId: "enemy-runt", hp: 50, speed: 7.5, bounty: 1 },
+    { id: "t-b", name: "B", assetId: "enemy-runt", hp: 500, speed: 7.5, bounty: 1 },
+    { id: "t-c", name: "C", assetId: "enemy-runt", hp: 5, speed: 7.5, bounty: 1 },
+    { id: "t-d", name: "D", assetId: "enemy-runt", hp: 80, speed: 7.5, bounty: 1 },
+  ];
+  const WAVE = {
+    waves: [
+      {
+        entries: [
+          { enemyTypeId: "t-a", count: 1, spacingTicks: 1, delayTicks: 0 },
+          { enemyTypeId: "t-b", count: 1, spacingTicks: 1, delayTicks: 1 },
+          { enemyTypeId: "t-c", count: 1, spacingTicks: 1, delayTicks: 1 },
+          { enemyTypeId: "t-d", count: 1, spacingTicks: 1, delayTicks: 1 },
+        ],
+      },
+    ],
+  };
+
+  /** Return the typeId of the enemy the sniper targets at t6 (all four present,
+   * none yet killed by the 1-damage sniper). */
+  function targetedTypeId(mode?: TargetingMode): string {
+    const { sim } = setup(WAVE, { extraEnemies: ENEMIES });
+    // Far corner: whole-map range still sees everyone, but the projectile stays
+    // in flight past the fire tick so we can read its target.
+    const placed = sim.placeTower("sniper", { col: 6, row: 4 }); // range 20
+    if (!placed.ok) throw new Error("placement failed");
+    if (mode) expect(sim.setTowerTargeting(placed.tower.id, mode)).toBe(true);
+    sim.startWave();
+    let targetId = -1;
+    for (let t = 1; t <= 6; t++) {
+      for (const f of eventsOfType(sim.tick(), "towerFired")) {
+        targetId = sim.state.projectiles.find((p) => p.id === f.projectileId)!.targetEnemyId;
+      }
+    }
+    return sim.state.enemies.find((e) => e.id === targetId)!.typeId;
+  }
+
+  it("first (the default) shoots the enemy furthest along the path", () => {
+    expect(targetedTypeId()).toBe("t-a");
+    expect(targetedTypeId("first")).toBe("t-a");
+  });
+
+  it("last shoots the rear-most enemy", () => {
+    expect(targetedTypeId("last")).toBe("t-d");
+  });
+
+  it("strongest shoots the highest-hp enemy", () => {
+    expect(targetedTypeId("strongest")).toBe("t-b");
+  });
+
+  it("weakest shoots the lowest-hp enemy", () => {
+    expect(targetedTypeId("weakest")).toBe("t-c");
+  });
+
+  it("setTowerTargeting returns false for an unknown tower id", () => {
+    const { sim } = setup();
+    expect(sim.setTowerTargeting(9999, "last")).toBe(false);
   });
 });
 

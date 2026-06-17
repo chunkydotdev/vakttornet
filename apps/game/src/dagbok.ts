@@ -24,8 +24,17 @@ export interface DagbokEntry {
 
 const sv: DagbokEntry[] = [
   {
-    id: "tower-sight",
+    id: "targeting",
     when: "Just nu",
+    title: "Säg åt tornen vem de ska sikta på",
+    body:
+      "Förut sköt varje torn alltid på den fiende som hunnit längst. Nu bestämmer " +
+      "du själv: främst eller sist i ledet, eller den med mest eller minst liv. " +
+      "Markera ett torn och peka ut målet med ikonerna, eller tryck T.",
+  },
+  {
+    id: "tower-sight",
+    when: "Nyligen",
     title: "Skarpare blick över tornen",
     body:
       "Nu syns det svart på vitt när ett torn får extra kraft av sin granne, som " +
@@ -35,7 +44,7 @@ const sv: DagbokEntry[] = [
   },
   {
     id: "endless-watch",
-    when: "Just nu",
+    when: "Nyligen",
     title: "Den eviga vakten är öppen",
     body:
       "Ett nytt sätt att spela har slagit upp portarna under Alternativa berättelser. " +
@@ -97,8 +106,17 @@ const sv: DagbokEntry[] = [
 
 const en: DagbokEntry[] = [
   {
-    id: "tower-sight",
+    id: "targeting",
     when: "Right now",
+    title: "Tell your towers who to aim at",
+    body:
+      "Until now every tower always shot the enemy furthest along. Now you choose: " +
+      "front or back of the line, or the one with the most or least health. Select a " +
+      "tower and point with the icons, or press T.",
+  },
+  {
+    id: "tower-sight",
+    when: "Recently",
     title: "A sharper eye over the towers",
     body:
       "Now you can see in black and white when a tower draws extra strength from a " +
@@ -108,7 +126,7 @@ const en: DagbokEntry[] = [
   },
   {
     id: "endless-watch",
-    when: "Right now",
+    when: "Recently",
     title: "The Endless Watch is open",
     body:
       "A new way to play has opened its doors under Alternative Tales. In Endless Watch " +

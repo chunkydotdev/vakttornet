@@ -24,6 +24,7 @@ import {
   type ProjectileInstance,
   type SimEvent,
   type SimState,
+  type TargetingMode,
   type TowerInstance,
   type Vec,
 } from "./types";
@@ -452,10 +453,11 @@ export const createSim: CreateSim = (level, content, opts) => {
         continue;
       }
 
-      // Rank in-range enemies by the furthest-along ordering: highest
-      // pathIndex, tie-break by smallest distance to the next waypoint, then
-      // lowest id (the enemies array is in spawn = id order and the sort is
-      // stable, so full ties keep array order).
+      // Rank in-range enemies per the tower's targeting mode. The "furthest
+      // along" ordering (highest pathIndex, then smallest distance to the next
+      // waypoint) is both the "first" mode AND the deterministic tie-break for
+      // every other mode; the enemies array is in spawn = id order and the sort
+      // is stable, so full ties keep array order (lowest id).
       const candidates: Array<{ enemy: EnemyInstance; nextDist: number }> = [];
       for (const enemy of state.enemies) {
         const d = Math.hypot(enemy.pos.x - center.x, enemy.pos.y - center.y);
@@ -465,9 +467,20 @@ export const createSim: CreateSim = (level, content, opts) => {
         candidates.push({ enemy, nextDist });
       }
       if (candidates.length === 0) continue;
-      candidates.sort(
-        (a, b) => b.enemy.pathIndex - a.enemy.pathIndex || a.nextDist - b.nextDist,
-      );
+      const along = (a: { enemy: EnemyInstance; nextDist: number }, b: typeof a) =>
+        b.enemy.pathIndex - a.enemy.pathIndex || a.nextDist - b.nextDist;
+      candidates.sort((a, b) => {
+        switch (tower.targeting) {
+          case "last":
+            return -along(a, b);
+          case "strongest":
+            return b.enemy.hp - a.enemy.hp || along(a, b);
+          case "weakest":
+            return a.enemy.hp - b.enemy.hp || along(a, b);
+          default: // "first"
+            return along(a, b);
+        }
+      });
       // multishot (projectile towers only): one shot fires at up to N
       // DISTINCT targets — the top N of the ranking above. Fewer enemies in
       // range → fewer projectiles; a target is never doubled up. Each
@@ -702,6 +715,7 @@ export const createSim: CreateSim = (level, content, opts) => {
       level: 1,
       cooldown: 0,
       mutationId: null,
+      targeting: "first",
     };
     state.towers.push(tower);
     queuedEvents.push({ type: "towerPlaced", towerId: tower.id });
@@ -784,6 +798,13 @@ export const createSim: CreateSim = (level, content, opts) => {
     return tower ? auraDamageMultFor(tower) : 1;
   }
 
+  function setTowerTargeting(towerId: number, mode: TargetingMode): boolean {
+    const tower = state.towers.find((t) => t.id === towerId);
+    if (!tower) return false;
+    tower.targeting = mode;
+    return true;
+  }
+
   return {
     state,
     tick,
@@ -793,5 +814,6 @@ export const createSim: CreateSim = (level, content, opts) => {
     sellTower,
     startWave,
     auraDamageMult,
+    setTowerTargeting,
   };
 };
