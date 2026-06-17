@@ -528,17 +528,22 @@ export class Renderer {
     ctx.stroke();
   }
 
-  /** Small amber rune diamond (⟡-like: hollow-centered) bobbing above any
-   * mutated tower's sprite — the at-a-glance "this one has evolved" mark. */
+  /** Small amber rune diamond (⟡-like: hollow-centered) tucked into the
+   * top-right CORNER of a mutated tower's own tile — the at-a-glance "this one
+   * has evolved" mark. Kept inside the tile footprint so dense boards never let
+   * it overlap the tower above (it used to float above the sprite). */
   private drawMutationRune(tower: TowerInstance): void {
     const { ctx } = this;
-    const cx = (tower.tile.col + 0.5) * TILE_PX;
-    // Per-tower phase offset so neighbouring runes don't bob in lockstep.
-    const bob = Math.sin(performance.now() / 480 + tower.id * 1.7) * 2.5;
-    const cy = tower.tile.row * TILE_PX - 4 + bob;
     const r = 5;
+    const cx = (tower.tile.col + 1) * TILE_PX - r - 2;
+    const cy = tower.tile.row * TILE_PX + r + 2;
     ctx.save();
     ctx.translate(cx, cy);
+    // Faint dark disc behind the rune so it reads against any sprite/terrain.
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 2, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    ctx.fill();
     ctx.beginPath();
     ctx.moveTo(0, -r);
     ctx.lineTo(r * 0.7, 0);

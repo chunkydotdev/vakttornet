@@ -1017,12 +1017,6 @@
   border-color: var(--accent);
 }
 
-/* The endless board stands apart from the map tabs with a standing amber outline. */
-.topplista-tabs .endless-tab {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
 .topplista-board {
   background: var(--bg-raised);
   border: 1px solid var(--border);

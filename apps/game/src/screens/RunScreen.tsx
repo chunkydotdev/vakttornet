@@ -157,6 +157,12 @@ export function RunScreen({
   const speedRef = useRef<SimSpeed>(1);
   const endedNotifiedRef = useRef(false);
   const lastHudSyncRef = useRef(0);
+  // Latest selection, read by the (once-bound) keyboard handler so shortcuts
+  // act on the currently-selected tower without re-binding the listener.
+  const selectionRef = useRef<{ id: number | null; def: TowerDef | null }>({
+    id: null,
+    def: null,
+  });
 
   // ---- Lifetime deed tracking (sägner). Kills + petrifies accumulate from
   // the event stream; the sim's starting lives are captured here so a
@@ -307,20 +313,44 @@ export function RunScreen({
     }
   }, [sim, syncHud]);
 
-  // ---- Keyboard: Escape cancels, Space starts the next wave. ----
+  // ---- Keyboard: Escape cancels, Space starts the next wave, and (with a
+  // tower selected) U upgrades, S sells, 1/2 pick a mutation branch. Ignored
+  // while a text field is focused (e.g. the leaderboard name on the end card). ----
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT")) {
+        return;
+      }
       if (e.code === "Escape") {
         setArmed(null);
         setSelectedId(null);
-      } else if (e.code === "Space") {
+        return;
+      }
+      if (e.code === "Space") {
         e.preventDefault();
         startWave();
+        return;
+      }
+      // Tower shortcuts act on the current selection (read fresh from the ref).
+      const { id, def } = selectionRef.current;
+      if (id === null) return;
+      if (e.code === "KeyU") {
+        if (sim.upgradeTower(id)) syncHud();
+      } else if (e.code === "KeyS") {
+        if (sim.sellTower(id)) {
+          setSelectedId(null);
+          syncHud();
+        }
+      } else if (e.code === "Digit1" || e.code === "Digit2") {
+        // The sim rejects the mutation if the tower isn't eligible — no extra guard.
+        const mutation = def?.mutations?.[e.code === "Digit1" ? 0 : 1];
+        if (mutation && sim.mutateTower(id, mutation.id)) syncHud();
       }
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [startWave]);
+  }, [startWave, sim, syncHud]);
 
   // ---- Toast auto-dismiss. ----
   useEffect(() => {
@@ -404,6 +434,7 @@ export function RunScreen({
   const previewDef = previewId
     ? (bundle.towers.find((tw) => tw.id === previewId) ?? null)
     : null;
+  selectionRef.current = { id: selectedId, def: selectedDef };
 
   const { cols, rows } = sim.state.grid;
   const canStartWave =
@@ -546,6 +577,7 @@ export function RunScreen({
               def={selectedDef}
               gold={hud.gold}
               meta={metaRef.current}
+              auraDamageMult={sim.auraDamageMult(selectedTower.id)}
               onUpgrade={upgradeSelected}
               onMutate={mutateSelected}
               onSell={sellSelected}
@@ -688,6 +720,8 @@ interface SelectedTowerPanelProps {
   def: TowerDef;
   gold: number;
   meta: MetaModifiers;
+  /** product of nearby damage auras affecting this tower (1 = none) */
+  auraDamageMult: number;
   onUpgrade: () => void;
   onMutate: (mutationId: string) => void;
   onSell: () => void;
@@ -698,6 +732,7 @@ function SelectedTowerPanel({
   def,
   gold,
   meta,
+  auraDamageMult,
   onUpgrade,
   onMutate,
   onSell,
@@ -725,7 +760,17 @@ function SelectedTowerPanel({
   // Economy towers (damage 0) never attack — combat stats (including range)
   // are meaningless, so show their income instead.
   const economy = isEconomy(current);
-  const range = formatNum(current.range * meta.rangeMult);
+  // Include the chosen mutation's rangeAdd (Eagle Eye / Scope) so the number
+  // matches the range ring and how far the tower actually shoots — it used to
+  // omit rangeAdd and read low for range-mutated towers.
+  const range = formatNum(
+    (current.range + (chosenMutation?.effect.rangeAdd ?? 0)) * meta.rangeMult,
+  );
+  // Damage aura from neighbouring towers (e.g. Runeguard): show base (+Δ) so
+  // the player sees the boost and that it's active. Δ is off the displayed base.
+  const baseDamage = current.damage * meta.damageMult;
+  const auraBoost = Math.round(baseDamage * (auraDamageMult - 1));
+  const boosted = !economy && auraDamageMult > 1 && auraBoost > 0;
 
   return (
     <>
@@ -752,7 +797,15 @@ function SelectedTowerPanel({
           <>
             <div className="stat-row">
               <span className="stat-label">{t("statDamage")}</span>
-              <span className="stat-value">{damageValue(def, current, meta.damageMult)}</span>
+              <span className="stat-value">
+                {damageValue(def, current, meta.damageMult)}
+                {boosted && (
+                  <span className="stat-boost" title={t("auraBoostTitle")}>
+                    {" "}
+                    (+{formatNum(auraBoost)})
+                  </span>
+                )}
+              </span>
             </div>
             <div className="stat-row">
               <span className="stat-label">{t("statRange")}</span>
@@ -783,6 +836,7 @@ function SelectedTowerPanel({
               onClick={onUpgrade}
             >
               {t("upgradeBtn", { n: next.cost })}
+              <kbd className="kbd">U</kbd>
             </button>
             <p className="next-level-note">
               {next.damage === 0
@@ -797,7 +851,7 @@ function SelectedTowerPanel({
         ) : offersMutations ? (
           <div className="mutation-choice">
             <p className="mutation-choice-title">{t("chooseMutation")}</p>
-            {def.mutations!.map((mutation) => {
+            {def.mutations!.map((mutation, mi) => {
               const affordable = gold >= mutation.cost;
               return (
                 <button
@@ -807,7 +861,9 @@ function SelectedTowerPanel({
                   disabled={!affordable}
                   onClick={() => onMutate(mutation.id)}
                 >
-                  <span className="mutation-name">⟡ {mutation.name}</span>
+                  <span className="mutation-name">
+                    <kbd className="kbd">{mi + 1}</kbd> ⟡ {mutation.name}
+                  </span>
                   <span className="mutation-desc">{mutation.description}</span>
                   {mutationEffectLines(mutation.effect).map((line) => (
                     <span key={line} className="mutation-effect">
@@ -828,6 +884,7 @@ function SelectedTowerPanel({
         )}
         <button type="button" className="btn btn-danger" onClick={onSell}>
           {t("sellBtn", { n: refund })}
+          <kbd className="kbd">S</kbd>
         </button>
       </div>
     </>

@@ -171,6 +171,11 @@ export interface Sim {
   sellTower(towerId: number): boolean;
   /** Start the next wave. False unless status is "building" and waves remain. */
   startWave(): boolean;
+  /** Read-only query: the product of nearby towers' active damage auras
+   * applied to this tower at fire time (1 = no boost). Lets the UI show how
+   * much a tower is buffed by neighbours without re-deriving aura logic.
+   * Returns 1 for an unknown tower id. */
+  auraDamageMult(towerId: number): number;
 }
 
 export interface CreateSimOptions {

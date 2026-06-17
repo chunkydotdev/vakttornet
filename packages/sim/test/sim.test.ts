@@ -1682,6 +1682,21 @@ describe("towerAura", () => {
     expect(hits.get(rune1)).toEqual([15]);
     expect(hits.get(rune2)).toEqual([15]);
   });
+
+  it("auraDamageMult query reports a tower's received buff (for the inspector UI)", () => {
+    const { sim } = setup({ ...tankWave, startGold: 200 });
+    const rune1 = placeMutated(sim, "runeguard", { col: 0, row: 1 }, "rune-aura");
+    const rune2 = placeMutated(sim, "runeguard", { col: 2, row: 1 }, "rune-aura");
+    const archer = sim.placeTower("archer", { col: 1, row: 1 }); // inside both radii
+    if (!archer.ok) throw new Error("placement failed");
+    const far = sim.placeTower("archer", { col: 6, row: 4 }); // outside any aura
+    if (!far.ok) throw new Error("placement failed");
+
+    expect(sim.auraDamageMult(archer.tower.id)).toBeCloseTo(2.25, 10); // 1.5 × 1.5
+    expect(sim.auraDamageMult(rune1)).toBeCloseTo(1.5, 10); // buffed by rune2, never itself
+    expect(sim.auraDamageMult(far.tower.id)).toBe(1); // no aura in range
+    expect(sim.auraDamageMult(99999)).toBe(1); // unknown id
+  });
 });
 
 describe("auraSlow", () => {

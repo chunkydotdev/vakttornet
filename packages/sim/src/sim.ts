@@ -779,5 +779,19 @@ export const createSim: CreateSim = (level, content, opts) => {
     return true;
   }
 
-  return { state, tick, placeTower, upgradeTower, mutateTower, sellTower, startWave };
+  function auraDamageMult(towerId: number): number {
+    const tower = state.towers.find((t) => t.id === towerId);
+    return tower ? auraDamageMultFor(tower) : 1;
+  }
+
+  return {
+    state,
+    tick,
+    placeTower,
+    upgradeTower,
+    mutateTower,
+    sellTower,
+    startWave,
+    auraDamageMult,
+  };
 };

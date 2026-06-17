@@ -84,10 +84,10 @@ export function TopplistaScreen({ onBack }: TopplistaScreenProps) {
             type="button"
             role="tab"
             aria-selected={levelId === ENDLESS_LEVEL_ID}
-            className={levelId === ENDLESS_LEVEL_ID ? "tab active endless-tab" : "tab endless-tab"}
+            className={levelId === ENDLESS_LEVEL_ID ? "tab active" : "tab"}
             onClick={() => setLevelId(ENDLESS_LEVEL_ID)}
           >
-            ♾ {t("endlessMode")}
+            {t("endlessMode")}
           </button>
         </div>
 
