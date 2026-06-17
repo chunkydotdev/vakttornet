@@ -24,8 +24,28 @@ export interface DagbokEntry {
 
 const sv: DagbokEntry[] = [
   {
-    id: "auto-and-bosses",
+    id: "tower-sight",
     when: "Just nu",
+    title: "Skarpare blick över tornen",
+    body:
+      "Nu syns det svart på vitt när ett torn får extra kraft av sin granne, som " +
+      "vårdträdets rötter. Snabbtangenter lyder med: U rustar upp, S säljer, och " +
+      "1 eller 2 väljer förvandling. Tecknet för ett förvandlat torn sitter dessutom " +
+      "prydligt på dess egen ruta numera, i stället för att skugga grannen ovanför.",
+  },
+  {
+    id: "endless-watch",
+    when: "Just nu",
+    title: "Den eviga vakten är öppen",
+    body:
+      "Ett nytt sätt att spela har slagit upp portarna under Alternativa berättelser. " +
+      "I Evig vakt råder en enda natt utan gryning, och vågorna växer sig vildare ända " +
+      "tills mörkret tar dig. Alla väktare står lika, utan förstärkningar och med alla " +
+      "torn till hands. På topplistan gäller en enda sak: hur länge du höll stigen.",
+  },
+  {
+    id: "auto-and-bosses",
+    when: "Nyligen",
     title: "Vågor på rad, och bjässar att akta sig för",
     body:
       "Trött på att vinka fram varje våg för hand? Slå på Auto uppe i fältet, " +
@@ -77,8 +97,28 @@ const sv: DagbokEntry[] = [
 
 const en: DagbokEntry[] = [
   {
-    id: "auto-and-bosses",
+    id: "tower-sight",
     when: "Right now",
+    title: "A sharper eye over the towers",
+    body:
+      "Now you can see in black and white when a tower draws extra strength from a " +
+      "neighbour, like the warden tree's roots. Quick keys obey too: U upgrades, S " +
+      "sells, and 1 or 2 choose a transformation. The mark on a transformed tower now " +
+      "sits neatly on its own tile as well, instead of shadowing the one above.",
+  },
+  {
+    id: "endless-watch",
+    when: "Right now",
+    title: "The Endless Watch is open",
+    body:
+      "A new way to play has opened its doors under Alternative Tales. In Endless Watch " +
+      "one night reigns with no dawn, and the waves grow wilder until the dark takes you. " +
+      "Every watcher stands equal, with no upgrades and every tower to hand. On the " +
+      "leaderboard one thing alone counts: how long you held the path.",
+  },
+  {
+    id: "auto-and-bosses",
+    when: "Recently",
     title: "Waves on a roll, and bosses to beware",
     body:
       "Tired of waving each wave forward by hand? Switch on Auto up in the bar " +
